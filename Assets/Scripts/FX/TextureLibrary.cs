@@ -54,6 +54,18 @@ namespace LizardCrossing
             get { return Load("terracotta", null, repeat: true); }
         }
 
+        /// <summary>Asphalt road surface. File: asphalt.png/jpg (seamless). Null-safe.</summary>
+        public static Texture2D Asphalt
+        {
+            get { return Load("asphalt", null, repeat: true); }
+        }
+
+        /// <summary>Grass turf surface. File: grass.png/jpg (seamless). Null-safe.</summary>
+        public static Texture2D Grass
+        {
+            get { return Load("grass", null, repeat: true); }
+        }
+
         public static bool HasGeneratedArt
         {
             get { return Resources.Load<Texture2D>(ResourceFolder + "pavement_stone") != null; }

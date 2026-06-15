@@ -49,6 +49,23 @@ built-in procedural fallback, so you can add these one at a time and compare.
 > horizontal throwing lines, light weathering and white mineral specks, sunny
 > ambient light, stylized-realistic mobile game art, perfectly tileable edges.
 
+## 5. `asphalt.png` — city street surface (where traffic crosses)
+- **Size:** 1024×1024 · **Must be seamless/tileable**
+
+> Seamless tileable texture, top-down view of dark grey asphalt road surface,
+> fine stone aggregate speckle, subtle hairline cracks and faint oil staining, a
+> few tiny embedded pebbles, matte, sunny daylight, flat even lighting, no road
+> markings, no shadows, no people, stylized-realistic mobile game art, perfectly
+> tileable edges.
+
+## 6. `grass.png` — grass strips / safe pockets
+- **Size:** 1024×1024 · **Must be seamless/tileable**
+
+> Seamless tileable texture, top-down view of lush green tropical lawn grass,
+> short dense blades with subtle color variation, a few tiny clover leaves
+> scattered, sunny daylight, flat even lighting, no objects, no shadows, no
+> people, stylized-realistic mobile game art, perfectly tileable edges.
+
 ---
 
 ## Later (art pass, not needed for Phase 1)

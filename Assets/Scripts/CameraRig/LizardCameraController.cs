@@ -24,10 +24,10 @@ namespace LizardCrossing
             go.tag = "MainCamera";
             var cam = go.AddComponent<Camera>();
             go.AddComponent<AudioListener>();
-            go.AddComponent<CameraGrade>().Setup();   // premium color grade + vignette
             var rig = go.AddComponent<LizardCameraController>();
             rig._shake = go.AddComponent<CameraShake>();
             rig.Setup(cam, target);
+            go.AddComponent<CinematicPost>().Setup(cam, target); // URP post: DoF, bloom, grade
             return rig;
         }
 

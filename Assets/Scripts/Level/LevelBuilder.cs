@@ -13,6 +13,13 @@ namespace LizardCrossing
         private static readonly Color WallSandstone = new Color(0.82f, 0.72f, 0.58f);
         private static readonly Color Terracotta = new Color(0.76f, 0.42f, 0.28f);
         private static readonly Color GrassGreen = new Color(0.38f, 0.66f, 0.3f);
+        // city surface palette — varied terrain so the run feels like a real city
+        // block (sidewalk stone + asphalt streets + concrete curbs + grass) instead
+        // of one flat floor. Colors are first-pass; each surface gets a matched
+        // Higgsfield texture later.
+        private static readonly Color Asphalt = new Color(0.17f, 0.17f, 0.19f);
+        private static readonly Color RoadLine = new Color(0.93f, 0.86f, 0.45f);
+        private static readonly Color CurbConcrete = new Color(0.72f, 0.69f, 0.64f);
         private static readonly Color[] LeafGreens =
         {
             new Color(0.3f, 0.55f, 0.25f),
@@ -34,6 +41,7 @@ namespace LizardCrossing
 
             BuildGround(root, level.Length);
             BuildSlabJointsAndCracks(root, level.Length, rng);
+            BuildCitySurfaces(root, level);
             BuildGardenWalls(root, level.Length, rng);
             BuildScatterProps(root, level.Length, rng);
             BuildSafeZoneGarden(root, level.Length, rng);
@@ -80,6 +88,67 @@ namespace LizardCrossing
                 FlatQuad(root, new Vector3(x, 0.011f, z), new Vector3(0.22f, len, 1f), yaw,
                     new Color(0.3f, 0.27f, 0.24f, 0.9f), "Crack");
             }
+        }
+
+        // ---------- city surface variety (sidewalk / curb / street / grass) ----------
+
+        /// <summary>
+        /// Overlays varied city terrain on the base pavement so the run reads like a
+        /// real city block rather than one flat floor: an asphalt STREET (with a
+        /// dashed center line and concrete curbs) at every crossing lane — that's the
+        /// dangerous road the traffic crosses — and GRASS strips in a few safe pockets
+        /// between them. All cosmetic / collider-free so the lizard glides across.
+        /// </summary>
+        private static void BuildCitySurfaces(Transform root, LevelDefinition level)
+        {
+            const float corridorWidth = 30f;
+            var asphaltTex = TextureLibrary.Asphalt;   // null until art is dropped in
+            var grassTex = TextureLibrary.Grass;
+
+            foreach (var lane in level.Lanes)
+            {
+                float z = lane.Z;
+                const float streetHalf = 4f; // street depth along the run (~8 units)
+
+                // asphalt road where the traffic crosses (textured when art present)
+                var street = FlatBox(root, new Vector3(0f, 0.02f, z),
+                    new Vector3(corridorWidth, 0.04f, streetHalf * 2f), Asphalt, "Street");
+                if (asphaltTex != null)
+                    street.GetComponent<Renderer>().sharedMaterial = MaterialCache.GetTexturedNormal(
+                        asphaltTex, null, Color.white, 0.05f, corridorWidth / 7f, (streetHalf * 2f) / 7f);
+
+                // dashed center line running across the corridor (along x)
+                for (float x = -13f; x <= 13f; x += 4.2f)
+                    FlatBox(root, new Vector3(x, 0.045f, z),
+                        new Vector3(1.8f, 0.04f, 0.45f), RoadLine, "RoadLine");
+
+                // low concrete curbs lipping each edge of the street
+                FlatBox(root, new Vector3(0f, 0.08f, z - streetHalf),
+                    new Vector3(corridorWidth, 0.16f, 0.6f), CurbConcrete, "Curb");
+                FlatBox(root, new Vector3(0f, 0.08f, z + streetHalf),
+                    new Vector3(corridorWidth, 0.16f, 0.6f), CurbConcrete, "Curb");
+            }
+
+            // grass strips in safe pockets between streets (breaks up the stone)
+            float[] grassZ = { 37f, 104f, 150f };
+            foreach (float gz in grassZ)
+            {
+                if (gz > level.Length) continue;
+                var grass = FlatBox(root, new Vector3(0f, 0.018f, gz),
+                    new Vector3(corridorWidth, 0.05f, 6f), GrassGreen, "GrassStrip");
+                if (grassTex != null)
+                    grass.GetComponent<Renderer>().sharedMaterial = MaterialCache.GetTexturedNormal(
+                        grassTex, null, Color.white, 0.05f, corridorWidth / 6f, 1f);
+            }
+        }
+
+        /// <summary>Thin, collider-free flat slab used for cosmetic ground surfaces.</summary>
+        private static GameObject FlatBox(Transform parent, Vector3 pos, Vector3 scale, Color color, string name)
+        {
+            var go = Box(parent, pos, scale, color, name);
+            Object.Destroy(go.GetComponent<Collider>());
+            go.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            return go;
         }
 
         // ---------- flanking gardens ----------
@@ -303,9 +372,9 @@ namespace LizardCrossing
                 var fly = Sphere(garden, new Vector3(-4f + (float)rng.NextDouble() * 8f,
                     1f + (float)rng.NextDouble() * 5f, length + 1f + (float)rng.NextDouble() * 4f),
                     Vector3.one * 0.16f, new Color(1f, 0.95f, 0.5f), "Firefly");
-                var mat = new Material(Shader.Find("Standard"));
+                var mat = new Material(MaterialCache.LitShaderAsset); // URP/Lit or Standard
                 mat.color = new Color(1f, 0.95f, 0.5f);
-                mat.EnableKeyword("_EMISSION");
+                mat.EnableKeyword("_EMISSION"); // _EMISSION + _EmissionColor exist on both
                 mat.SetColor("_EmissionColor", new Color(1f, 0.9f, 0.3f) * 1.6f);
                 fly.GetComponent<Renderer>().material = mat;
                 var bob = fly.AddComponent<Bobber>();
@@ -362,8 +431,7 @@ namespace LizardCrossing
             quad.transform.SetParent(root, false);
             quad.transform.position = new Vector3(0f, 26f, length + 38f);
             quad.transform.localScale = new Vector3(170f, 80f, 1f);
-            var mat = new Material(Shader.Find("Unlit/Texture"));
-            mat.mainTexture = TextureLibrary.Backdrop;
+            var mat = MaterialCache.GetUnlitTextured(TextureLibrary.Backdrop);
             quad.GetComponent<Renderer>().sharedMaterial = mat;
         }
 

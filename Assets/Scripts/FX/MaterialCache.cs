@@ -5,8 +5,15 @@ namespace LizardCrossing
 {
     /// <summary>
     /// Shared-material factory so the whole procedural world batches well.
-    /// Built-in RP Phase 1 (docs/DECISIONS.md D1): Standard for lit surfaces,
-    /// Sprites/Default for soft transparent quads (shadows, particles, wings).
+    /// URP pass (docs/DECISIONS.md D1): URP/Lit for lit surfaces (falls back to
+    /// Standard if URP isn't installed yet), Sprites/Default for soft transparent
+    /// quads (shadows, particles, wings — works unchanged under both pipelines).
+    ///
+    /// Magenta-trap note: never hardcode "Standard". LitShader resolves URP/Lit
+    /// when present so runtime materials match whichever pipeline is active.
+    /// Color/texture go through m.color / m.mainTexture, which Unity routes to the
+    /// shader's [MainColor]/[MainTexture] (URP _BaseColor/_BaseMap or Standard
+    /// _Color/_MainTex). Smoothness differs by shader, so we set both names.
     /// </summary>
     public static class MaterialCache
     {
@@ -14,26 +21,65 @@ namespace LizardCrossing
         private static Material _shadowBlob;
         private static Material _warningRing;
         private static Material _softParticle;
+        private static Shader _litShader;
+
+        /// <summary>URP/Lit when the package is installed, else Standard. Cached.</summary>
+        public static Shader LitShaderAsset
+        {
+            get
+            {
+                if (_litShader == null)
+                    _litShader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+                return _litShader;
+            }
+        }
+
+        private static Shader _unlitShader;
+
+        /// <summary>URP/Unlit when installed, else Built-in Unlit/Texture. Cached.</summary>
+        public static Shader UnlitShaderAsset
+        {
+            get
+            {
+                if (_unlitShader == null)
+                    _unlitShader = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Texture");
+                return _unlitShader;
+            }
+        }
+
+        /// <summary>Unlit textured surface (backdrops, sky quads). Pipeline-agnostic.</summary>
+        public static Material GetUnlitTextured(Texture tex)
+        {
+            var m = new Material(UnlitShaderAsset);
+            m.mainTexture = tex; // routes to _BaseMap (URP) or _MainTex (Built-in)
+            return m;
+        }
+
+        /// <summary>Set smoothness/metallic using whichever property the active shader exposes.</summary>
+        private static void SetPbr(Material m, float smoothness, float metallic)
+        {
+            m.SetFloat("_Smoothness", smoothness); // URP/Lit
+            m.SetFloat("_Glossiness", smoothness);  // Standard (ignored if absent)
+            m.SetFloat("_Metallic", metallic);
+        }
 
         public static Material GetLit(Color color)
         {
             Material m;
             if (Lit.TryGetValue(color, out m) && m != null) return m;
-            m = new Material(Shader.Find("Standard"));
+            m = new Material(LitShaderAsset);
             m.color = color;
-            m.SetFloat("_Glossiness", 0.12f);
-            m.SetFloat("_Metallic", 0f);
+            SetPbr(m, 0.12f, 0f);
             Lit[color] = m;
             return m;
         }
 
         public static Material GetLitTextured(Texture2D tex, Color tint)
         {
-            var m = new Material(Shader.Find("Standard"));
+            var m = new Material(LitShaderAsset);
             m.mainTexture = tex;
             m.color = tint;
-            m.SetFloat("_Glossiness", 0.08f);
-            m.SetFloat("_Metallic", 0f);
+            SetPbr(m, 0.08f, 0f);
             return m;
         }
 
@@ -44,15 +90,14 @@ namespace LizardCrossing
         public static Material GetTexturedNormal(Texture2D albedo, Texture2D normal, Color tint,
             float smoothness, float tileX, float tileY)
         {
-            var m = new Material(Shader.Find("Standard"));
+            var m = new Material(LitShaderAsset);
             m.mainTexture = albedo;
             m.color = tint;
-            m.SetFloat("_Glossiness", smoothness);
-            m.SetFloat("_Metallic", 0f);
+            SetPbr(m, smoothness, 0f);
             m.mainTextureScale = new Vector2(tileX, tileY);
             if (normal != null)
             {
-                m.EnableKeyword("_NORMALMAP");
+                m.EnableKeyword("_NORMALMAP"); // same keyword + _BumpMap on URP/Lit and Standard
                 m.SetTexture("_BumpMap", normal);
                 m.SetTextureScale("_BumpMap", new Vector2(tileX, tileY));
                 m.SetFloat("_BumpScale", 1.1f);
@@ -107,6 +152,7 @@ namespace LizardCrossing
             _shadowBlob = null;
             _warningRing = null;
             _softParticle = null;
+            _litShader = null;
         }
     }
 }
