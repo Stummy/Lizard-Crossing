@@ -372,9 +372,9 @@ namespace LizardCrossing
                 var fly = Sphere(garden, new Vector3(-4f + (float)rng.NextDouble() * 8f,
                     1f + (float)rng.NextDouble() * 5f, length + 1f + (float)rng.NextDouble() * 4f),
                     Vector3.one * 0.16f, new Color(1f, 0.95f, 0.5f), "Firefly");
-                var mat = new Material(Shader.Find("Standard"));
+                var mat = new Material(MaterialCache.LitShaderAsset); // URP/Lit or Standard
                 mat.color = new Color(1f, 0.95f, 0.5f);
-                mat.EnableKeyword("_EMISSION");
+                mat.EnableKeyword("_EMISSION"); // _EMISSION + _EmissionColor exist on both
                 mat.SetColor("_EmissionColor", new Color(1f, 0.9f, 0.3f) * 1.6f);
                 fly.GetComponent<Renderer>().material = mat;
                 var bob = fly.AddComponent<Bobber>();
@@ -431,8 +431,7 @@ namespace LizardCrossing
             quad.transform.SetParent(root, false);
             quad.transform.position = new Vector3(0f, 26f, length + 38f);
             quad.transform.localScale = new Vector3(170f, 80f, 1f);
-            var mat = new Material(Shader.Find("Unlit/Texture"));
-            mat.mainTexture = TextureLibrary.Backdrop;
+            var mat = MaterialCache.GetUnlitTextured(TextureLibrary.Backdrop);
             quad.GetComponent<Renderer>().sharedMaterial = mat;
         }
 
