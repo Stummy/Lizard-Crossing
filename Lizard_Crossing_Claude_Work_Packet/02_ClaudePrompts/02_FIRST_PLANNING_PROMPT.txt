@@ -1,0 +1,31 @@
+Use medium effort.
+
+Read these files first:
+- 00_READ_ME_FIRST/CLAUDE_INSTRUCTIONS.md
+- 01_GameDesignDocs/GAME_VISION.md
+- 01_GameDesignDocs/ART_DIRECTION.md
+- 01_GameDesignDocs/CAMERA_AND_SCALE.md
+- 01_GameDesignDocs/PHASE_1_VERTICAL_SLICE.md
+- 01_GameDesignDocs/QUALITY_BAR.md
+
+I am starting from a fresh Unity project. There is no old code to inspect.
+
+Do not code yet.
+
+First summarize the game in your own words:
+1. core loop
+2. camera style
+3. visual style
+4. current phase
+5. what not to build yet
+6. exact next 3 tasks
+
+Then create the Phase 1 implementation plan:
+- folder structure
+- scene structure
+- scripts needed
+- prefabs needed
+- build order
+- test plan
+
+Wait for my approval before coding.

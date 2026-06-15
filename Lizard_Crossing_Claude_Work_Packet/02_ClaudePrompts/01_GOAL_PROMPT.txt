@@ -1,0 +1,18 @@
+/goal Build an extraordinary commercial-quality mobile Unity game called Lizard Crossing.
+
+Core concept:
+Lizard Crossing is a level-based 3D mobile game where the player controls a tiny lizard crossing dangerous sidewalks, curbs, patios, and boardwalks from a dramatic low lizard POV. The game is NOT open world. Each level is a short crossing challenge with a clear start, forward route, sideways-moving hazards, collectibles, and safe finish zone.
+
+Core fantasy:
+The player is tiny. The world is huge. Human shoes, legs, cars, scooters, stroller wheels, bikes, puddles, sidewalk cracks, gum, leaves, trash, crumbs, curbs, dogs, birds, and shadows should feel massive and dangerous. The game should feel like a completely revamped, higher-graphics, lizard POV version of Crossy Road, but level-based and more cinematic.
+
+Most important rule:
+The lizard moves forward toward the safe zone. The main hazards move sideways across the lizard's path, left-to-right or right-to-left, like cross-traffic. Do not make the main human hazards walk forward in the same direction as the lizard.
+
+Camera:
+The camera is the most important part. It must be a very low third-person lizard POV camera behind the lizard, close to the sidewalk. The lizard should be visible near the bottom center. The sidewalk texture should feel huge. Shoes, wheels, and cars should tower over the player.
+
+Development rule:
+Build in phases. First build a polished Phase 1 vertical slice only: one lizard, one sidewalk level, low camera, sideways giant shoe hazards, warning markers, collectible bugs, finish safe zone, win/lose, simple HUD, camera shake, and impact feedback.
+
+Use the files in this work packet as permanent context and do not make random features outside the current phase.

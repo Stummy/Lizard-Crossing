@@ -1,0 +1,21 @@
+Use medium effort.
+
+Do a strict self-review of the current build against:
+- 01_GameDesignDocs/QUALITY_BAR.md
+- 04_ReviewChecklists/PHASE_1_REVIEW.md
+
+Do not add features yet.
+
+Evaluate:
+1. Does the screenshot read as tiny lizard crossing a giant human world?
+2. Are hazards moving sideways across the lizard's forward path?
+3. Is the camera low enough?
+4. Are shoes/wheels huge enough?
+5. Is the safe zone clearly readable?
+6. Is the HUD clean?
+7. Are there console errors?
+8. Are there duplicate scripts?
+9. Are collisions reliable?
+10. Does the game feel fun after 30 seconds?
+
+Then give me a prioritized polish plan. Wait for approval before coding.

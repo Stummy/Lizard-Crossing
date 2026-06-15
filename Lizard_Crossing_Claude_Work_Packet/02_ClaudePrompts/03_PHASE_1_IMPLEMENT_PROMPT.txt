@@ -1,0 +1,32 @@
+Approved. Use high effort.
+
+Implement Phase 1 only.
+
+Read QUALITY_BAR.md before making changes.
+
+Build:
+- low lizard POV camera
+- basic lizard controller
+- sidewalk/crossing lane level
+- giant shoe/foot hazards moving sideways across the lizard's path
+- warning circles/shadows before hazards land
+- collectible bugs
+- finish safe zone
+- basic win/lose
+- simple HUD
+- camera shake and impact feedback
+
+Do not build:
+- cosmetics
+- shop
+- ads
+- multiple lizards
+- level select
+- daily challenges
+- leaderboard
+
+Before coding:
+List exact scripts, prefabs, and scene objects you will create.
+
+After coding:
+Tell me changed files, how to test in Play Mode, and what parts of QUALITY_BAR.md are still weak.

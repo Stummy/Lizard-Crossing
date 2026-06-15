@@ -1,0 +1,42 @@
+{
+  "project": "Lizard Crossing",
+  "purpose": "Claude/Fable work packet for Unity planning, implementation prompts, visual references, and self-testing",
+  "folders": [
+    "00_READ_ME_FIRST",
+    "01_GameDesignDocs",
+    "02_ClaudePrompts",
+    "03_SelfTesting",
+    "04_ReviewChecklists",
+    "05_ReferenceImages",
+    "03_SelfTesting/Unity_Test_Scripts"
+  ],
+  "files": [
+    "00_READ_ME_FIRST/README.md",
+    "00_READ_ME_FIRST/CLAUDE_INSTRUCTIONS.md",
+    "01_GameDesignDocs/GAME_VISION.md",
+    "01_GameDesignDocs/ART_DIRECTION.md",
+    "01_GameDesignDocs/CAMERA_AND_SCALE.md",
+    "01_GameDesignDocs/PHASE_1_VERTICAL_SLICE.md",
+    "01_GameDesignDocs/QUALITY_BAR.md",
+    "01_GameDesignDocs/LEVEL_DESIGN.md",
+    "02_ClaudePrompts/01_GOAL_PROMPT.txt",
+    "02_ClaudePrompts/02_FIRST_PLANNING_PROMPT.txt",
+    "02_ClaudePrompts/03_PHASE_1_IMPLEMENT_PROMPT.txt",
+    "02_ClaudePrompts/04_SELF_REVIEW_PROMPT.txt",
+    "02_ClaudePrompts/05_TASK_PACKET_TEMPLATE.md",
+    "03_SelfTesting/SELF_TESTING_PLAN.md",
+    "04_ReviewChecklists/PHASE_1_REVIEW.md",
+    "04_ReviewChecklists/BUG_AND_GAP_LOG.md",
+    "05_ReferenceImages/garden_escape_sideways_hazards.png",
+    "05_ReferenceImages/boardwalk_rush_sideways_hazards.png",
+    "05_ReferenceImages/curb_gauntlet_sideways_hazards.png",
+    "05_ReferenceImages/midnight_dash_sideways_hazards.png",
+    "05_ReferenceImages/patio_panic_sideways_hazards.png",
+    "05_ReferenceImages/rough_concept_board.png",
+    "05_ReferenceImages/old_prototype_reference_do_not_copy.png",
+    "05_ReferenceImages/REFERENCE_IMAGES_README.md",
+    "03_SelfTesting/Unity_Test_Scripts/Phase1SmokeTests.cs",
+    "03_SelfTesting/Unity_Test_Scripts/LizardCrossingSceneValidator.cs",
+    "03_SelfTesting/Unity_Test_Scripts/SidewaysHazardDirectionHint.cs"
+  ]
+}

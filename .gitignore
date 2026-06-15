@@ -1,0 +1,31 @@
+# Unity generated
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+MemoryCaptures/
+*.csproj
+*.sln
+*.user
+*.pidb
+*.booproj
+*.svd
+*.tmp
+.vs/
+.idea/
+crashlytics-build.properties
+*.log
+
+# Batch test / screenshot artifacts in project root (not the GameScreenshots folder)
+/*.xml
+/shot_*.png
+/menu_*.png
+/screenshot_*.png
+/clean*.png
+/setup.log
+
+# Asset pipeline staging (raw downloads before import)
+_AssetDownloads/
