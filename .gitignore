@@ -29,3 +29,16 @@ crashlytics-build.properties
 
 # Asset pipeline staging (raw downloads before import)
 _AssetDownloads/
+
+# Abandoned 2D web prototype — direction is locked to Unity 3D native.
+# Kept on disk for reference, but not part of the game repo.
+webproto/
+boardwalk-rush.zip
+Tools/serve.js
+
+# Unity crash-recovery scene dupes (not real work)
+Assets/_Recovery/
+Assets/_Recovery.meta
+
+# Editor / machine-specific
+.claude/
