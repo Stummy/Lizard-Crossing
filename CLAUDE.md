@@ -32,6 +32,6 @@ before doing any work.** Do not ask the owner to re-explain the game idea.
 ## Batch verification
 ```
 & "C:\Program Files\Unity\Hub\Editor\6000.4.10f1\Editor\Unity.exe" -batchmode -quit -nographics `
-  -projectPath "C:\Users\Family\New Game\LizardCrossing" `
+  -projectPath "C:\Users\snpvi\Documents\GitHub\Lizard-Crossing" `
   -executeMethod LizardCrossing.EditorTools.ProjectSetup.BatchSetup -logFile setup.log
 ```
