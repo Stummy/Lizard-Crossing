@@ -53,6 +53,15 @@ namespace LizardCrossing
             var levelRoot = LevelBuilder.Build(gm.Level);
             HazardLaneManager.Build(levelRoot, gm.Level);
 
+            // --- giant pedestrians (real human models, CC0) — towering set dressing;
+            //     they become moving hazards once walk animation is wired ---
+            if (ModelLibrary.HasHuman)
+            {
+                PlaceHuman(levelRoot, new Vector3(6f, 0f, 74f), -90f);
+                PlaceHuman(levelRoot, new Vector3(-6f, 0f, 96f), 90f);
+                PlaceHuman(levelRoot, new Vector3(7f, 0f, 162f), -100f);
+            }
+
             // --- player ---
             var playerGo = new GameObject("Lizard");
             playerGo.transform.position = new Vector3(0f, 0.1f, 2f);
@@ -63,6 +72,12 @@ namespace LizardCrossing
             // --- camera + HUD ---
             LizardCameraController.Create(playerGo.transform);
             SimpleHUDController.Create();
+        }
+
+        private static void PlaceHuman(Transform parent, Vector3 pos, float yaw)
+        {
+            var h = ModelLibrary.TryBuildHuman(parent, 11f, yaw);
+            if (h != null) h.position = pos;
         }
 
         private void Update()

@@ -86,6 +86,68 @@ namespace LizardCrossing
             return holder;
         }
 
+        // ---- Giant human pedestrians (Quaternius Universal Base Characters, CC0) ----
+
+        public const string HumanPath = "Models/Human/Superhero_Male_FullBody";
+
+        public static bool HasHuman { get { return Resources.Load<GameObject>(HumanPath) != null; } }
+
+        private static Material _humanMat;
+
+        public static Material BuildHumanMaterial()
+        {
+            if (_humanMat != null) return _humanMat;
+            var albedo = Resources.Load<Texture2D>("Models/Human/human_albedo");
+            var normal = Resources.Load<Texture2D>("Models/Human/human_normal");
+            _humanMat = new Material(Shader.Find("Standard"));
+            if (albedo != null) _humanMat.mainTexture = albedo;
+            _humanMat.color = Color.white;
+            _humanMat.SetFloat("_Glossiness", 0.28f);
+            _humanMat.SetFloat("_Metallic", 0f);
+            if (normal != null)
+            {
+                _humanMat.EnableKeyword("_NORMALMAP");
+                _humanMat.SetTexture("_BumpMap", normal);
+                _humanMat.SetFloat("_BumpScale", 1f);
+            }
+            return _humanMat;
+        }
+
+        /// <summary>
+        /// Instantiate a real human model normalized to <paramref name="targetHeight"/>
+        /// world units (height, not footprint — humans are tall), base on the ground,
+        /// textured with its PBR maps. Towers over the 1-unit lizard from the low POV.
+        /// </summary>
+        public static Transform TryBuildHuman(Transform parent, float targetHeight, float yawDeg)
+        {
+            var prefab = Resources.Load<GameObject>(HumanPath);
+            Debug.Log("[Human] " + HumanPath + " -> " + (prefab == null ? "NULL (not imported as model)" : "loaded ok"));
+            if (prefab == null) return null;
+
+            var holder = new GameObject("human_model").transform;
+            holder.SetParent(parent, false);
+            holder.localRotation = Quaternion.Euler(0f, yawDeg, 0f);
+
+            var go = Object.Instantiate(prefab);
+            go.transform.SetParent(holder, false);
+            go.transform.localScale = Vector3.one;
+
+            Bounds b;
+            if (!TryGetLocalBounds(go, holder, out b)) { Object.Destroy(holder.gameObject); return null; }
+            float h = Mathf.Max(b.size.y, 1e-4f);
+            go.transform.localScale = Vector3.one * (targetHeight / h);
+            if (TryGetLocalBounds(go, holder, out b))
+                go.transform.localPosition = new Vector3(-b.center.x, -b.min.y, -b.center.z);
+
+            var mat = BuildHumanMaterial();
+            foreach (var r in holder.GetComponentsInChildren<Renderer>())
+                r.sharedMaterial = mat;
+            foreach (var col in holder.GetComponentsInChildren<Collider>())
+                Object.Destroy(col);
+
+            return holder;
+        }
+
         /// <summary>Combined renderer bounds of <paramref name="go"/> expressed in
         /// <paramref name="space"/>'s local frame (corner-accurate under rotation).</summary>
         private static bool TryGetLocalBounds(GameObject go, Transform space, out Bounds bounds)
