@@ -99,10 +99,11 @@ namespace LizardCrossing
             if (_humanMat != null) return _humanMat;
             var albedo = Resources.Load<Texture2D>("Models/Human/human_albedo");
             var normal = Resources.Load<Texture2D>("Models/Human/human_normal");
-            _humanMat = new Material(Shader.Find("Standard"));
+            _humanMat = new Material(MaterialCache.LitShaderAsset); // URP/Lit (never Standard → magenta)
             if (albedo != null) _humanMat.mainTexture = albedo;
             _humanMat.color = Color.white;
-            _humanMat.SetFloat("_Glossiness", 0.28f);
+            _humanMat.SetFloat("_Smoothness", 0.28f); // URP/Lit
+            _humanMat.SetFloat("_Glossiness", 0.28f); // Standard fallback
             _humanMat.SetFloat("_Metallic", 0f);
             if (normal != null)
             {

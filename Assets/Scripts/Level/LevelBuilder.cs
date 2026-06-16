@@ -40,10 +40,17 @@ namespace LizardCrossing
             var rng = new System.Random(level.Name.GetHashCode());
 
             BuildGround(root, level.Length);
-            BuildSlabJointsAndCracks(root, level.Length, rng);
-            BuildCitySurfaces(root, level);
-            BuildGardenWalls(root, level.Length, rng);
-            BuildScatterProps(root, level.Length, rng);
+            // Real Downtown City blocks (buildings, kit roads, crosswalks, props)
+            // assemble the street when the kit is present; otherwise fall back to the
+            // fully procedural garden alley so the run is never open.
+            bool city = CityFacade.Build(root, level);
+            if (!city)
+            {
+                BuildSlabJointsAndCracks(root, level.Length, rng);
+                BuildCitySurfaces(root, level);
+                BuildGardenWalls(root, level.Length, rng);
+                BuildScatterProps(root, level.Length, rng);
+            }
             BuildSafeZoneGarden(root, level.Length, rng);
             BuildBackdrop(root, level.Length);
             SpawnBugs(root, level);

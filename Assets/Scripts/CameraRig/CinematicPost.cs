@@ -63,15 +63,17 @@ namespace LizardCrossing
             vig.intensity.value = 0.30f;
             vig.smoothness.value = 0.42f;
 
-            // sense of speed as the world rushes past
+            // a touch of speed blur (light, so fast cross-traffic stays readable)
             var mb = profile.Add<MotionBlur>(true);
-            mb.intensity.value = 0.28f;
+            mb.intensity.value = 0.10f;
 
-            // shallow depth-of-field, subject-focused (the hero look)
+            // depth-of-field: keep a cinematic background softness but DEEP enough
+            // that the lizard and approaching traffic stay sharp at the tiny new
+            // scale (lizard ~0.5u from camera). Narrow f-stop = much deeper focus.
             _dof = profile.Add<DepthOfField>(true);
             _dof.mode.value = DepthOfFieldMode.Bokeh;
-            _dof.focalLength.value = 52f;
-            _dof.aperture.value = 4.2f;   // lower f-stop = stronger blur
+            _dof.focalLength.value = 20f;
+            _dof.aperture.value = 16f;     // high f-stop = subtle, deep focus
             _dof.focusDistance.value = 6f; // updated each frame to the lizard
         }
 

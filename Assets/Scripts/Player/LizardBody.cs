@@ -43,8 +43,10 @@ namespace LizardCrossing
         {
             _renderers = new List<Renderer>();
 
-            // imported lizard model if present; otherwise the procedural gecko
-            var model = ModelLibrary.TryBuild(ModelLibrary.LizardKey, transform, 1.8f, ModelYaw);
+            // imported lizard model if present; otherwise the procedural gecko.
+            // Realistic scale (2026-06-16): a real ~15 cm lizard, dwarfed by the
+            // human-scale city (person ~1.8 u, building ~20 u). 1 unit ~= 1 metre.
+            var model = ModelLibrary.TryBuild(ModelLibrary.LizardKey, transform, 0.15f, ModelYaw);
             if (model != null)
             {
                 _modelMode = true;
@@ -65,6 +67,12 @@ namespace LizardCrossing
             _root = new GameObject("Root").transform;
             _root.SetParent(transform, false);
             _root.localPosition = new Vector3(0f, 0.22f, 0f);
+
+            // Realistic scale (2026-06-16): the procedural gecko is authored ~3.3u
+            // long; shrink the whole visual to a real ~0.2u lizard, a speck next to
+            // the human-scale city (door ~2.2u, person ~1.8u). 1 unit ~= 1 metre.
+            // Scale the BODY transform — NOT _root, which squash/stretch animates.
+            transform.localScale = Vector3.one * 0.06f;
 
             // ---- procedural gecko: designed + verified from the low game camera ----
             var black = new Color(0.05f, 0.05f, 0.06f);

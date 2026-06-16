@@ -11,15 +11,16 @@ namespace LizardCrossing
         public const float SlabSize = 14f;             // sidewalk slab edge length
         public const float GroundY = 0f;
 
-        // Lizard
-        public const float LizardMoveSpeed = 5.5f;
+        // Lizard — speeds scaled to the realistic ~0.15u lizard (2026-06-16).
+        // Kept snappier than a true 1/12 scale so the run still feels arcade-fast.
+        public const float LizardMoveSpeed = 2.6f;
         public const float LizardTurnSpeedDeg = 720f;
-        public const float DashSpeed = 14f;
+        public const float DashSpeed = 6f;
         public const float DashDuration = 0.25f;
         public const float DashCooldown = 2.0f;
 
         // Abilities (jump = Anole, camouflage = Chameleon, revive = rewarded ad)
-        public const float JumpVelocity = 9f;
+        public const float JumpVelocity = 2.2f;
         public const float JumpGravity = 26f;
         public const float CamouflageDelay = 0.4f;   // stand still this long to vanish
         public const float ReviveInvulnerableTime = 2.0f;
@@ -27,22 +28,23 @@ namespace LizardCrossing
         // Hearts (docs: packet Phase 1 spec — HUD shows hearts)
         public const int MaxHearts = 3;
         public const float HitInvulnerableTime = 1.6f;
-        public const float HitKnockback = 9f;
+        public const float HitKnockback = 1.0f;
 
-        // Camera (vertical FOV adapts so portrait keeps cross-traffic readable)
-        public const float CamBack = 4.0f;
-        public const float CamHeight = 1.62f;
-        public const float CamLookAhead = 5.5f;
-        public const float CamLookHeight = 1.1f;
+        // Camera (vertical FOV adapts so portrait keeps cross-traffic readable).
+        // Scaled low + close for the realistic ~0.15u lizard POV (2026-06-16).
+        public const float CamBack = 0.5f;
+        public const float CamHeight = 0.16f;
+        public const float CamLookAhead = 1.2f;
+        public const float CamLookHeight = 0.12f;
         public const float CamBaseFov = 62f;
         public const float CamMaxFov = 76f;
         public const float CamTargetHorizontalFov = 58f;
         public const float CamDashFovKick = 8f;
         public const float CamTraumaDecay = 1.4f;
 
-        // Hazards / feel
-        public const float CloseCallRadius = 3.2f;
-        public const float StompKillPad = 0.35f;       // margin trimmed off the sole: edges are forgiving
+        // Hazards / feel (scaled to the realistic lizard, 2026-06-16)
+        public const float CloseCallRadius = 0.3f;
+        public const float StompKillPad = 0.03f;       // margin trimmed off the sole: edges are forgiving
         public const float MinWarningLead = 0.7f;      // guaranteed telegraph lead (s) before any footfall lands
         public const float HitStopDuration = 0.07f;
         public const float NearMissSlowScale = 0.45f;

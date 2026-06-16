@@ -39,12 +39,16 @@ namespace LizardCrossing
             gameObject.name = "Lizard";
             gameObject.tag = "Player";
 
+            // Collider scaled to the realistic ~0.2u lizard (2026-06-16); skin width
+            // and step offset shrunk to match or the tiny controller misbehaves.
             _cc = GetComponent<CharacterController>();
-            _cc.radius = 0.35f;
-            _cc.height = 0.7f;
-            _cc.center = new Vector3(0f, 0.4f, 0f);
+            _cc.radius = 0.04f;
+            _cc.height = 0.08f;
+            _cc.center = new Vector3(0f, 0.04f, 0f);
+            _cc.skinWidth = 0.012f;
+            _cc.minMoveDistance = 0f;
             _cc.slopeLimit = 60f;
-            _cc.stepOffset = 0.3f;
+            _cc.stepOffset = 0.02f;
 
             Body = LizardBody.Build(transform);
 

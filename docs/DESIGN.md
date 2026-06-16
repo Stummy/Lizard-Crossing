@@ -3,11 +3,20 @@
 The owner's work packet (`Lizard_Crossing_Claude_Work_Packet/01_GameDesignDocs/`)
 is the canonical vision. This document records how this codebase implements it.
 
-## 1. Core fantasy
+> **REVISED 2026-06-16 — realistic-scale city.** The game now crosses a real
+> city at true scale (see CLAUDE.md "CURRENT DESIGN DIRECTION"). The lizard is a
+> genuine ~10 cm speck; people, cars and buildings are realistic-sized. Sections
+> below marked *(revised)* reflect this; unmarked legacy text (giant shoes, garden
+> alley) is superseded.
 
-You are tiny. The world is huge. Each level is a short, dangerous crossing of a
-human sidewalk from the eye level of a lizard — a revamped, cinematic, lizard-POV
-take on Crossy Road's crossing logic, level-based and never open world.
+## 1. Core fantasy *(revised)*
+
+You are a tiny lizard crossing a real, full-scale **city** from a speck's-eye POV
+— a cinematic, lizard-POV take on Crossy Road's crossing logic, forward-running
+and never open world. The thrill is the **size ratio**: a pedestrian's shoe, a
+car tyre, a chunk of falling debris are all life-threatening because you are
+1/10th of a person and 1/150th of a building. The run threads three kinds of
+danger zone: **sidewalks** (pedestrians), **roads** (cars), **alleys** (debris).
 
 **Pillars (priority order):**
 1. **Scale fantasy** — camera, audio, and art constantly sell "I am 10 cm tall."
@@ -28,17 +37,24 @@ take on Crossy Road's crossing logic, level-based and never open world.
   "CLOSE CALL!"; **hit/death** = hit-stop + big trauma + squash.
 - Warm sun, long soft shadows, light distance fog, garden backdrop.
 
-## 3. World scale convention
+## 3. World scale convention *(revised 2026-06-16)*
 
-1 unit ≈ 1 lizard body length (~10 cm). World authored oversized.
+**1 unit ≈ 1 metre (real world).** The lizard is scaled DOWN to a realistic body
+length; everything else is true-to-life city scale, so ratios are real.
 
-| Thing | Size (units) |
-|---|---|
-| Lizard (body) | 1.0 |
-| Corridor (playable width) | 18 |
-| Shoe sole | 11 × 4.5 (giant: ~11× lizard) |
-| Stride arc height | 7 |
-| Garden Escape length | 205 (≈ 45–60 s) |
+| Thing | Size (units) | Ratio to lizard |
+|---|---|---|
+| Lizard (body) | ~0.15 | 1× |
+| Pedestrian (person) | ~1.8 | ~12× |
+| Car | ~4.5 long | ~30× |
+| Sidewalk tile | 3 × 3 | — |
+| Road crossing (kit Street_4Lane) | 18 wide × 6 deep | — |
+| Building | 12–21 wide, 17–28 tall | ~150× tall |
+| City run length (Garden Escape Z) | 205 | — |
+
+Legacy (superseded): 1 u = 1 lizard body, corridor 18, shoe sole 11×4.5, stride
+arc 7. The 18-wide play corridor is retained as the crossing width, but the lizard
+now occupies a tiny fraction of it.
 
 ## 4. In-level loop
 
@@ -58,16 +74,24 @@ blinking invulnerability. Third hit = squash + death panel + retry.
 ### Stars
 - ★ Finish · ★★ ≥ 75% bugs · ★★★ 100% bugs **and** under par time.
 
-## 5. Hazards
+## 5. Hazards *(revised 2026-06-16 — three zone types)*
 
-Phase 1 ships the hero hazard; the rest come from the packet's lane list in Phase 2+.
-- **SidewaysFootHazard** — a pair of giant shoes striding across the corridor.
-  Each footfall: warning grows during flight → slam (dust, thud, trauma by
-  proximity) → planted shoe is a solid obstacle → next stride. Fairness: the
-  kill test trims a forgiveness margin off the sole edge; resolution happens at
-  the landing instant only.
-- Later: stroller/scooter wheels, car tires, puddle slow zones, bird shadows,
-  chair legs, falling debris, rain/night modifiers.
+Each crossing lane has a **type** that determines its hazard. The run alternates
+zones for variety and rising pressure:
+
+1. **Sidewalk → pedestrians.** Realistic-scale people walk across the lizard's
+   path; being stepped on or walked into costs a heart. Implemented by
+   `GiantPedestrian` (procedural Humanoid walk via the avatar bones), now sized
+   to ~1.8 u real-human scale — no longer "giant." Each footfall still telegraphs
+   a shadow at its landing spot; the kill test trims a forgiveness margin.
+2. **Road → cars.** Cars drive across as cross-traffic (classic Crossy-Road
+   timing — read the gap, dash across). A car hit costs a heart. *(to build)*
+3. **Alleyway → debris.** Narrow building gaps where falling / scattered debris
+   (crates, cans, bricks) must be dodged. *(to build)*
+
+Retired: the **SidewaysFootHazard** giant-shoe hero hazard (kept only as the
+asset-free fallback in `HazardLaneManager`). Later modifiers: puddle slow zones,
+bird shadows, rain/night.
 
 ## 6. Progression & meta (future phases; save hooks exist now)
 
