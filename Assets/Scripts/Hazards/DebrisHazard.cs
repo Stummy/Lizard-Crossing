@@ -116,7 +116,9 @@ namespace LizardCrossing
 
         void ChooseTarget()
         {
-            float half = GameConst.CorridorHalfWidth - 1f;
+            // stay inside the pinched alley gap (buildings close to ~±4.5 here) so
+            // debris never lands behind a wall
+            float half = 3.6f;
             float x = (float)(_rng.NextDouble() * 2.0 - 1.0) * half;
             float z = _z + (float)(_rng.NextDouble() * 2.0 - 1.0) * _laneDepth;
             _target = new Vector3(x, 0f, z);

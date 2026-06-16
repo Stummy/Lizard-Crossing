@@ -15,6 +15,8 @@ namespace LizardCrossing
     {
         const float CorridorHalf = 9f;     // matches GameConst.CorridorHalfWidth
         const float BuildingInnerX = 9.8f; // inner face of the buildings sits just outside the corridor
+        const float AlleyInnerX = 4.5f;    // buildings pinch IN around an alley lane → tight gap
+        const float AlleyReach = 9f;       // how far up/down the run the pinch extends
         const string Kit = "CityKit/";
 
         static readonly string[] Buildings =
@@ -33,7 +35,7 @@ namespace LizardCrossing
             float length = level.Length;
 
             BuildRoads(parent, level);
-            BuildBuildings(parent, length);
+            BuildBuildings(parent, level);
             BuildStreetProps(parent, level);
 
             StaticBatchingUtility.Combine(parent.gameObject);
@@ -55,8 +57,9 @@ namespace LizardCrossing
         }
 
         // ---- pre-made buildings lining both sides ----
-        static void BuildBuildings(Transform parent, float length)
+        static void BuildBuildings(Transform parent, LevelDefinition level)
         {
+            float length = level.Length;
             for (int side = -1; side <= 1; side += 2)
             {
                 float yaw = side > 0 ? -90f : 90f; // front faces the corridor (inward)
@@ -64,7 +67,9 @@ namespace LizardCrossing
                 for (float z = -8f; z < length + 16f; i++)
                 {
                     string res = Buildings[(i + (side > 0 ? 0 : 3)) % Buildings.Length];
-                    var go = Place(parent, res, new Vector3(0f, 0f, z), yaw, AlignBuildingInner, side);
+                    // pinch the facade inward around alley lanes for a claustrophobic gap
+                    float innerX = NearAlley(level, z) ? AlleyInnerX : BuildingInnerX;
+                    var go = Place(parent, res, new Vector3(side * innerX, 0f, z), yaw, AlignBuildingInner, side);
                     if (go == null) { z += 14f; continue; }
 
                     Bounds b = WorldBounds(go);
@@ -73,6 +78,13 @@ namespace LizardCrossing
                     z += b.size.z + 1.5f;
                 }
             }
+        }
+
+        static bool NearAlley(LevelDefinition level, float z)
+        {
+            foreach (var lane in level.Lanes)
+                if (lane.Type == LaneType.Alley && Mathf.Abs(z - lane.Z) < AlleyReach) return true;
+            return false;
         }
 
         // ---- sidewalk dressing ----
@@ -131,7 +143,7 @@ namespace LizardCrossing
             if (align == Align.BuildingInner)
             {
                 float innerEdge = side > 0 ? b.min.x : b.max.x;          // edge nearest the corridor
-                float targetInner = side * BuildingInnerX;
+                float targetInner = basePos.x;                           // side * innerX (pinched near alleys)
                 delta = new Vector3(targetInner - innerEdge, -b.min.y, basePos.z - b.center.z);
             }
             else
