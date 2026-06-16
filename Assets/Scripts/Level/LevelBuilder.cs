@@ -39,20 +39,28 @@ namespace LizardCrossing
             var root = new GameObject("Level_" + level.Name.Replace(" ", "")).transform;
             var rng = new System.Random(level.Name.GetHashCode());
 
-            BuildGround(root, level.Length);
-            // Real Downtown City blocks (buildings, kit roads, crosswalks, props)
-            // assemble the street when the kit is present; otherwise fall back to the
-            // fully procedural garden alley so the run is never open.
-            bool city = CityFacade.Build(root, level);
-            if (!city)
+            // A baked real city (the imported NYC GLB, named "NYCity" in the scene)
+            // is the environment when present — we only add an invisible ground for
+            // the lizard to run on, and skip all procedural scenery + backdrop.
+            bool nyc = GameObject.Find("NYCity") != null;
+            if (nyc)
             {
-                BuildSlabJointsAndCracks(root, level.Length, rng);
-                BuildCitySurfaces(root, level);
-                BuildGardenWalls(root, level.Length, rng);
-                BuildScatterProps(root, level.Length, rng);
+                BuildInvisibleGround(root, level.Length);
+            }
+            else
+            {
+                BuildGround(root, level.Length);
+                // Downtown City kit blocks when present; else procedural garden alley.
+                if (!CityFacade.Build(root, level))
+                {
+                    BuildSlabJointsAndCracks(root, level.Length, rng);
+                    BuildCitySurfaces(root, level);
+                    BuildGardenWalls(root, level.Length, rng);
+                    BuildScatterProps(root, level.Length, rng);
+                }
             }
             BuildSafeZoneGarden(root, level.Length, rng);
-            BuildBackdrop(root, level.Length);
+            if (!nyc) BuildBackdrop(root, level.Length);
             SpawnBugs(root, level);
 
             SafeZoneTrigger.Create(root, level.Length);
@@ -60,6 +68,17 @@ namespace LizardCrossing
         }
 
         // ---------- ground ----------
+
+        /// <summary>Flat invisible collider at y=0 so the lizard runs on a clean
+        /// plane over the real city's streets (whose own meshes have no colliders).</summary>
+        private static void BuildInvisibleGround(Transform root, float length)
+        {
+            var go = new GameObject("GroundCollider");
+            go.transform.SetParent(root, false);
+            var col = go.AddComponent<BoxCollider>();
+            col.center = new Vector3(0f, -0.1f, length * 0.5f); // top face at y=0
+            col.size = new Vector3(40f, 0.2f, length + 80f);
+        }
 
         private static void BuildGround(Transform root, float length)
         {

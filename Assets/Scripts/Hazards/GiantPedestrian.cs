@@ -38,9 +38,7 @@ namespace LizardCrossing
         float _cadence;       // rad/s (one step = pi)
         float _speed;         // world units/s along the walk direction
         float _legLen;        // measured hip->foot distance (for stride/foot reach)
-        int _dir;             // +1 walks toward +x, -1 toward -x
-        float _crossZ;
-        float _startX, _endX;
+        Vector3 _startPos, _endPos;  // walks from start to end (any horizontal direction)
         float _respawnDelay;
         bool _resting;
         float _restTimer;
@@ -58,44 +56,56 @@ namespace LizardCrossing
         WarningMarker _markerL, _markerR;
         bool _struckL, _struckR;          // already resolved this foot's current strike
 
+        /// <summary>Legacy crossing-lane spawn (kit-city fallback): walks across the
+        /// corridor (±X) at the lane's Z.</summary>
         public static GiantPedestrian Spawn(Transform parent, LaneSpec lane)
+        {
+            int dir = lane.Dir >= 0 ? 1 : -1;
+            float margin = GameConst.CorridorHalfWidth + MarginOutside;
+            Vector3 start = new Vector3(dir > 0 ? -margin : margin, GameConst.GroundY, lane.Z);
+            Vector3 end = new Vector3(-start.x, GameConst.GroundY, lane.Z);
+            return SpawnTrack(parent, start, end, lane.StepDuration, lane.StartDelay, lane.RespawnDelay, lane.Scale);
+        }
+
+        /// <summary>
+        /// Walk from <paramref name="start"/> to <paramref name="end"/> along any
+        /// horizontal direction, then recycle. Used for street traffic: a pedestrian
+        /// walking the sidewalk down the avenue (±Z) is just start/end along Z.
+        /// </summary>
+        public static GiantPedestrian SpawnTrack(Transform parent, Vector3 start, Vector3 end,
+            float stepDuration, float startDelay, float respawnDelay, float scale, float startProgress = 0f)
         {
             var go = new GameObject("GiantPedestrian");
             go.transform.SetParent(parent, false);
             var p = go.AddComponent<GiantPedestrian>();
-            p.height *= lane.Scale;
-            p.killRadius *= lane.Scale;
-            p._dir = lane.Dir >= 0 ? 1 : -1;
-            p._crossZ = lane.Z;
-            p._respawnDelay = lane.RespawnDelay;
-            p._restTimer = lane.StartDelay;
-            p._resting = true; // hold off-frame until the start delay elapses
+            p.height *= scale;
+            p.killRadius *= scale;
+            p._respawnDelay = respawnDelay;
+            p._restTimer = startDelay;
+            p._resting = true; // hold off until the start delay elapses
+            p._cadence = Mathf.PI / Mathf.Max(0.05f, stepDuration);
 
-            // one step per StepDuration, matching the old stride rhythm the level is tuned to
-            p._cadence = Mathf.PI / Mathf.Max(0.05f, lane.StepDuration);
-
-            p._walkDir = new Vector3(p._dir, 0f, 0f);
+            p._startPos = start;
+            p._endPos = end;
+            p._walkDir = (end - start).normalized;
             p._lateral = Vector3.Cross(Vector3.up, p._walkDir).normalized;
-            p._startX = p._dir > 0 ? -(GameConst.CorridorHalfWidth + MarginOutside)
-                                   :  (GameConst.CorridorHalfWidth + MarginOutside);
-            p._endX = -p._startX;
 
-            if (!p.BuildHuman())
-            {
-                // no model imported — let the caller fall back to the shoe hazard
-                Destroy(go);
-                return null;
-            }
+            if (!p.BuildHuman()) { Destroy(go); return null; }
 
-            // forward distance one foot covers per step, from the real leg length
             float reach = p._legLen * Mathf.Sin(p.thighAmp * Mathf.Deg2Rad) * p.forwardReachMul;
-            p._speed = (2f * reach) / Mathf.Max(0.05f, lane.StepDuration);
+            p._speed = (2f * reach) / Mathf.Max(0.05f, stepDuration);
 
             float footW = p.killRadius * 2f;
             p._markerL = WarningMarker.Create(go.transform, footW, footW);
             p._markerR = WarningMarker.Create(go.transform, footW, footW);
 
             p.PlaceAtStart();
+            if (startProgress > 0f) // pre-distribute along the track so the street is busy at once
+            {
+                p.transform.position = Vector3.Lerp(start, end, startProgress);
+                p._resting = false;
+                p.SetVisible(true);
+            }
             return p;
         }
 
@@ -164,7 +174,7 @@ namespace LizardCrossing
 
         void PlaceAtStart()
         {
-            transform.position = new Vector3(_startX, GameConst.GroundY, _crossZ);
+            transform.position = _startPos;
             _phase = 0f;
             _struckL = _struckR = false;
             Pose(0f);
@@ -212,9 +222,7 @@ namespace LizardCrossing
                 _markerR.Hide();
             }
 
-            bool past = _dir > 0 ? transform.position.x > _endX
-                                 : transform.position.x < _endX;
-            if (past)
+            if (Vector3.Dot(transform.position - _endPos, _walkDir) > 0f) // walked past the end
             {
                 _resting = true;
                 _restTimer = _respawnDelay;
@@ -315,9 +323,10 @@ namespace LizardCrossing
         Vector3 PredictedPlant(float strikePhase)
         {
             float reach = _legLen * Mathf.Sin(thighAmp * Mathf.Deg2Rad) * forwardReachMul;
-            // foot lands ahead of the body in the walk direction
-            float x = transform.position.x + _dir * reach;
-            return new Vector3(x, GameConst.GroundY, _crossZ);
+            // foot lands ahead of the body along the walk direction
+            Vector3 plant = transform.position + _walkDir * reach;
+            plant.y = GameConst.GroundY;
+            return plant;
         }
 
         void ResolveStomp(Vector3 plant)

@@ -56,7 +56,9 @@ namespace LizardCrossing
 
             // --- player ---
             var playerGo = new GameObject("Lizard");
-            playerGo.transform.position = new Vector3(0f, 0.02f, 2f); // low: the lizard is ~0.04u tall now
+            // start on the right sidewalk in the real-city street (else centered)
+            float startX = GameObject.Find("NYCity") != null ? 6f : 0f;
+            playerGo.transform.position = new Vector3(startX, 0.02f, 2f); // low: the lizard is ~0.04u tall
             playerGo.AddComponent<CharacterController>();
             var player = playerGo.AddComponent<PlayerController>();
             player.Init();

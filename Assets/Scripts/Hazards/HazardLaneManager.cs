@@ -17,6 +17,14 @@ namespace LizardCrossing
             go.transform.SetParent(parent, false);
             var mgr = go.AddComponent<HazardLaneManager>();
 
+            // Real-city street mode: traffic runs ALONG the avenue (people on the
+            // sidewalk, cars on the road) instead of crossing a corridor.
+            if (GameObject.Find("NYCity") != null)
+            {
+                StreetTraffic.Build(go.transform, level);
+                return mgr;
+            }
+
             for (int i = 0; i < level.Lanes.Length; i++)
             {
                 var lane = level.Lanes[i];
