@@ -42,3 +42,8 @@ Assets/_Recovery.meta
 
 # Editor / machine-specific
 .claude/
+
+# Editor / IDE local config (machine-specific, not part of the game)
+.vscode/
+.continue/
+*.slnx
