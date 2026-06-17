@@ -43,6 +43,7 @@ namespace LizardCrossing
             // is the environment when present — we only add an invisible ground for
             // the lizard to run on, and skip all procedural scenery + backdrop.
             bool nyc = GameObject.Find("NYCity") != null;
+            StreetGround.Active = nyc; // lizard + camera ride the avenue's curbs
             if (nyc)
             {
                 BuildInvisibleGround(root, level.Length);

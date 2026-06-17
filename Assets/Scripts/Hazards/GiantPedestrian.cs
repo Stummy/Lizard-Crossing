@@ -310,11 +310,10 @@ namespace LizardCrossing
                 if (!struck)
                 {
                     struck = true;
+                    // ambient foot traffic must NOT shake the screen or thud every step
+                    // (dozens of pedestrians = constant trauma) — only resolve the squish.
                     if (Mathf.Abs(plant.x) < GameConst.CorridorHalfWidth + killRadius)
-                    {
-                        HazardParts.DoImpact(plant, killRadius / 2.2f);
                         ResolveStomp(plant);
-                    }
                 }
                 marker.Hide();
             }

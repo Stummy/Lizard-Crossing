@@ -110,14 +110,6 @@ namespace LizardCrossing
 
             transform.position += _walkDir * (_speed * Time.deltaTime);
 
-            // one engine rumble as it nears the lizard's row
-            if (playing && !_rumbled)
-            {
-                var pl = PlayerController.Instance;
-                if (pl != null && Vector3.Distance(transform.position, pl.transform.position) < 10f)
-                { _rumbled = true; HazardParts.DoImpact(transform.position, 1f); }
-            }
-
             if (playing) KillCheck();
 
             if (Vector3.Dot(transform.position - _endPos, _walkDir) > 0f)

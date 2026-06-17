@@ -135,18 +135,24 @@ namespace LizardCrossing
                 _knockback = Vector3.MoveTowards(_knockback, Vector3.zero, 30f * Time.deltaTime);
             }
 
-            // --- vertical velocity (gravity + jumps) ---
-            _vVel -= GameConst.JumpGravity * Time.deltaTime;
+            // --- vertical: off-street uses gravity/jumps; on the city street the
+            //     lizard rides the analytic ground height (below) instead ---
+            if (StreetGround.Active) _vVel = 0f;
+            else _vVel -= GameConst.JumpGravity * Time.deltaTime;
 
             Vector3 displacement = move * Time.deltaTime + Vector3.up * (_vVel * Time.deltaTime);
             _cc.Move(displacement);
 
-            // clamp to the playable corridor (xz only — leave y for jumps)
+            // clamp to the playable corridor and ride the ground height (so the
+            // lizard climbs onto raised sidewalks and drops to the road smoothly)
             Vector3 p = transform.position;
             float clampedX = Mathf.Clamp(p.x, -GameConst.CorridorHalfWidth, GameConst.CorridorHalfWidth);
             float clampedZ = Mathf.Max(p.z, -4f);
-            if (!Mathf.Approximately(clampedX, p.x) || !Mathf.Approximately(clampedZ, p.z))
-                transform.position = new Vector3(clampedX, p.y, clampedZ);
+            float groundY = StreetGround.HeightAt(clampedX);
+            float ridingY = StreetGround.Active
+                ? Mathf.Lerp(p.y, groundY, 1f - Mathf.Exp(-14f * Time.deltaTime))
+                : p.y;
+            transform.position = new Vector3(clampedX, ridingY, clampedZ);
 
             Velocity = move;
 

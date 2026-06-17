@@ -100,13 +100,15 @@ namespace LizardCrossing
         private Vector3 DesiredPosition()
         {
             Vector3 anchor = _target.position;
-            return new Vector3(anchor.x * 0.85f, GameConst.CamHeight, anchor.z - GameConst.CamBack);
+            // ride above the lizard's ground height so the camera lifts onto the
+            // sidewalk with it instead of clipping through the raised curb
+            return new Vector3(anchor.x * 0.85f, anchor.y + GameConst.CamHeight, anchor.z - GameConst.CamBack);
         }
 
         private Vector3 LookPoint()
         {
             Vector3 anchor = _target.position;
-            return new Vector3(anchor.x * 0.9f, GameConst.CamLookHeight, anchor.z + GameConst.CamLookAhead);
+            return new Vector3(anchor.x * 0.9f, anchor.y + GameConst.CamLookHeight, anchor.z + GameConst.CamLookAhead);
         }
 
         /// <summary>Portrait phones need a taller FOV to keep cross-traffic visible.</summary>
