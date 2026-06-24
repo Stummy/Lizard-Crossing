@@ -17,6 +17,9 @@ session can dispatch to the specialists, and to review the results.
 - **camera-ui-juice** — camera framing/DoF target, HUD polish, game-feel juice.
 - **gameplay-guardian** — protects sacred mechanics + mobile budget; runs the bot playthrough
   as the regression gate (every visual sprint ends with its PASS/FAIL).
+- **asset-scout** — sources free, license-clean, on-budget art (CC0 surfaces/props/foliage/
+  HDRIs it can download directly; Fab/Megascans + Unity Asset Store as owner-claim lists). Route
+  to it whenever a work-order needs an asset we don't have; it hands results to environment-artist.
 
 ## Orient first (read before planning)
 `docs/VISUAL_TARGET.md` (the bar + the two-theme plan + the explicit ORDER of work in §6),

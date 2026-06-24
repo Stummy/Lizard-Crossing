@@ -25,6 +25,10 @@ and `PROJECT_OVERVIEW.md` (§6 code map). Your work is visual-only; never alter 
   create materials through `MaterialCache` / the `LitShader` resolver. NEVER hardcode the
   "Standard" shader (magenta trap). URP props are `_BaseMap`/`_BaseColor`/`_BumpMap`.
 - `Assets/Resources/GeneratedArt/` (surfaces) and `Resources/Models/` (props/furniture/plants).
+- **Sourcing new art:** don't hunt the web yourself — request it from **asset-scout**, which
+  finds free/license-clean/on-budget candidates, downloads CC0 ones to a staging folder, and
+  hands you the path + suggested slot + import settings + any attribution. You then import,
+  vet in-editor (tri count / texture size), and wire it through the pipeline above.
 
 ## Theme work (owner decision: BOTH themes)
 1. **Now:** raise the **NYC** theme's surfaces/materials/props to the bar — cohesive palette,
