@@ -1,7 +1,9 @@
 # Lizard Crossing — Project Status & Knowledge-Base Index
 
-> Single up-to-date snapshot of the project. Start here, then dive into the
-> linked docs. Last updated: **2026-06-16**.
+> **For the current canonical snapshot, see [`PROJECT_OVERVIEW.md`](PROJECT_OVERVIEW.md)**
+> (the single self-contained briefing, kept up to date). This file remains as the
+> repository/Git/LFS reference and code-map index below.
+> Status section last refreshed: **2026-06-16** (see PROJECT_OVERVIEW for newer status).
 
 ## What this is
 
