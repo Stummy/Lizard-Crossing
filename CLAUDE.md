@@ -79,13 +79,21 @@ Done and verified in-engine (0 console errors, mechanics intact):
   branch) — it's the owner's "second pair of eyes." Claude CANNOT launch it (owner-
   triggered + billed); prompt the owner at the gate, never attempt to run it.
 
-## North star (owner, 2026-06-25)
-- **Always build toward the concept target deck.** `Assets/Art/Concept/` (run / squished /
-  faceplant / win / gameover / nearmiss / title) is THE quality bar — a real, polished,
-  cohesive game that looks and feels like those frames. Every visual, animation, juice, and
-  optimization change is measured against them: does this move the live game closer to the
-  concept? Don't just "make it work" — make it *high quality and matching the concept*.
-  Record the game, watch it, and fix/optimize against this goal continuously.
+## North star — ALWAYS WORK THE PLAN (owner, 2026-06-25)
+- **Every task must trace to the plan AND the concept deck. No orphan work.** The single
+  source of truth for *what to build and in what order* is **`docs/PROJECT_PLAN.md`** (stages,
+  milestones, ETA, and the **live task ledger** in §5). The single source of truth for *how
+  good it must look/feel* is the concept target deck **`Assets/Art/Concept/`** (run / squished /
+  faceplant / win / gameover / nearmiss / title) + `docs/VISUAL_TARGET_SHEET.md`. Before starting
+  ANY change, name which stage + ledger item it advances and which concept frame it moves toward;
+  if it does neither, it's scope creep — don't do it (or add it to the ledger first). This is the
+  prime directive: we are always building toward that plan and that final goal.
+- **Keep the plan live.** When a unit of work is verified+committed, tick it off the ledger in
+  `docs/PROJECT_PLAN.md`; when the owner adds feedback, log it into the ledger so nothing is lost.
+  The plan is a living doc, not a one-time artifact — it always reflects reality.
+- **Quality bar is the concept, not "it works."** Don't just "make it work" — make it *high
+  quality and matching the concept*. Record the game, watch it, and fix/optimize against the
+  frames continuously. The owner judges *feel*; the plan + verify loop keep *correctness*.
 
 ## Agent usage rules (owner, 2026-06-25)
 - **Every AI-GENERATED asset gets a design-review before it's accepted/committed.** Concept
