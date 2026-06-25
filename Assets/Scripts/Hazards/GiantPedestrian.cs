@@ -47,6 +47,7 @@ namespace LizardCrossing
         float _respawnDelay;
         bool _resting;
         float _restTimer;
+        float _nearMissCd;    // throttles the leg pass-by near-miss so one weave fires it once
 
         Vector3 _walkDir;
 
@@ -408,14 +409,30 @@ namespace LizardCrossing
             var player = PlayerController.Instance;
             var gm = GameStateManager.Instance;
             if (player == null || gm == null) return;
-            if (player.IsAirborne || player.IsInvulnerable || !player.CanFootBump) return;
+            if (player.IsAirborne || player.IsInvulnerable) return;
 
             Vector3 p = player.KillCheckPosition;
             float r = GameConst.FootBumpRadius * (height / 2.5f); // widen with the pedestrian's size
             float dx = transform.position.x - p.x;
             float dz = transform.position.z - p.z;
-            if (dx * dx + dz * dz <= r * r)
-                gm.FootBump(transform.position);
+            float d2 = dx * dx + dz * dz;
+
+            if (d2 <= r * r)
+            {
+                if (player.CanFootBump) gm.FootBump(transform.position);
+                return; // inside the leg column: a bump (or its cooldown) — never a near-miss
+            }
+
+            // Near-miss: the lizard threaded PAST this leg without bumping it — the close weave
+            // through the crowd the player should FEEL (blue whoosh + slow-mo, concept frame #4).
+            // Fire once per pass via a cooldown so lingering beside a leg can't spam it.
+            _nearMissCd -= Time.deltaTime;
+            float near = r + GameConst.CloseCallRadius;
+            if (_nearMissCd <= 0f && d2 <= near * near)
+            {
+                _nearMissCd = 1.2f;
+                GameEvents.RaiseNearMiss(transform.position);
+            }
         }
 
         void ResolveStomp(Vector3 plant)

@@ -19,7 +19,7 @@ namespace LizardCrossing
         float _speed;
         Vector3 _startPos, _endPos, _walkDir;
         float _respawnDelay, _restTimer;
-        bool _resting, _rumbled;
+        bool _resting, _rumbled, _nearMissed;
         Transform _holder;
 
         static readonly Color[] Bodies =
@@ -91,6 +91,7 @@ namespace LizardCrossing
         {
             transform.position = _startPos;
             _rumbled = false;
+            _nearMissed = false;
             if (_holder != null) _holder.gameObject.SetActive(false);
         }
 
@@ -128,7 +129,23 @@ namespace LizardCrossing
             float halfL = Length * 0.5f - GameConst.StompKillPad;
             float halfW = Width * 0.5f - GameConst.StompKillPad;
             if (Mathf.Abs(local.z) <= halfL && Mathf.Abs(local.x) <= halfW)
+            {
                 gm.HitPlayer(player.KillCheckPosition, DeathCause.Squashed);
+                return;
+            }
+
+            // Near-miss: this car swept PAST the lizard without crushing it — a giant taxi
+            // whiffing across its nose (concept frame #4). Fire once per pass (the holder's
+            // local box grown by CloseCallRadius) so the blue whoosh + slow-mo trigger.
+            if (!_nearMissed)
+            {
+                float pad = GameConst.CloseCallRadius;
+                if (Mathf.Abs(local.z) <= halfL + pad && Mathf.Abs(local.x) <= halfW + pad)
+                {
+                    _nearMissed = true;
+                    GameEvents.RaiseNearMiss(player.KillCheckPosition);
+                }
+            }
         }
 
         void Box(Vector3 pos, Vector3 scale, Color col, string name) { Prim(PrimitiveType.Cube, pos, scale, col, name); }
