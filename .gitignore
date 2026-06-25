@@ -40,6 +40,15 @@ Tools/serve.js
 Assets/_Recovery/
 Assets/_Recovery.meta
 
+# Secrets — never commit API keys. Canonical store is OUTSIDE the repo
+# (~/.lizard_secrets/). These patterns are belt-and-suspenders in case a key
+# ever lands in the working tree.
+.secrets/
+*.key
+*api_key*
+.env
+.env.*
+
 # Editor / machine-specific
 .claude/
 

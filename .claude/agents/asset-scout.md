@@ -62,10 +62,31 @@ built app.** Preferred by reliability:
    path, the suggested pipeline slot, import settings (maxSize 2048, NormalMap type on normals,
    sRGB on albedo), and any attribution you logged. Don't wire assets into gameplay yourself.
 
+## Generating assets with Meshy AI
+When a needed prop doesn't exist as a good free asset, **generate it** (the owner has a paid
+Meshy plan). Use `Tools/meshy.sh` (key lives outside the repo; see `docs/MESHY_PIPELINE.md`):
+- `bash Tools/meshy.sh t23 "<clear single-object prompt>" realistic <polycount>` → preview →
+  `wait` → review → `refine` (textures) → `wait` → `download ... Assets/Art/Imported/Generated/<name>.glb`.
+- **Prompt for ONE clean standalone object** ("a single weathered NYC newspaper vending box,
+  standalone, realistic game prop") — busy/scene prompts give blobs. No `"` chars in prompts.
+- Always pass a mobile-sane `target_polycount` (props 8k–20k) — the guardrail against poly bombs.
+- Then run the MANDATORY cleanup (vet tris/texture size, clamp 2048, re-normalize height +
+  Z-up→Y-up yaw, wire via the project pipeline) before handing to `environment-artist`. Log it
+  in `ATTRIBUTION.md`. Check `balance` periodically.
+
+## Account-gated stores via the browser (Unity Asset Store, Fab, etc.)
+The owner has authorized using their machine to fetch free assets. You may drive the **browser
+(Chrome MCP / claude-in-chrome)** to search and open free listings and to queue them — but you
+**must not** log in, create accounts, accept ToS/EULAs, or click "claim"/"add to my assets"/
+purchase on the owner's behalf (even free items require accepting terms). Surface those exact
+steps for the owner to click. Free Unity Asset Store items, once in their account, import via the
+editor's Package Manager → My Assets. Vet everything you bring in the same way (license, tris, texture size).
+
 ## Guardrails
-- Never enter credentials, create accounts, accept store ToS, or "claim" on the owner's behalf
-  — surface those to the owner. Confirm before downloading. Keep heavy/unused assets OUT of
-  `Resources/` (everything there ships in the build) — stage elsewhere until chosen.
+- Never enter credentials, create accounts, accept store ToS/EULAs, or "claim"/purchase on the
+  owner's behalf — surface those to the owner. Confirm before downloading from any source. Keep
+  heavy/unused assets OUT of `Resources/` (everything there ships in the build) — stage elsewhere
+  until chosen. Generated/3rd-party meshes are unvetted until you check tri count + texture size.
 - When you can verify in Unity (tri count, texture size, import), do; otherwise report the
   source's stated specs and flag that they need an in-editor check.
 
