@@ -64,5 +64,14 @@ namespace LizardCrossing.EditorTools
             if (!Application.isPlaying) { Debug.LogWarning("[AutoPlaytest] Enter Play mode first."); return; }
             LizardCrossing.Testing.AutoPlaytest.Launch(8);
         }
+
+        // Records a real MP4 of a bot run to Temp/Recording/run.mp4 (HUD included) for
+        // uploading to a video model (e.g. Gemini) to critique motion/feel. Play mode first.
+        [MenuItem(Root + "Record MP4 (10s)")]
+        private static void RecordMp4()
+        {
+            if (!Application.isPlaying) { Debug.LogWarning("[RunRecorder] Enter Play mode first."); return; }
+            LizardCrossing.Testing.RunRecorder.LaunchVideo(10f, 30);
+        }
     }
 }

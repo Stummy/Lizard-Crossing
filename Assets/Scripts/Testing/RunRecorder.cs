@@ -18,6 +18,12 @@ namespace LizardCrossing.Testing
         public int CellW = 200, Cols = 6;
         private int _cellH = 356;
 
+        // ---- MP4 video mode (LaunchVideo): a real H.264 clip for upload to a video-understanding
+        //      model (e.g. Gemini) so MOTION/timing/jank can be critiqued, not just stills. Uses the
+        //      editor's built-in MediaEncoder — no extra package. Editor-only (dev tool). ----
+        public float VideoSeconds = 0f;
+        public int VideoFps = 30;
+
         private readonly List<Texture2D> _shots = new List<Texture2D>();
 
         public static void Launch(int frames, float interval, int hitAtFrame)
@@ -29,6 +35,106 @@ namespace LizardCrossing.Testing
             r.Interval = Mathf.Max(0.03f, interval);
             r.HitAtFrame = hitAtFrame;
             r.StartCoroutine(r.Record());
+        }
+
+        /// <summary>Record a real MP4 (H.264) of a bot run to Temp/Recording/run.mp4 — for
+        /// uploading to a video model (Gemini etc.) to critique motion/feel, not just stills.</summary>
+        public static void LaunchVideo(float seconds, int fps)
+        {
+            var go = new GameObject("RunRecorderVideo");
+            DontDestroyOnLoad(go);
+            var r = go.AddComponent<RunRecorder>();
+            r.VideoSeconds = Mathf.Max(1f, seconds);
+            r.VideoFps = Mathf.Clamp(fps, 12, 60);
+            r.StartCoroutine(r.RecordVideo());
+        }
+
+        private IEnumerator RecordVideo()
+        {
+#if UNITY_EDITOR
+            float guard = 0f;
+            while ((GameStateManager.Instance == null || GameStateManager.Instance.State != GameState.Ready) && guard < 8f)
+            { guard += Time.unscaledDeltaTime; yield return null; }
+            var gm = GameStateManager.Instance;
+            if (gm == null) { Debug.LogError("[RunRecorder] no GameStateManager"); Destroy(gameObject); yield break; }
+
+            string dir = System.IO.Path.Combine(Application.dataPath, "..", "Temp", "Recording");
+            System.IO.Directory.CreateDirectory(dir);
+            string path = System.IO.Path.Combine(dir, "run.mp4");
+            if (System.IO.File.Exists(path)) System.IO.File.Delete(path);
+
+            InputProvider.StartOverride = true;
+
+            // derive an even-dimensioned portrait size from the first rendered frame (H.264 needs even w/h)
+            yield return new WaitForEndOfFrame();
+            var probe = ScreenCapture.CaptureScreenshotAsTexture();
+            int W = 540;
+            int H = Mathf.Clamp(Mathf.RoundToInt(W * (float)probe.height / Mathf.Max(1, probe.width)), 320, 1280);
+            if ((W & 1) == 1) W++;
+            if ((H & 1) == 1) H++;
+            Object.DestroyImmediate(probe);
+
+            var attrs = new UnityEditor.Media.VideoTrackAttributes
+            {
+                frameRate = new UnityEditor.Media.MediaRational(VideoFps),
+                width = (uint)W,
+                height = (uint)H,
+                includeAlpha = false
+            };
+
+            int frames = 0;
+            var encoder = new UnityEditor.Media.MediaEncoder(path, attrs);
+            try
+            {
+                float frameDt = 1f / VideoFps;
+                float acc = frameDt;       // capture the first frame immediately
+                float elapsed = 0f;
+                while (elapsed < VideoSeconds)
+                {
+                    yield return null;
+                    float dt = Time.unscaledDeltaTime;
+                    elapsed += dt; acc += dt;
+                    if (gm.State == GameState.Playing) Steer();
+                    if (acc < frameDt) continue;   // fixed-cadence sampling so playback timing is correct
+                    acc -= frameDt;
+
+                    yield return new WaitForEndOfFrame();
+                    var full = ScreenCapture.CaptureScreenshotAsTexture(); // includes HUD overlay
+                    var frame = DownscaleRGBA(full, W, H);
+                    encoder.AddFrame(frame);
+                    Object.DestroyImmediate(full);
+                    Object.DestroyImmediate(frame);
+                    frames++;
+
+                    if (gm.State == GameState.Won || gm.State == GameState.Dead) break;
+                }
+            }
+            finally
+            {
+                encoder.Dispose();
+                InputProvider.MoveOverride = null;
+            }
+            Debug.Log("[RunRecorder] VIDEO DONE — " + frames + " frames @ " + VideoFps + "fps (" + W + "x" + H + ") -> Temp/Recording/run.mp4");
+            Destroy(gameObject);
+#else
+            Debug.LogWarning("[RunRecorder] MP4 export is editor-only.");
+            Destroy(gameObject);
+            yield break;
+#endif
+        }
+
+        // RGBA32 copy at a fixed size — MediaEncoder.AddFrame wants a readable, even-sized texture.
+        private static Texture2D DownscaleRGBA(Texture2D src, int w, int h)
+        {
+            var rt = RenderTexture.GetTemporary(w, h, 0);
+            var prev = RenderTexture.active;
+            Graphics.Blit(src, rt);
+            RenderTexture.active = rt;
+            var dst = new Texture2D(w, h, TextureFormat.RGBA32, false);
+            dst.ReadPixels(new Rect(0, 0, w, h), 0, 0); dst.Apply();
+            RenderTexture.active = prev;
+            RenderTexture.ReleaseTemporary(rt);
+            return dst;
         }
 
         private IEnumerator Record()
