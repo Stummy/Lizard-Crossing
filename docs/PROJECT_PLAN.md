@@ -87,7 +87,7 @@ advances and the concept frame it moves toward. **`▶` = next up.**
 | ▶ | Fences **solid + close left gap** — register the panels as obstacles (lizard X-clamp / ObstacleField) so lizard + peds go around; close the open left section | 3 | run | spatial — co-design w/ owner on screen (ties into traffic/crossing flow) |
 | ✅ | DASH button UI — premium amber disc + glossy rim + MOBA-style dark cooldown sweep + DASH label | 4 | all (HUD) | verified in Play; dropped the baked-"BOOST" sprite (no generation needed) |
 | ⬜ | More HUD via Unity AI — progress bar, bug icon, panels | 4 | all (HUD) | same generate→bg-remove→wire pipeline |
-| ⬜ | close_calls=0 — confirm near-miss detection fires | 2 | nearmiss | AutoPlaytest flagged it never triggers |
+| ✅ | close_calls — near-miss now fires (leg pass-by + car sweep); manual weave = CloseCalls 2 | 2 | nearmiss | AutoPlaytest still shows 0 by design (AI dodges with margin) |
 | ⬜ | S2-6 on-device frame-time confirm (gameplay-guardian gate) → **closes Stage 2** | 2/5 | — | needs owner device |
 | ⬜ | art-director re-grade vs target sheet → if it reads the target, **M1 hit** | 2 | all | gate |
 
