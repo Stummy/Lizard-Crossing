@@ -209,3 +209,25 @@ the tiny lizard — the core fantasy reads in one frame.
   premium art/look pass: drop Higgsfield textures into
   `Assets/Resources/GeneratedArt/` and begin swapping procedural primitives for
   real 3D models (lizard, shoes, plants) per ART_DIRECTION.md.
+
+## Code review 2026-06-25 (local max-effort) — open findings
+Fixed in commit a16dea4: #1 stomp dead-zone (x-gate recentered), #2 cat i-frame
+bypass, #4 cat multi-material remap, #10 FootBump doc. Remaining, tracked:
+- **#3 Stomp detection is framerate-dependent** (`GiantPedestrian.TrackFoot`): the
+  descending→plant edge (`-1e-4` threshold + strikeLift window) can be skipped on a
+  frame hitch → a foot that visually lands resolves no kill. FIX DURING S2-6 device
+  pass (needs a real low-FPS repro to tune safely — don't fix blind in-editor).
+- **#5** Static `_prefabs`/`_controller` caches never reset on rebuild → stale refs
+  after a menu→run cycle. Add a ClearRuntimeCache-style reset.
+- **#6** `Physics.IgnoreLayerCollision(Lizard,CityGround)` set globally, never restored.
+- **#7** `ObstacleField` never removes destroyed props (phantom obstacles).
+- **#8** `ObstacleField.Avoidance` is O(peds×obstacles)/frame — perf tax (mobile).
+- **#9** Left-sidewalk lanes x=-8.3 (on curb ramp) vs -8.8 ride at different heights.
+- **#11** `PropObstacle.Update` per-prop per-frame cost + desync risk if attached
+  without `ObstacleField.Add`.
+- **#13** Altitude: FootBump/PropBump/HitPlayer are near-duplicate entry points —
+  consolidate into one HitPlayer overload taking the FX/provoke behavior.
+- **#14** Dead seams: `GiantPedestrian.Spawn`+`HazardLaneManager` (retired non-NYC
+  path), `StreetGround.Configure` no-op.
+- **#15** Chameleon camouflage unreachable under auto-run (`wish.sqrMagnitude<0.02`
+  never true). Decide if camouflage ships; if so, gate on steer-only stillness.

@@ -80,8 +80,13 @@ Done and verified in-engine (0 console errors, mechanics intact):
   triggered + billed); prompt the owner at the gate, never attempt to run it.
 
 ## Non-negotiable rules (from the packet)
-- The lizard moves **forward (+Z)** toward the safe zone; primary hazards move
-  **sideways (±X)** across its path, like cross-traffic. Never parallel walkers.
+- The lizard moves **forward (+Z)** toward the safe zone. Hazards come on TWO axes:
+  a dense **sidewalk crowd walks ALONG ±Z** (the lizard weaves through giant feet —
+  this is now the hero hazard) AND **cross-traffic moves ±X** across its path
+  (jaywalkers, cars, falling debris), classic Crossy-Road timing. (This supersedes the
+  packet's original "primary hazards move ±X / never parallel walkers" rule — the
+  realistic-city redesign made the parallel crowd the primary challenge. Keep BOTH axes
+  readable from the low POV; don't let the crowd become an unreadable wall of bodies.)
 - The camera is the most important feature: very low third-person lizard POV
   (camera y < 3), lizard bottom-center, hazards must feel giant.
 - Build in phases. No cosmetics/shop/ads/multiple lizards/level select/daily
