@@ -496,6 +496,45 @@ namespace LizardCrossing
             rect.localScale = target;
         }
 
+        // ---------- juice: reactive HUD pops (S2-5) ----------
+
+        /// <summary>Quick scale "punch" (overshoot then settle) on unscaled time so it reads
+        /// through hit-stop / slow-mo. Used to make a HUD element react to an event.</summary>
+        private IEnumerator PunchScale(RectTransform rect, float peak, float dur)
+        {
+            if (rect == null) yield break;
+            float t = 0f;
+            while (t < 1f)
+            {
+                t += Time.unscaledDeltaTime / dur;
+                float s = 1f + (peak - 1f) * Mathf.Sin(Mathf.Clamp01(t) * Mathf.PI);
+                rect.localScale = new Vector3(s, s, 1f);
+                yield return null;
+            }
+            rect.localScale = Vector3.one;
+        }
+
+        /// <summary>A lost heart bursts: flashes white and pops big, then settles to the dim
+        /// "empty socket" colour — reads as the heart shattering, not just quietly greying out.</summary>
+        private IEnumerator ShatterHeart(int index)
+        {
+            if (_hearts == null || index < 0 || index >= _hearts.Length) yield break;
+            var img = _hearts[index];
+            var rect = img.rectTransform;
+            float t = 0f;
+            while (t < 1f)
+            {
+                t += Time.unscaledDeltaTime / 0.34f;
+                float k = Mathf.Clamp01(t);
+                float s = 1f + 0.8f * Mathf.Sin(k * Mathf.PI);
+                rect.localScale = new Vector3(s, s, 1f);
+                img.color = Color.Lerp(Color.white, HeartDim, k);
+                yield return null;
+            }
+            rect.localScale = Vector3.one;
+            img.color = HeartDim;
+        }
+
         // ---------- event handlers ----------
 
         private void OnRunStarted()
@@ -506,6 +545,7 @@ namespace LizardCrossing
         private void OnPlayerHit(int heartsLeft, Vector3 pos)
         {
             RefreshHearts(heartsLeft);
+            StartCoroutine(ShatterHeart(heartsLeft)); // burst the heart that was just lost
             ShowPopup("OUCH!", new Color(1f, 0.4f, 0.35f));
             Flash(new Color(1f, 0.18f, 0.12f), 0.55f, 0.4f); // red damage pulse
         }
@@ -513,6 +553,7 @@ namespace LizardCrossing
         private void OnTailLost(Vector3 pos)
         {
             RefreshTail(false);
+            if (_tailPip != null) StartCoroutine(PunchScale(_tailPip.rectTransform, 1.7f, 0.32f));
             ShowPopup("TAIL DROPPED!", new Color(0.6f, 1f, 0.5f));
             Flash(new Color(0.5f, 1f, 0.45f), 0.42f, 0.35f); // green "free hit" pulse
         }
@@ -532,6 +573,7 @@ namespace LizardCrossing
         {
             _lastDeathCause = cause;
             RefreshHearts(0);
+            StartCoroutine(ShatterHeart(0)); // burst the last heart
             ShowPopup(DeathCauseText(cause), new Color(1f, 0.3f, 0.2f));
             Flash(new Color(1f, 0.12f, 0.08f), 0.8f, 0.7f); // strong red death pulse
             StartCoroutine(DeathPanelAfterBeat());
@@ -581,6 +623,7 @@ namespace LizardCrossing
         private void OnBugCollected(int collected, int total)
         {
             RefreshBugs(collected, total);
+            if (_bugText != null) StartCoroutine(PunchScale(_bugText.rectTransform, 1.35f, 0.28f));
         }
 
         private void OnNearMiss(Vector3 pos)
