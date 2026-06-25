@@ -92,11 +92,13 @@ namespace LizardCrossing
             color.postExposure.value = 0.06f;                    // gentle lift; pulled 0.15->0.06 to stop the sun-facing washout
             color.contrast.value = 12f;                          // gentle punch
             color.saturation.value = 18f;                        // slightly saturated (hero pops)
-            color.colorFilter.value = new Color(1.05f, 1.0f, 0.92f); // faint warm wash
+            color.colorFilter.value = new Color(1.03f, 1.0f, 0.97f); // faint warm wash; eased blue 0.92->0.97 so people/jeans aren't tinted yellow
 
-            // push white balance toward warm sunlight
+            // push white balance toward warm sunlight — but only gently. 14 was casting
+            // everything (esp. pedestrians' clothing) YELLOW; pulled to 7 so it reads warm
+            // golden-hour without turning blue jeans tan or skin sallow (owner playtest).
             var wb = profile.Add<WhiteBalance>(true);
-            wb.temperature.value = 14f;
+            wb.temperature.value = 7f;
             wb.tint.value = 2f;                                  // a hair of magenta kills the green cast
 
             // --- Lift / Gamma / Gain: the cohesive cinematic grade toward the §3 palette
