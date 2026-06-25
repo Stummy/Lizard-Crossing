@@ -7,9 +7,9 @@
 ## Gap-to-target (one line)
 Lighting + post + DoF landed (WO-1/WO-2 DONE — gameplay-guardian PASS): the frame now reads **warm, sunny, and
 cinematic** with an HDRI sky, ACES grade, bloom, vignette, AO, and bokeh DoF (sharp hero /
-blurred giant foreground). Framing tightened (WO-3 IN REVIEW — hero now large/bottom-center/
-sharp). Remaining gap is mostly **set dressing** (barrier walls / crosswalk — WO-4) and **HUD
-polish** (WO-5), plus an on-device frame-time confirm.
+blurred giant foreground). Framing tightened (WO-3 DONE — hero now large/bottom-center/
+sharp). Set dressing (WO-4 DONE) and **HUD polish** (WO-5 DONE — rebuilt to the reference) are
+in. Remaining: the **art-director re-grade + Sprint 2 scope** (WO-6) and an on-device frame-time confirm.
 
 ## Current grade (NYC theme, from this session's gameplay frames)
 - ✅ Surfaces reskinned (cobblestone / brick / asphalt / granite), 0 magenta, slice runs
@@ -24,7 +24,10 @@ polish** (WO-5), plus an on-device frame-time confirm.
   as granite stone, the flat-orange crosswalk band (`CityGen_lanes_secondary_color`) + a pink
   ground-decal layer (`Street_Assets.001`) reskinned to asphalt, stripes (`CityGen_lanes_white`)
   forced to clean painted white. Plus 8 generated NYC props scattered as set dressing.
-- ❔ HUD: needs comparison/polish vs reference (hearts / progress bar+gecko+flag / bug counter).
+- ✅ HUD rebuilt to reference (WO-5): hearts (TL, filled red + greyed sockets), "DOWNTOWN DASH"
+  title + rounded green progress bar with a live **gecko marker** + **checkered goal flag** +
+  "LEVEL 1" (TC), "n / total" bug counter w/ fly icon (TR). Soft shadows + dark text outlines,
+  no opaque panel, safe-area inset. Binds live to GameStateManager hearts/bugs + lizard.z/Length.
 
 ---
 
@@ -39,7 +42,7 @@ with a `gameplay-guardian` PASS (mechanics + frame-time budget).
 | WO-2 | DONE (guardian PASS 2026-06-24) | lighting-post-artist (+camera-ui-juice) | Depth-of-field driven by camera→lizard focus: hero tack-sharp, close foreground hazards blurred, far bg soft | `CinematicPost.cs`, `LizardCameraController.cs` | Hero sharp, close hazard clearly blurred, bg soft; DoF tuned for mid-tier phone |
 | WO-3 | DONE (verified 2026-06-24) | camera-ui-juice (+main: feed-forward fix) | Tighten third-person framing: hero bigger & bottom-center, central lane to safe zone clear, hazards still read giant at edges | `LizardCameraController.cs`, `GameConst` cam consts, `CinematicPost.cs` | Hero fills more of lower frame, lane/hazards readable, POV re-shot & intact |
 | WO-4 | DONE (verified 2026-06-24) | environment-artist | Skin the grey road-zone barrier walls + make the crosswalk read as a real crosswalk (+ import/wire 8 generated NYC props) | `CityReskin.cs`, `LevelBuilder.cs`, `Resources/Models/Generated` | No flat-grey walls, crosswalk legible, 0 magenta, real-world scale |
-| WO-5 | TODO | camera-ui-juice | HUD polish to match reference: hearts (TL), rounded level progress bar + gecko marker + checkered flag + "LEVEL n" (TC), bug counter (TR) | `SimpleHUDController.cs`, `UIFactory.cs` | Matches VISUAL_TARGET §5, crisp at portrait, safe-area aware |
+| WO-5 | DONE (verified 2026-06-24) | camera-ui-juice | HUD polish to match reference: hearts (TL), rounded level progress bar + gecko marker + checkered flag + "LEVEL n" (TC), bug counter (TR) | `SimpleHUDController.cs`, `UIFactory.cs`, `ProceduralTextures.cs` | Matches VISUAL_TARGET §5, crisp at portrait, safe-area aware |
 | WO-6 | TODO | art-director | Re-grade the full run vs target; update gap-to-target; scope Sprint 2 | (review) | New % to-target + named next sprint |
 
 **Dispatch order:** WO-1 → WO-2 → WO-3 → WO-4 → WO-5 → WO-6. (1 & 2 are the big pop; do them first.)
@@ -56,6 +59,36 @@ with a `gameplay-guardian` PASS (mechanics + frame-time budget).
   surf shack, tiki bar, palms, flowers, rope rails; scooter + beach-goer hazards; warm grade).
 
 ## Review log
+- **2026-06-24 — WO-5 (camera-ui-juice), DONE/verified.** Rebuilt the in-run HUD to match
+  VISUAL_TARGET §5 — **visual/UI only, no gameplay logic touched** (still purely presents existing
+  GameStateManager / PlayerController / LevelDefinition state; sacred mechanics untouched).
+  **(1) `ProceduralTextures.cs`:** added two cached procedural sprites — a side-on **gecko**
+  silhouette (capsule body + curling tail + feet, faces +x = run dir) for the progress marker and
+  a rounded **checkered race-flag** for the goal end (plus a `SegDist` helper). **(2) `UIFactory.cs`:**
+  added `CreateSafeArea` + a `SafeAreaFitter` MonoBehaviour that continuously insets a full-rect
+  child to `Screen.safeArea` (notch/home-indicator aware; only re-applies on change). **(3)
+  `SimpleHUDController.Build`:** top HUD now parents to the safe-area inset. Hearts (TL): clean
+  filled-red hearts over dim "socket" slots so a lost life still reads as an empty slot, dark
+  Outline so they pop; tail pip kept beside them. Top-center: a "DOWNTOWN DASH" title (NYC name;
+  falls back to `LevelDefinition.Name` if it's ever non-"Garden Escape"), a rounded dark progress
+  track with a green fill (`lizard.z / Level.Length`, Length=140), a **gecko marker** that rides
+  the fill (pivot at its feet so it stands on the bar, lifted above the green so it never
+  disappears), a **checkered flag** pinned to the goal end, and "LEVEL 1" under it (no level-index
+  field exists yet → defaults to 1). Top-right: bug counter reformatted to "n / total" with the
+  fly icon, right-aligned. All text gets a subtle dark Outline; bar gets a soft Shadow; no opaque
+  panel. `Update()` now also slides the gecko marker with the fill each frame. **Verified
+  in-engine** (fresh Play, Start Run + bot auto-run, `ScreenCapture` of the overlay HUD — the low
+  POV cam can't RT-capture but the screen-space overlay shows in a full-screen grab): hearts
+  decremented live 3→1 via `PlayerHit`, bug counter climbed 0→12/12 via `BugCollected`, the
+  progress fill + gecko advanced to 71% from the real lizard z (z=98.8 / 140), checkered flag at
+  the goal, "DOWNTOWN DASH"/"LEVEL 1" legible. SafeArea container live (anchors track
+  `Screen.safeArea`; full-screen on a notchless display). **0 console errors** (the only red lines
+  were my own malformed MCP `Unity_ReadConsole types` calls, not game/compile errors). Frames:
+  `Temp/Shots/wo5_before.png` (old thin bar, no title/gecko/flag) vs `wo5_after_3x.png` /
+  `wo5_after_final.png` (new hearts+sockets, title, rounded bar with gecko + flag, "LEVEL 1", bug
+  counter). **Note for gameplay-guardian:** changes are HUD-render-only (no InputProvider/steer/
+  dash/band/cam edits) so control feel is unaffected, but flagging per the loop-guardian rule.
+  **Open:** WO-6 art-director re-grade + Sprint 2 scope; on-device frame-time confirm still owed.
 - **2026-06-24 — WO-4 (environment-artist), DONE/verified.** Two jobs, both visual-only — no
   gameplay/band/hazard edits. **(A) Road-zone walls + crosswalk.** Diagnosed by tinting the
   NYCity GLB's own materials and surveying: the flat-grey "barrier walls" are the GLB material

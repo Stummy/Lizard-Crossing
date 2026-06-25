@@ -98,6 +98,55 @@ namespace LizardCrossing
             return canvas;
         }
 
+        /// <summary>A full-screen transparent child that continuously insets itself to the
+        /// device <see cref="Screen.safeArea"/> (notch / rounded corners / home indicator).
+        /// Parent the HUD's screen-edge widgets to this so nothing clips on a notched phone.</summary>
+        public static RectTransform CreateSafeArea(Transform parent, string name = "SafeArea")
+        {
+            var go = new GameObject(name, typeof(RectTransform));
+            go.transform.SetParent(parent, false);
+            var rect = go.GetComponent<RectTransform>();
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+            go.AddComponent<SafeAreaFitter>();
+            return rect;
+        }
+
+        /// <summary>Drives a full-rect RectTransform's anchors to match Screen.safeArea each
+        /// frame (cheap; only re-applies when the area changes).</summary>
+        private class SafeAreaFitter : MonoBehaviour
+        {
+            private RectTransform _rect;
+            private Rect _last;
+            private Vector2Int _lastRes;
+
+            private void Awake() { _rect = GetComponent<RectTransform>(); Apply(); }
+
+            private void Update()
+            {
+                if (_last != Screen.safeArea ||
+                    _lastRes.x != Screen.width || _lastRes.y != Screen.height)
+                    Apply();
+            }
+
+            private void Apply()
+            {
+                _last = Screen.safeArea;
+                _lastRes = new Vector2Int(Screen.width, Screen.height);
+                if (Screen.width <= 0 || Screen.height <= 0) return;
+                Vector2 min = _last.position;
+                Vector2 max = _last.position + _last.size;
+                min.x /= Screen.width; min.y /= Screen.height;
+                max.x /= Screen.width; max.y /= Screen.height;
+                _rect.anchorMin = min;
+                _rect.anchorMax = max;
+                _rect.offsetMin = Vector2.zero;
+                _rect.offsetMax = Vector2.zero;
+            }
+        }
+
         public static RectTransform CreatePanel(Transform parent, string name, Color color)
         {
             var img = CreateImage(parent, name, ProceduralTextures.WhiteSprite(), color);

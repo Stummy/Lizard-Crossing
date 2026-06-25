@@ -224,6 +224,100 @@ namespace LizardCrossing
             return inside;
         }
 
+        private static Texture2D _gecko;
+        private static Texture2D _flag;
+
+        /// <summary>
+        /// Side-on gecko/lizard silhouette for the HUD progress marker — a fat-tailed
+        /// little body facing right (+x = run direction), built from a few overlapping
+        /// capsules so it reads at ~40px. White; tint when used.
+        /// </summary>
+        public static Texture2D Gecko
+        {
+            get
+            {
+                if (_gecko == null)
+                {
+                    const int s = 96;
+                    _gecko = NewTex(s);
+                    var px = new Color[s * s];
+
+                    // body: tapering belly capsule from tail-base (left) to snout (right)
+                    Vector2 tailBase = new Vector2(0.30f, 0.46f);
+                    Vector2 snout = new Vector2(0.84f, 0.52f);
+                    Vector2 headC = new Vector2(0.74f, 0.55f);
+                    // tail: thin curling capsule sweeping left and down
+                    Vector2 tailMid = new Vector2(0.14f, 0.40f);
+                    Vector2 tailTip = new Vector2(0.06f, 0.52f);
+
+                    for (int yi = 0; yi < s; yi++)
+                    for (int xi = 0; xi < s; xi++)
+                    {
+                        var p = new Vector2((xi + 0.5f) / s, (yi + 0.5f) / s);
+                        float body = SegDist(p, tailBase, headC) - 0.11f;
+                        float head = Vector2.Distance(p, headC) - 0.11f;
+                        float nose = SegDist(p, headC, snout) - 0.055f;
+                        float tail1 = SegDist(p, tailBase, tailMid) - 0.055f;
+                        float tail2 = SegDist(p, tailMid, tailTip) - 0.032f;
+                        // four little feet stubs below the belly
+                        float feet = Mathf.Min(
+                            SegDist(p, new Vector2(0.40f, 0.42f), new Vector2(0.38f, 0.30f)),
+                            SegDist(p, new Vector2(0.62f, 0.44f), new Vector2(0.64f, 0.31f))) - 0.035f;
+                        float dist = Mathf.Min(Mathf.Min(body, head, nose), Mathf.Min(tail1, tail2, feet));
+                        float a = Mathf.Clamp01(-dist * s * 0.5f);
+                        px[yi * s + xi] = new Color(1f, 1f, 1f, a);
+                    }
+                    _gecko.SetPixels(px);
+                    _gecko.Apply();
+                }
+                return _gecko;
+            }
+        }
+
+        /// <summary>Checkered race-flag for the goal end of the progress bar:
+        /// a rounded square with a black/white check pattern. Opaque RGB.</summary>
+        public static Texture2D Flag
+        {
+            get
+            {
+                if (_flag == null)
+                {
+                    const int s = 64;
+                    const int cells = 4;
+                    const float r = 0.16f; // rounded-corner radius (uv)
+                    _flag = NewTex(s);
+                    var px = new Color[s * s];
+                    for (int yi = 0; yi < s; yi++)
+                    for (int xi = 0; xi < s; xi++)
+                    {
+                        float u = (xi + 0.5f) / s, v = (yi + 0.5f) / s;
+                        // rounded-rect alpha
+                        float dx = Mathf.Max(r - u, u - (1f - r), 0f);
+                        float dy = Mathf.Max(r - v, v - (1f - r), 0f);
+                        float d = Mathf.Sqrt(dx * dx + dy * dy);
+                        float a = Mathf.Clamp01((r - d) * s * 0.5f + 0.5f);
+                        a = Mathf.Clamp01(Mathf.Max(a, (u > r && u < 1f - r) || (v > r && v < 1f - r) ? a : a));
+                        int cx = Mathf.Clamp((int)(u * cells), 0, cells - 1);
+                        int cy = Mathf.Clamp((int)(v * cells), 0, cells - 1);
+                        bool dark = ((cx + cy) & 1) == 0;
+                        Color c = dark ? new Color(0.1f, 0.1f, 0.12f) : Color.white;
+                        px[yi * s + xi] = new Color(c.r, c.g, c.b, a);
+                    }
+                    _flag.SetPixels(px);
+                    _flag.Apply();
+                }
+                return _flag;
+            }
+        }
+
+        /// <summary>Distance from point p to segment a-b (uv space).</summary>
+        private static float SegDist(Vector2 p, Vector2 a, Vector2 b)
+        {
+            Vector2 ab = b - a;
+            float t = Mathf.Clamp01(Vector2.Dot(p - a, ab) / Mathf.Max(Vector2.Dot(ab, ab), 1e-6f));
+            return Vector2.Distance(p, a + ab * t);
+        }
+
         /// <summary>
         /// Fallback far-end backdrop: vertical sky→foliage gradient with simple
         /// leaf-silhouette bumps, used when no Higgsfield backdrop is supplied.
@@ -327,6 +421,16 @@ namespace LizardCrossing
         public static Sprite StarSprite()
         {
             return MakeSprite(Star);
+        }
+
+        public static Sprite GeckoSprite()
+        {
+            return MakeSprite(Gecko);
+        }
+
+        public static Sprite FlagSprite()
+        {
+            return MakeSprite(Flag);
         }
 
         private static Sprite MakeSprite(Texture2D t)

@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -14,19 +15,28 @@ namespace LizardCrossing
     {
         private static readonly Color HeartRed = new Color(0.95f, 0.25f, 0.3f);
         private static readonly Color HeartDim = new Color(0.25f, 0.22f, 0.24f, 0.6f);
+        private static readonly Color TailGreen = new Color(0.5f, 0.85f, 0.42f);
+        private static readonly Color TailDim = new Color(0.25f, 0.24f, 0.22f, 0.6f);
         private static readonly Color StarGold = new Color(1f, 0.8f, 0.15f);
         private static readonly Color StarDim = new Color(0.3f, 0.3f, 0.32f, 0.8f);
         private static readonly Color PanelDim = new Color(0.05f, 0.08f, 0.05f, 0.78f);
         private static readonly Color ButtonGreen = new Color(0.35f, 0.7f, 0.3f);
 
         private Image[] _hearts;
+        private Image _tailPip;
         private Text _bugText;
         private Image _progressFill;
+        private Image _geckoMarker;
+        private Text _levelText;
         private Image _dashFill;
+        private Image _dangerFill;
+        private GameObject _dangerGroup; // CAT meter, hidden until the cat is provoked
+        private Text _dangerLabel;
         private Text _message;
         private Text _popup;
         private RectTransform _startPanel;
         private RectTransform _deathPanel;
+        private DeathCause _lastDeathCause = DeathCause.Unknown;
         private RectTransform _winPanel;
         private Text _rewardText;
         private float _popupUntil;
@@ -41,6 +51,10 @@ namespace LizardCrossing
 
         private void Build(Transform root)
         {
+            // Everything that hugs a screen edge lives inside a safe-area inset so the
+            // notch / rounded corners / home indicator never clip the HUD.
+            var safe = UIFactory.CreateSafeArea(root);
+
             // ----- hearts (top-left) — count includes the lizard's heart bonus -----
             int maxHearts = GameStateManager.Instance != null
                 ? GameStateManager.Instance.MaxHearts : GameConst.MaxHearts;
@@ -48,56 +62,127 @@ namespace LizardCrossing
             var heartSprite = ProceduralTextures.HeartSprite();
             for (int i = 0; i < _hearts.Length; i++)
             {
-                var heart = UIFactory.CreateImage(root, "Heart" + i, heartSprite, HeartRed);
-                UIFactory.SetRect(heart, new Vector2(0f, 1f), new Vector2(0f, 1f),
-                    new Vector2(40f + i * 95f, -40f), new Vector2(85f, 85f));
+                // a dim "socket" behind each heart so an empty (lost) life still reads as a slot
+                var socket = UIFactory.CreateImage(safe, "HeartSocket" + i, heartSprite,
+                    new Color(0f, 0f, 0f, 0.32f));
+                UIFactory.SetRect(socket, new Vector2(0f, 1f), new Vector2(0.5f, 0.5f),
+                    new Vector2(72f + i * 92f, -68f), new Vector2(92f, 92f));
+                socket.raycastTarget = false;
+
+                var heart = UIFactory.CreateImage(safe, "Heart" + i, heartSprite, HeartRed);
+                UIFactory.SetRect(heart, new Vector2(0f, 1f), new Vector2(0.5f, 0.5f),
+                    new Vector2(72f + i * 92f, -68f), new Vector2(80f, 80f));
+                heart.raycastTarget = false;
+                // crisp dark outline so the red hearts pop over the bright world
+                var ho = heart.gameObject.AddComponent<UnityEngine.UI.Outline>();
+                ho.effectColor = new Color(0f, 0f, 0f, 0.55f);
+                ho.effectDistance = new Vector2(2.5f, -2.5f);
                 _hearts[i] = heart;
             }
 
-            // ----- bug counter (top-right): tiny fly icon (body + wing dots) -----
-            var bugIcon = UIFactory.CreateImage(root, "BugIcon", ProceduralTextures.CircleSprite(),
-                new Color(0.25f, 0.18f, 0.12f));
-            UIFactory.SetRect(bugIcon, new Vector2(1f, 1f), new Vector2(1f, 1f),
-                new Vector2(-180f, -48f), new Vector2(52f, 64f));
+            // ----- tail pip (just right of the hearts): the "free hit" buffer. Lit while
+            //       the lizard still has its tail; dims when it's been dropped. -----
+            _tailPip = UIFactory.CreateImage(safe, "TailPip", ProceduralTextures.CircleSprite(), TailGreen);
+            UIFactory.SetRect(_tailPip, new Vector2(0f, 1f), new Vector2(0.5f, 0.5f),
+                new Vector2(72f + _hearts.Length * 92f + 6f, -68f), new Vector2(46f, 46f));
+            _tailPip.raycastTarget = false;
+            RefreshTail(GameStateManager.Instance == null || GameStateManager.Instance.HasTail);
+
+            // ----- bug counter (top-right): little fly icon (body + wings) + "n / total" -----
+            var bugIcon = UIFactory.CreateImage(safe, "BugIcon", ProceduralTextures.CircleSprite(),
+                new Color(0.32f, 0.22f, 0.14f));
+            UIFactory.SetRect(bugIcon, new Vector2(1f, 1f), new Vector2(0.5f, 0.5f),
+                new Vector2(-150f, -66f), new Vector2(50f, 60f));
+            bugIcon.raycastTarget = false;
+            var bo = bugIcon.gameObject.AddComponent<UnityEngine.UI.Outline>();
+            bo.effectColor = new Color(0f, 0f, 0f, 0.45f);
+            bo.effectDistance = new Vector2(2f, -2f);
             var wingL = UIFactory.CreateImage(bugIcon.transform, "WingL", ProceduralTextures.CircleSprite(),
-                new Color(0.85f, 0.95f, 1f, 0.8f));
+                new Color(0.85f, 0.95f, 1f, 0.85f));
             UIFactory.SetRect(wingL, new Vector2(0.2f, 0.85f), new Vector2(0.5f, 0.5f),
                 new Vector2(-8f, 6f), new Vector2(34f, 44f));
             wingL.rectTransform.localRotation = Quaternion.Euler(0f, 0f, 30f);
             var wingR = UIFactory.CreateImage(bugIcon.transform, "WingR", ProceduralTextures.CircleSprite(),
-                new Color(0.85f, 0.95f, 1f, 0.8f));
+                new Color(0.85f, 0.95f, 1f, 0.85f));
             UIFactory.SetRect(wingR, new Vector2(0.8f, 0.85f), new Vector2(0.5f, 0.5f),
                 new Vector2(8f, 6f), new Vector2(34f, 44f));
             wingR.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -30f);
-            _bugText = UIFactory.CreateText(root, "BugCount", "0/0", 58, Color.white, TextAnchor.MiddleLeft);
-            UIFactory.SetRect(_bugText, new Vector2(1f, 1f), new Vector2(0f, 1f),
-                new Vector2(-160f, -42f), new Vector2(150f, 70f));
+            _bugText = UIFactory.CreateText(safe, "BugCount", "0 / 0", 50, Color.white, TextAnchor.MiddleRight);
+            UIFactory.SetRect(_bugText, new Vector2(1f, 1f), new Vector2(1f, 0.5f),
+                new Vector2(-188f, -66f), new Vector2(220f, 70f));
+            AddTextOutline(_bugText);
 
-            // ----- progress bar (top-center) -----
-            var barBg = UIFactory.CreateImage(root, "ProgressBg", UIFactory.RoundedSprite(),
-                new Color(0f, 0f, 0f, 0.5f));
+            // ----- top-center: level title + rounded progress bar (gecko marker + goal flag) + "LEVEL n" -----
+            string levelTitle = LevelTitle();
+            var titleText = UIFactory.CreateText(safe, "LevelTitle", levelTitle, 46,
+                new Color(1f, 0.97f, 0.86f), TextAnchor.MiddleCenter);
+            UIFactory.SetRect(titleText, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f),
+                new Vector2(0f, -56f), new Vector2(560f, 60f));
+            AddTextOutline(titleText);
+
+            const float barW = 560f, barH = 34f;
+            var barBg = UIFactory.CreateImage(safe, "ProgressBg", UIFactory.RoundedSprite(),
+                new Color(0f, 0f, 0f, 0.45f));
             barBg.type = Image.Type.Sliced;
-            UIFactory.SetRect(barBg, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
-                new Vector2(0f, -150f), new Vector2(620f, 26f));
+            UIFactory.SetRect(barBg, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f),
+                new Vector2(0f, -114f), new Vector2(barW, barH));
+            var barShadow = barBg.gameObject.AddComponent<UnityEngine.UI.Shadow>();
+            barShadow.effectColor = new Color(0f, 0f, 0f, 0.35f);
+            barShadow.effectDistance = new Vector2(0f, -4f);
+
             _progressFill = UIFactory.CreateImage(barBg.transform, "ProgressFill",
-                UIFactory.RoundedSprite(), new Color(0.45f, 0.92f, 0.4f));
+                UIFactory.RoundedSprite(), new Color(0.42f, 0.9f, 0.38f));
             _progressFill.type = Image.Type.Sliced;
             var fillRect = _progressFill.rectTransform;
             fillRect.anchorMin = new Vector2(0f, 0f);
             fillRect.anchorMax = new Vector2(0f, 1f);
             fillRect.pivot = new Vector2(0f, 0.5f);
-            fillRect.anchoredPosition = new Vector2(3f, 0f);
-            fillRect.sizeDelta = new Vector2(0f, -6f);
-            var goalDot = UIFactory.CreateImage(barBg.transform, "GoalDot", ProceduralTextures.CircleSprite(),
-                new Color(0.95f, 1f, 0.6f));
-            UIFactory.SetRect(goalDot, new Vector2(1f, 0.5f), new Vector2(0.5f, 0.5f),
-                Vector2.zero, new Vector2(44f, 44f));
+            fillRect.anchoredPosition = new Vector2(4f, 0f);
+            fillRect.sizeDelta = new Vector2(0f, -8f);
 
-            // ----- dash button (bottom-right) -----
+            // checkered goal flag pinned to the right (finish) end of the bar
+            var flag = UIFactory.CreateImage(barBg.transform, "GoalFlag", ProceduralTextures.FlagSprite(),
+                Color.white);
+            UIFactory.SetRect(flag, new Vector2(1f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(2f, 0f), new Vector2(46f, 46f));
+            flag.raycastTarget = false;
+            var fo = flag.gameObject.AddComponent<UnityEngine.UI.Outline>();
+            fo.effectColor = new Color(0f, 0f, 0f, 0.5f);
+            fo.effectDistance = new Vector2(2f, -2f);
+
+            // gecko marker that rides along the fill at the current progress; it perches
+            // ABOVE the bar (with a little pin) so it never disappears into the green fill.
+            _geckoMarker = UIFactory.CreateImage(barBg.transform, "GeckoMarker",
+                ProceduralTextures.GeckoSprite(), new Color(0.62f, 1f, 0.42f));
+            _geckoMarker.preserveAspect = true;
+            var gm0 = _geckoMarker.rectTransform;
+            gm0.anchorMin = new Vector2(0f, 0.5f);
+            gm0.anchorMax = new Vector2(0f, 0.5f);
+            gm0.pivot = new Vector2(0.5f, 0f); // pivot at the gecko's feet so it stands on the bar
+            gm0.sizeDelta = new Vector2(66f, 66f);
+            gm0.anchoredPosition = new Vector2(0f, 6f);
+            _geckoMarker.raycastTarget = false;
+            var go2 = _geckoMarker.gameObject.AddComponent<UnityEngine.UI.Outline>();
+            go2.effectColor = new Color(0f, 0.12f, 0f, 0.85f);
+            go2.effectDistance = new Vector2(2.5f, -2.5f);
+
+            int lvl = LevelNumber();
+            _levelText = UIFactory.CreateText(safe, "LevelNum", "LEVEL " + lvl, 30,
+                new Color(1f, 1f, 1f, 0.92f), TextAnchor.MiddleCenter);
+            UIFactory.SetRect(_levelText, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f),
+                new Vector2(0f, -150f), new Vector2(400f, 40f));
+            AddTextOutline(_levelText);
+
+            // ----- steer LEFT / RIGHT hold-buttons (bottom corners): the only directional
+            //       control now that the lizard auto-runs forward. Hold to keep swaying. -----
+            BuildSteerButton(root, "SteerLeft", "◀", -1f, true);
+            BuildSteerButton(root, "SteerRight", "▶", +1f, false);
+
+            // ----- dash button (bottom-center, between the steer buttons) -----
             var dashBtnImg = UIFactory.CreateImage(root, "DashButton", ProceduralTextures.CircleSprite(),
                 new Color(1f, 1f, 1f, 0.25f));
-            UIFactory.SetRect(dashBtnImg, new Vector2(1f, 0f), new Vector2(1f, 0f),
-                new Vector2(-60f, 60f), new Vector2(220f, 220f));
+            UIFactory.SetRect(dashBtnImg, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
+                new Vector2(0f, 70f), new Vector2(190f, 190f));
             var dashBtn = dashBtnImg.gameObject.AddComponent<Button>();
             dashBtn.targetGraphic = dashBtnImg;
             dashBtn.onClick.AddListener(InputProvider.PressDash);
@@ -115,6 +200,49 @@ namespace LizardCrossing
             UIFactory.SetRect(dashLabel, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 Vector2.zero, new Vector2(200f, 60f));
 
+            // ----- POV toggle (top-right, under the bug counter): swap nose-cam / follow cam.
+            //       Moved off the bottom-left so the LEFT steer button owns that corner. -----
+            var povImg = UIFactory.CreateImage(root, "PovButton", ProceduralTextures.CircleSprite(),
+                new Color(1f, 1f, 1f, 0.22f));
+            UIFactory.SetRect(povImg, new Vector2(1f, 1f), new Vector2(1f, 1f),
+                new Vector2(-90f, -150f), new Vector2(120f, 120f));
+            var povBtn = povImg.gameObject.AddComponent<Button>();
+            povBtn.targetGraphic = povImg;
+            povBtn.onClick.AddListener(() =>
+            {
+                if (LizardCameraController.Instance != null) LizardCameraController.Instance.ToggleView();
+            });
+            var povLabel = UIFactory.CreateText(povImg.transform, "Label", "POV", 34,
+                new Color(0.95f, 1f, 0.95f));
+            UIFactory.SetRect(povLabel, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                Vector2.zero, new Vector2(140f, 50f));
+
+            // ----- predator danger meter (left edge): fills upward as the alley cat
+            //       closes in from behind, reading Predator.Threat01 -----
+            var dangerBg = UIFactory.CreateImage(root, "DangerBg", UIFactory.RoundedSprite(),
+                new Color(0f, 0f, 0f, 0.5f));
+            dangerBg.type = Image.Type.Sliced;
+            UIFactory.SetRect(dangerBg, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
+                new Vector2(36f, 0f), new Vector2(26f, 360f));
+            _dangerFill = UIFactory.CreateImage(dangerBg.transform, "DangerFill",
+                UIFactory.RoundedSprite(), new Color(0.95f, 0.55f, 0.2f));
+            _dangerFill.type = Image.Type.Sliced;
+            var dangerRect = _dangerFill.rectTransform;
+            dangerRect.anchorMin = new Vector2(0f, 0f);
+            dangerRect.anchorMax = new Vector2(1f, 0f);
+            dangerRect.pivot = new Vector2(0.5f, 0f);
+            dangerRect.anchoredPosition = new Vector2(0f, 3f);
+            dangerRect.sizeDelta = new Vector2(-6f, 0f);
+            var dangerLabel = UIFactory.CreateText(root, "DangerLabel", "CAT", 30,
+                new Color(1f, 0.72f, 0.66f));
+            UIFactory.SetRect(dangerLabel, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
+                new Vector2(49f, -208f), new Vector2(110f, 42f));
+            // the cat doesn't exist until provoked, so the meter stays hidden until then
+            _dangerGroup = dangerBg.gameObject;
+            _dangerLabel = dangerLabel;
+            _dangerGroup.SetActive(false);
+            _dangerLabel.gameObject.SetActive(false);
+
             // ----- center message + popup -----
             _message = UIFactory.CreateText(root, "Message", "", 72, Color.white);
             UIFactory.SetRect(_message, new Vector2(0.5f, 0.62f), new Vector2(0.5f, 0.5f),
@@ -130,11 +258,14 @@ namespace LizardCrossing
 
             GameEvents.RunStarted += OnRunStarted;
             GameEvents.PlayerHit += OnPlayerHit;
+            GameEvents.PlayerTailLost += OnTailLost;
+            GameEvents.PlayerTailRegrown += OnTailRegrown;
             GameEvents.PlayerDied += OnPlayerDied;
             GameEvents.PlayerRevived += OnRevived;
             GameEvents.RunWon += OnRunWon;
             GameEvents.BugCollected += OnBugCollected;
             GameEvents.NearMiss += OnNearMiss;
+            GameEvents.CatProvoked += OnCatProvoked;
 
             RefreshBugs(0, GameStateManager.Instance != null ? GameStateManager.Instance.BugsTotal : 0);
         }
@@ -143,11 +274,14 @@ namespace LizardCrossing
         {
             GameEvents.RunStarted -= OnRunStarted;
             GameEvents.PlayerHit -= OnPlayerHit;
+            GameEvents.PlayerTailLost -= OnTailLost;
+            GameEvents.PlayerTailRegrown -= OnTailRegrown;
             GameEvents.PlayerDied -= OnPlayerDied;
             GameEvents.PlayerRevived -= OnRevived;
             GameEvents.RunWon -= OnRunWon;
             GameEvents.BugCollected -= OnBugCollected;
             GameEvents.NearMiss -= OnNearMiss;
+            GameEvents.CatProvoked -= OnCatProvoked;
         }
 
         // ---------- panels ----------
@@ -183,7 +317,7 @@ namespace LizardCrossing
             hint.gameObject.AddComponent<PulseText>();
 
             var controls = UIFactory.CreateText(_startPanel, "Controls",
-                "drag to scurry  ·  DASH to burst through gaps", 40, new Color(1f, 1f, 1f, 0.85f));
+                "you auto-run  ·  hold ◀ / ▶ to dodge  ·  DASH to burst", 40, new Color(1f, 1f, 1f, 0.85f));
             UIFactory.SetRect(controls, new Vector2(0.5f, 0.28f), new Vector2(0.5f, 0.5f),
                 Vector2.zero, new Vector2(950f, 70f));
         }
@@ -193,7 +327,7 @@ namespace LizardCrossing
             var gm = GameStateManager.Instance;
             _deathPanel = UIFactory.CreatePanel(transform, "DeathPanel", PanelDim);
 
-            var title = UIFactory.CreateText(_deathPanel, "Title", "SQUISHED!", 120,
+            var title = UIFactory.CreateText(_deathPanel, "Title", DeathTitle(_lastDeathCause), 120,
                 new Color(1f, 0.45f, 0.35f));
             UIFactory.SetRect(title, new Vector2(0.5f, 0.74f), new Vector2(0.5f, 0.5f),
                 Vector2.zero, new Vector2(900f, 150f));
@@ -359,10 +493,59 @@ namespace LizardCrossing
             ShowPopup("OUCH!", new Color(1f, 0.4f, 0.35f));
         }
 
+        private void OnTailLost(Vector3 pos)
+        {
+            RefreshTail(false);
+            ShowPopup("TAIL DROPPED!", new Color(0.6f, 1f, 0.5f));
+        }
+
+        private void OnTailRegrown()
+        {
+            RefreshTail(true);
+            ShowPopup("TAIL BACK!", new Color(0.6f, 1f, 0.5f));
+        }
+
+        private void RefreshTail(bool hasTail)
+        {
+            if (_tailPip != null) _tailPip.color = hasTail ? TailGreen : TailDim;
+        }
+
         private void OnPlayerDied(DeathCause cause)
         {
+            _lastDeathCause = cause;
             RefreshHearts(0);
+            ShowPopup(DeathCauseText(cause), new Color(1f, 0.3f, 0.2f));
             StartCoroutine(DeathPanelAfterBeat());
+        }
+
+        private static string DeathCauseText(DeathCause cause)
+        {
+            switch (cause)
+            {
+                case DeathCause.Caught: return "CAUGHT BY THE CAT!";
+                case DeathCause.Squashed: return "HIT BY A CAR!";
+                default: return "STEPPED ON!";
+            }
+        }
+
+        // Big death-panel headline, keyed to how the run ended.
+        private static string DeathTitle(DeathCause cause)
+        {
+            switch (cause)
+            {
+                case DeathCause.Caught: return "CAUGHT!";
+                case DeathCause.Squashed: return "SQUISHED!";
+                default: return "STOMPED!";
+            }
+        }
+
+        // The alley cat wakes on the first foot-bump: reveal its danger meter and warn.
+        private void OnCatProvoked()
+        {
+            if (_dangerGroup != null) _dangerGroup.SetActive(true);
+            if (_dangerLabel != null) _dangerLabel.gameObject.SetActive(true);
+            ShowPopup("THE CAT IS HUNTING!", new Color(1f, 0.3f, 0.2f));
+            GameAudio.Play(Sfx.Hit);
         }
 
         private IEnumerator DeathPanelAfterBeat()
@@ -396,7 +579,36 @@ namespace LizardCrossing
 
         private void RefreshBugs(int collected, int total)
         {
-            _bugText.text = collected + "/" + total;
+            _bugText.text = collected + " / " + total;
+        }
+
+        // ---------- top-center title helpers ----------
+
+        // The displayed banner name. The loaded LevelDefinition is the legacy
+        // "Garden Escape"; this is now the realistic NYC theme, so show a fitting
+        // NYC name (falls back to the level's own Name if it ever reads NYC-ish).
+        private static string LevelTitle()
+        {
+            var lvl = GameStateManager.Instance != null ? GameStateManager.Instance.Level : null;
+            string n = lvl != null ? lvl.Name : null;
+            if (!string.IsNullOrEmpty(n) && n != "Garden Escape")
+                return n.ToUpperInvariant();
+            return "DOWNTOWN DASH";
+        }
+
+        // No level-index field exists yet; default to 1 (single vertical-slice level).
+        private static int LevelNumber()
+        {
+            return 1;
+        }
+
+        // Subtle dark outline so high-contrast white HUD text stays legible over the
+        // bright, busy world without a heavy panel behind it.
+        private static void AddTextOutline(Text t)
+        {
+            var o = t.gameObject.AddComponent<UnityEngine.UI.Outline>();
+            o.effectColor = new Color(0f, 0f, 0f, 0.6f);
+            o.effectDistance = new Vector2(2f, -2f);
         }
 
         private void ShowPopup(string msg, Color color)
@@ -413,13 +625,17 @@ namespace LizardCrossing
             var player = PlayerController.Instance;
             if (gm == null) return;
 
-            // progress
+            // progress — fill width + the gecko marker ride the lizard's z / level length
             if (player != null && gm.Level != null)
             {
                 float t = Mathf.Clamp01(player.transform.position.z / gm.Level.Length);
                 var rect = _progressFill.rectTransform;
                 var parent = (RectTransform)rect.parent;
-                rect.sizeDelta = new Vector2((parent.rect.width - 6f) * t, rect.sizeDelta.y);
+                float trackW = parent.rect.width - 8f; // matches the fill's 4px inset each side
+                rect.sizeDelta = new Vector2(trackW * t, rect.sizeDelta.y);
+                if (_geckoMarker != null)
+                    _geckoMarker.rectTransform.anchoredPosition =
+                        new Vector2(4f + trackW * t, _geckoMarker.rectTransform.anchoredPosition.y);
             }
 
             // dash cooldown
@@ -429,8 +645,51 @@ namespace LizardCrossing
                 _dashFill.fillAmount = cd <= 0f ? 1f : 1f - cd / GameConst.DashCooldown;
             }
 
+            // predator danger meter — grows as the alley cat closes, hue ramps to red-hot
+            if (_dangerFill != null)
+            {
+                float threat = Predator.Instance != null ? Predator.Instance.Threat01 : 0f;
+                var rect = _dangerFill.rectTransform;
+                var parent = (RectTransform)rect.parent;
+                rect.sizeDelta = new Vector2(rect.sizeDelta.x, (parent.rect.height - 6f) * threat);
+                _dangerFill.color = Color.Lerp(new Color(0.95f, 0.55f, 0.2f),
+                    new Color(1f, 0.16f, 0.12f), threat);
+            }
+
             if (_popup.gameObject.activeSelf && Time.unscaledTime > _popupUntil)
                 _popup.gameObject.SetActive(false);
+        }
+
+        /// <summary>A big translucent steer pad in a bottom corner. Held → InputProvider.ButtonSteer
+        /// drives the auto-running lizard left/right; released → stops swaying.</summary>
+        private void BuildSteerButton(Transform root, string name, string glyph, float value, bool leftCorner)
+        {
+            var img = UIFactory.CreateImage(root, name, ProceduralTextures.CircleSprite(),
+                new Color(1f, 1f, 1f, 0.18f));
+            Vector2 anchor = leftCorner ? new Vector2(0f, 0f) : new Vector2(1f, 0f);
+            Vector2 pos = leftCorner ? new Vector2(70f, 70f) : new Vector2(-70f, 70f);
+            UIFactory.SetRect(img, anchor, anchor, pos, new Vector2(300f, 300f));
+            img.gameObject.AddComponent<HoldButton>().Value = value;
+            var label = UIFactory.CreateText(img.transform, "Glyph", glyph, 110,
+                new Color(0.97f, 1f, 0.97f, 0.92f));
+            UIFactory.SetRect(label, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                Vector2.zero, new Vector2(220f, 220f));
+        }
+
+        /// <summary>Press-and-hold steer pad: sets <see cref="InputProvider.ButtonSteer"/> while
+        /// held, clears it on release/exit. Multiple pads share the field; the latest press wins.</summary>
+        private class HoldButton : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IPointerExitHandler
+        {
+            public float Value;
+            public void OnPointerDown(PointerEventData e) { InputProvider.ButtonSteer = Value; }
+            public void OnPointerUp(PointerEventData e) { Release(); }
+            public void OnPointerExit(PointerEventData e) { Release(); }
+            private void OnDisable() { Release(); }
+            private void Release()
+            {
+                // only clear if WE own the current steer (so releasing one pad doesn't cancel the other)
+                if (Mathf.Approximately(InputProvider.ButtonSteer, Value)) InputProvider.ButtonSteer = 0f;
+            }
         }
 
         /// <summary>Gentle scale pulse for the "TAP TO GO" hint.</summary>
