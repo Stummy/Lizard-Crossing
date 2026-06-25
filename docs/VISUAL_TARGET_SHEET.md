@@ -10,6 +10,12 @@ ours is a realistic NYC street).
 > spec these prompts encode. Stylized inline mockups (composition/HUD guides) were
 > produced alongside this sheet in chat.
 
+> **Generated target deck (2026-06-25):** 7 frames rendered via Unity AI (FLUX 2 dev,
+> 720×1280) live in `Assets/Art/Concept/` — `run`, `squished`, `faceplant`, `win`,
+> `gameover`, `nearmiss`, `title`. These ARE the bar; build the in-engine states to match
+> them. Reference art only (outside `Resources/`, won't ship). Regenerate/iterate any
+> frame with the matching prompt below via the Unity AI `GenerateImage` tool.
+
 ---
 
 ## STYLE BLOCK (prepend to every prompt)
