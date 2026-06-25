@@ -5,28 +5,29 @@ using UnityEngine;
 namespace LizardCrossing.Testing
 {
     /// <summary>
-    /// Records a bot run as a CONTACT SHEET — a grid of camera frames sampled across the run —
-    /// plus a few full-res key frames, written to Temp/Recording/. Lets the whole playthrough be
-    /// reviewed in one image (animation, framing, juice, visual quality) against the concept deck.
-    ///
-    /// Dev tool (launched from RunCommand / the Bot menu). Camera-only (no HUD overlay) so it
-    /// compares directly to the Assets/Art/Concept frames; the HUD is reviewed separately.
+    /// Records a bot run as a dense CONTACT SHEET — a grid of frames sampled across the run,
+    /// CAPTURED WITH THE HUD OVERLAY (ScreenCapture), so the whole playthrough incl. the damage
+    /// flash / heart-shatter / pops can be reviewed in one image against the concept deck. Can
+    /// force a hit mid-run so the juice actually shows up in the footage. Dev tool.
     /// </summary>
     public class RunRecorder : MonoBehaviour
     {
-        public int Frames = 20;
-        public float Interval = 0.3f;          // game-seconds between samples
-        public int CellW = 200, CellH = 356, Cols = 5;
+        public int Frames = 30;
+        public float Interval = 0.12f;     // game-seconds between samples (~8 fps)
+        public int HitAtFrame = -1;        // force a foot-bump on this frame to show the damage juice
+        public int CellW = 200, Cols = 6;
+        private int _cellH = 356;
 
         private readonly List<Texture2D> _shots = new List<Texture2D>();
 
-        public static void Launch(int frames, float interval)
+        public static void Launch(int frames, float interval, int hitAtFrame)
         {
             var go = new GameObject("RunRecorder");
             DontDestroyOnLoad(go);
             var r = go.AddComponent<RunRecorder>();
             r.Frames = Mathf.Max(4, frames);
-            r.Interval = Mathf.Max(0.05f, interval);
+            r.Interval = Mathf.Max(0.03f, interval);
+            r.HitAtFrame = hitAtFrame;
             r.StartCoroutine(r.Record());
         }
 
@@ -53,58 +54,60 @@ namespace LizardCrossing.Testing
                     yield return null;
                 }
                 if (gm.State == GameState.Playing) Steer();
+
+                // force a hit so the damage flash + heart-shatter appear in the footage
+                if (captured == HitAtFrame && gm.State == GameState.Playing)
+                {
+                    var p = PlayerController.Instance;
+                    if (p != null) gm.FootBump(p.transform.position + Vector3.forward * 0.2f);
+                }
+
                 yield return new WaitForEndOfFrame();
-                CaptureCell();
-                if (captured % 4 == 0) CaptureFull(dir, captured);
+                var full = ScreenCapture.CaptureScreenshotAsTexture(); // includes HUD overlay
+                if (captured == 0)
+                {
+                    _cellH = Mathf.Clamp(Mathf.RoundToInt(CellW * (float)full.height / Mathf.Max(1, full.width)), 120, 520);
+                }
+                _shots.Add(Downscale(full, CellW, _cellH));
+                if (captured % 6 == 0) System.IO.File.WriteAllBytes(
+                    System.IO.Path.Combine(dir, "ui_frame_" + captured.ToString("D2") + ".png"),
+                    Downscale(full, 360, Mathf.RoundToInt(360f * full.height / Mathf.Max(1, full.width))).EncodeToPNG());
+                Object.DestroyImmediate(full);
+
                 captured++;
                 if (gm.State == GameState.Won || gm.State == GameState.Dead) break;
             }
 
             BuildContactSheet(dir);
             InputProvider.MoveOverride = null;
-            Debug.Log("[RunRecorder] DONE — " + _shots.Count + " frames -> Temp/Recording/contact_sheet.png");
+            Debug.Log("[RunRecorder] DONE — " + _shots.Count + " frames (UI) -> Temp/Recording/contact_sheet.png");
             foreach (var s in _shots) Object.DestroyImmediate(s);
             Destroy(gameObject);
         }
 
-        private void CaptureCell()
+        private static Texture2D Downscale(Texture2D src, int w, int h)
         {
-            var cam = Camera.main; if (cam == null) return;
-            var rt = new RenderTexture(CellW, CellH, 24);
-            var pT = cam.targetTexture; var pA = RenderTexture.active;
-            cam.targetTexture = rt; cam.Render(); RenderTexture.active = rt;
-            var tex = new Texture2D(CellW, CellH, TextureFormat.RGB24, false);
-            tex.ReadPixels(new Rect(0, 0, CellW, CellH), 0, 0); tex.Apply();
-            cam.targetTexture = pT; RenderTexture.active = pA;
-            Object.DestroyImmediate(rt);
-            _shots.Add(tex);
-        }
-
-        private void CaptureFull(string dir, int idx)
-        {
-            var cam = Camera.main; if (cam == null) return;
-            int w = 540, h = 960;
-            var rt = new RenderTexture(w, h, 24);
-            var pT = cam.targetTexture; var pA = RenderTexture.active;
-            cam.targetTexture = rt; cam.Render(); RenderTexture.active = rt;
-            var tex = new Texture2D(w, h, TextureFormat.RGB24, false);
-            tex.ReadPixels(new Rect(0, 0, w, h), 0, 0); tex.Apply();
-            cam.targetTexture = pT; RenderTexture.active = pA;
-            Object.DestroyImmediate(rt);
-            System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, "frame_" + idx.ToString("D2") + ".png"), tex.EncodeToPNG());
-            Object.DestroyImmediate(tex);
+            var rt = RenderTexture.GetTemporary(w, h, 0);
+            var prev = RenderTexture.active;
+            Graphics.Blit(src, rt);
+            RenderTexture.active = rt;
+            var dst = new Texture2D(w, h, TextureFormat.RGB24, false);
+            dst.ReadPixels(new Rect(0, 0, w, h), 0, 0); dst.Apply();
+            RenderTexture.active = prev;
+            RenderTexture.ReleaseTemporary(rt);
+            return dst;
         }
 
         private void BuildContactSheet(string dir)
         {
             if (_shots.Count == 0) return;
             int rows = Mathf.CeilToInt(_shots.Count / (float)Cols);
-            var grid = new Texture2D(Cols * CellW, rows * CellH, TextureFormat.RGB24, false);
-            grid.SetPixels32(new Color32[Cols * CellW * rows * CellH]); // black fill for empty cells
+            var grid = new Texture2D(Cols * CellW, rows * _cellH, TextureFormat.RGB24, false);
+            grid.SetPixels32(new Color32[Cols * CellW * rows * _cellH]);
             for (int k = 0; k < _shots.Count; k++)
             {
                 int col = k % Cols, row = k / Cols;
-                grid.SetPixels(col * CellW, (rows - 1 - row) * CellH, CellW, CellH, _shots[k].GetPixels());
+                grid.SetPixels(col * CellW, (rows - 1 - row) * _cellH, CellW, _cellH, _shots[k].GetPixels());
             }
             grid.Apply();
             System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, "contact_sheet.png"), grid.EncodeToPNG());
