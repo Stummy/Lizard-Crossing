@@ -89,7 +89,7 @@ namespace LizardCrossing
             // pavement read hazy and near-white. Pulled to +0.15 so the asphalt and mid-tones
             // stay grounded; the scene is still warm/sunny from the grade + HDRI ambient, just
             // no longer washed out.
-            color.postExposure.value = 0.15f;                    // gentle lift (was 0.35 — too hot)
+            color.postExposure.value = 0.06f;                    // gentle lift; pulled 0.15->0.06 to stop the sun-facing washout
             color.contrast.value = 12f;                          // gentle punch
             color.saturation.value = 18f;                        // slightly saturated (hero pops)
             color.colorFilter.value = new Color(1.05f, 1.0f, 0.92f); // faint warm wash
@@ -114,8 +114,8 @@ namespace LizardCrossing
             // Raised the threshold so ONLY true highlights (sky, chrome, sun glints) bloom, and
             // dropped the intensity so the glow is a sun-kiss, not a haze. Mid surfaces stay solid.
             _bloom = profile.Add<Bloom>(true);
-            _bloom.intensity.value = 0.30f;        // gentler glow (was 0.45 — hazy)
-            _bloom.threshold.value = 1.30f;        // only genuinely bright highlights glow (was 1.10)
+            _bloom.intensity.value = 0.20f;        // gentler glow; 0.30->0.20 to stop the sun smear
+            _bloom.threshold.value = 1.55f;        // only the VERY brightest highlights glow; 1.30->1.55 so the sun/sky stops blooming into a white wash
             _bloom.scatter.value = 0.60f;
             _bloom.highQualityFiltering.value = false; // half-res, the mobile-friendly path
             _bloom.tint.value = new Color(1f, 0.96f, 0.88f); // warm glow

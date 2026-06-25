@@ -76,10 +76,15 @@ namespace LizardCrossing
         // anchors the bottom-center instead of the camera staring at dead pavement above it.
         // The central lane to the safe zone stays open via CamLookAhead (0.5→0.55). The lizard
         // is NOT resized — only the camera moved (POV/FP math untouched, see Fp* below).
-        public const float CamBack = 0.22f;
+        // Hero-prominence pass (2026-06-25, recorded review): the lizard still read SMALL and LOW
+        // in frame vs the concept's prominent bottom-centre hero. Pulled the rig closer
+        // (CamBack 0.22→0.185 = bigger hero) and dropped the look point (CamLookHeight 0.052→0.036
+        // = camera pitches down so the hero rises off the bottom edge into the lower third). Still
+        // a low ground-level POV; the city still towers.
+        public const float CamBack = 0.185f;
         public const float CamHeight = 0.105f;
         public const float CamLookAhead = 0.55f;
-        public const float CamLookHeight = 0.052f;
+        public const float CamLookHeight = 0.036f;
         public const float CamBaseFov = 55f;
         public const float CamMaxFov = 72f;
         public const float CamTargetHorizontalFov = 52f;
