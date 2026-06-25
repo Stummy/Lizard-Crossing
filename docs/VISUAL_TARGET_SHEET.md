@@ -10,6 +10,22 @@ ours is a realistic NYC street).
 > spec these prompts encode. Stylized inline mockups (composition/HUD guides) were
 > produced alongside this sheet in chat.
 
+> **DESIGN CORRECTIONS (owner review, 2026-06-25)** — the v1 deck looked great in *style/
+> quality* but several frames were design-WRONG. Fixes (the spec going forward):
+> - **Squished:** the lizard must be COMICALLY PANCAKE-FLATTENED (paper-thin, 2D, tongue out,
+>   spiral/X eyes) — v1 just had it lying down. Flatten it.
+> - **Faceplant:** the lizard must be SMUSHED *into* a wall/obstacle (face pressed flat on the
+>   surface, body vertical against it) — v1 splatted it in open space, which reads as nonsense.
+> - **Win / safe zone = CENTRAL PARK.** The safe zone is NYC's big park; winning = escaping the
+>   street back to the green of the park (grass, trees, park path, skyline behind) — NOT a
+>   generic glowing street arch. This also informs the IN-GAME safe zone art (future work).
+> - **Game over:** must read like a real game's GAME-OVER SCREEN (dark panel, "GAME OVER",
+>   Distance/Bugs stats, a bright RETRY button) — v1 was just a mood photo. The UI is built
+>   in-engine; the concept should show that screen, not only a scene.
+> - **Getting hit by a car** should read distinctly from a pedestrian stomp (impact from the
+>   side, vehicle-specific) — keep it its own beat.
+> Style/quality/graphics were approved as-is — keep them; fix only the design logic.
+
 > **Generated target deck (2026-06-25):** 7 frames rendered via Unity AI (FLUX 2 dev,
 > 720×1280) live in `Assets/Art/Concept/` — `run`, `squished`, `faceplant`, `win`,
 > `gameover`, `nearmiss`, `title`. These ARE the bar; build the in-engine states to match

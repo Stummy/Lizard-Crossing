@@ -79,6 +79,22 @@ Done and verified in-engine (0 console errors, mechanics intact):
   branch) — it's the owner's "second pair of eyes." Claude CANNOT launch it (owner-
   triggered + billed); prompt the owner at the gate, never attempt to run it.
 
+## Agent usage rules (owner, 2026-06-25)
+- **Every AI-GENERATED asset gets a design-review before it's accepted/committed.** Concept
+  frames, textures, models, sprites — all are CANDIDATES, not final. Before committing, the
+  `art-director` (or the main session acting as it) must check the asset depicts the intended
+  game state / mechanic / setting *correctly*, not just that it looks pretty: a "squished"
+  frame must show a flattened lizard; a faceplant must be *into an obstacle*, not open space;
+  the safe zone must be the right place (**Central Park** — see VISUAL_TARGET); a game-over
+  must read like a real game-over *screen* (panel + stats + RETRY), not a sad photo.
+- **Never dispatch a visual agent blind. Brief it with the objective.** Any agent judging or
+  making visuals (esp. `art-director`) MUST be fed: the concept reference + the generated
+  target deck (`Assets/Art/Concept/`), `docs/VISUAL_TARGET*.md`, AND the specific purpose of
+  the asset (what state/mechanic/setting it represents). An agent that doesn't know the
+  objective can only judge polish, not correctness — that's how the bad frames shipped.
+- **The owner's concept is the spec.** Match it. When a generated asset is wrong, fix the
+  prompt to bake in the design logic and regenerate; don't accept "close but nonsensical."
+
 ## Non-negotiable rules (from the packet)
 - The lizard moves **forward (+Z)** toward the safe zone. Hazards come on TWO axes:
   a dense **sidewalk crowd walks ALONG ±Z** (the lizard weaves through giant feet —

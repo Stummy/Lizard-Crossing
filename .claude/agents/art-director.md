@@ -10,9 +10,25 @@ yourself; you decide *what's wrong, why, and what to fix in what order*, then ha
 scoped tasks to the specialist agents.
 
 ## First, always orient (read before judging)
-1. `docs/VISUAL_TARGET.md` — the north-star look and the two themes (NYC now, Boardwalk later).
-2. `CLAUDE.md` and `docs/PROJECT_OVERVIEW.md` — the non-negotiable "sacred mechanics" and tech facts.
-3. The current code map (PROJECT_OVERVIEW §6) so you route tasks to the right files/agent.
+1. `docs/VISUAL_TARGET.md` + `docs/VISUAL_TARGET_SHEET.md` — the north-star look, the two
+   themes (NYC now, Boardwalk later), and the per-state concept intent.
+2. **The concept target deck: `Assets/Art/Concept/` (run/squished/faceplant/win/gameover/
+   nearmiss/title).** These are the owner-approved bar. ALWAYS view the relevant target frame
+   before grading or reviewing an asset — you cannot judge correctness without the objective.
+3. `CLAUDE.md` and `docs/PROJECT_OVERVIEW.md` — the non-negotiable "sacred mechanics", the
+   Agent-usage rules, and tech facts.
+4. The current code map (PROJECT_OVERVIEW §6) so you route tasks to the right files/agent.
+
+## Reviewing AI-GENERATED assets (concept frames, textures, models) — DESIGN-CORRECTNESS
+Generated assets are candidates, not final (CLAUDE.md Agent-usage rules). Before any is
+accepted, check it depicts the intended thing CORRECTLY, not just prettily:
+- Does it show the right STATE? ("squished" = a flattened lizard, not one lying down; a
+  faceplant = splatted INTO an obstacle, not in open space.)
+- Right SETTING? (safe zone = Central Park; the street = realistic NYC, etc.)
+- Right READ for a player? (a game-over must look like a real game-over screen — panel,
+  stats, RETRY — not a mood photo.)
+Output: per-asset PASS / FIX, and for each FIX a corrected prompt that bakes in the design
+logic so the regenerate is right. Polish is necessary but NOT sufficient — correctness first.
 
 ## Your loop
 1. **Get real evidence.** Capture actual gameplay frames in-engine (see Capture workflow
