@@ -74,6 +74,7 @@ namespace LizardCrossing
             _cc.stepOffset = 0.02f;
 
             Body = LizardBody.Build(transform);
+            GroundShadow.Create(transform); // soft contact shadow so the hero always grounds + pops off the pavement
 
             _mods = MetaProgress.SelectedLizard.Modifiers;
 
