@@ -31,13 +31,25 @@ namespace LizardCrossing
         private Camera _cam;
         private Transform _focusTarget;
 
+        // Smoothed focus distance (WO-3): the raw camera->lizard distance jitters frame-to-frame
+        // (follow-cam SmoothDamp lag, dash FOV kick, near-miss slow-mo, shake) which would let the
+        // hero pulse in/out of focus. We ease the focus toward the measured distance so the lizard
+        // stays continuously tack-sharp while the close foreground / far background stay soft.
+        private float _focusDist = DofFocusFallback;
+        private float _focusVel;
+
         // --- DoF tuning (real-world scale: 1u = 1m; TP camera sits ~1.5-2u from the
         //     lizard, the close foreground hazard ~0.3-0.8u, the background tens of u). ---
-        private const float DofFocalLength = 45f;   // mm; longer = shallower, stronger bg blur
-        private const float DofAperture = 6.5f;      // f-stop; lower = shallower depth of field.
-                                                     // 6.5 keeps the hero + near lane crisp while
-                                                     // the much-closer/farther hazards still blur.
-        private const float DofFocusFallback = 1.8f; // m, used until the lizard is found
+        // WO-3: the tighter framing pulls the camera to ~0.4-0.5u from the hero, so the focus
+        // distance is now CLOSE — at that range a 45mm/f6.5 lens is too shallow and softens the
+        // hero's own front/back. Shorter focal length (45→38) + wider aperture (6.5→9) deepens
+        // the band around the hero so the WHOLE lizard stays tack-sharp, while the much-closer
+        // foreground hazards (~0.2-0.3u) and the far city (tens of u) still blur strongly.
+        private const float DofFocalLength = 38f;   // mm; longer = shallower, stronger bg blur
+        private const float DofAperture = 9f;        // f-stop; higher = deeper field. Keeps the
+                                                     // close hero fully crisp while near hazards
+                                                     // and the far background still fall off.
+        private const float DofFocusFallback = 1.2f; // m, used until the lizard is found
 
         public void Setup(Camera cam, Transform focusTarget)
         {
@@ -130,15 +142,22 @@ namespace LizardCrossing
             // of focus, which is fine.
             if (LizardCameraController.Instance != null && LizardCameraController.Instance.IsFirstPerson)
             {
-                _dof.focusDistance.value = 5f;
+                // snap (no easing) when in FP so toggling views doesn't ramp the focus
+                _focusDist = 5f;
+                _focusVel = 0f;
+                _dof.focusDistance.value = _focusDist;
                 return;
             }
 
-            // Third-person: keep the lizard tack-sharp. Focus exactly on the camera->lizard
-            // distance so anything nearer (close foreground hazard) or farther (background)
-            // falls out of focus.
-            float d = Vector3.Distance(_cam.transform.position, _focusTarget.position);
-            _dof.focusDistance.value = Mathf.Max(0.1f, d);
+            // Third-person: keep the lizard tack-sharp. Target the exact camera->lizard distance
+            // so anything nearer (close foreground hazard) or farther (background) falls out of
+            // focus — but EASE toward it (SmoothDamp) so dash FOV kicks, near-miss slow-mo, shake
+            // and follow-lag can't make the hero pulse out of focus. Uses unscaled time so the
+            // focus keeps tracking cleanly even while near-miss slow-mo holds Time.timeScale low.
+            float target = Mathf.Max(0.1f, Vector3.Distance(_cam.transform.position, _focusTarget.position));
+            float dt = Time.unscaledDeltaTime;
+            _focusDist = Mathf.SmoothDamp(_focusDist, target, ref _focusVel, 0.10f, Mathf.Infinity, dt);
+            _dof.focusDistance.value = _focusDist;
         }
     }
 }

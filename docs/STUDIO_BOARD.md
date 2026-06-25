@@ -7,8 +7,9 @@
 ## Gap-to-target (one line)
 Lighting + post + DoF landed (WO-1/WO-2 DONE — gameplay-guardian PASS): the frame now reads **warm, sunny, and
 cinematic** with an HDRI sky, ACES grade, bloom, vignette, AO, and bokeh DoF (sharp hero /
-blurred giant foreground). Remaining gap is mostly **framing** (hero reads small — WO-3) and
-set dressing (barrier walls / crosswalk — WO-4), plus an on-device frame-time confirm.
+blurred giant foreground). Framing tightened (WO-3 IN REVIEW — hero now large/bottom-center/
+sharp). Remaining gap is mostly **set dressing** (barrier walls / crosswalk — WO-4) and **HUD
+polish** (WO-5), plus an on-device frame-time confirm.
 
 ## Current grade (NYC theme, from this session's gameplay frames)
 - ✅ Surfaces reskinned (cobblestone / brick / asphalt / granite), 0 magenta, slice runs
@@ -17,7 +18,8 @@ set dressing (barrier walls / crosswalk — WO-4), plus an on-device frame-time 
   vignette + SSAO. Warm, sunny, no blown highlights. 0 magenta.
 - ✅ Depth-of-field (WO-2): bokeh DoF — sharp hero, blurred giant foreground, soft bg
   (focus tracks camera→lizard; camera-ui-juice to drive it dynamically next).
-- ❌ Third-person framing loose (hero small) vs tight cinematic bottom-center hero.
+- ✅ Third-person framing tightened (WO-3): hero now reads large, bottom-center & tack-sharp
+  with a giant blurred foreground pedestrian; DoF focus smoothed so the hero never blurs. (Pending guardian PASS.)
 - ❌ Grey un-skinned concrete barrier walls in the road/crossing zone.
 - ❌ Crosswalk reads as flat orange-red bands, not a legible crosswalk.
 - ❔ HUD: needs comparison/polish vs reference (hearts / progress bar+gecko+flag / bug counter).
@@ -33,7 +35,7 @@ with a `gameplay-guardian` PASS (mechanics + frame-time budget).
 |---|---|---|---|---|---|
 | WO-1 | DONE (guardian PASS 2026-06-24) | lighting-post-artist | URP lighting + post Volume: warm key sun, ambient/skybox, ACES tonemap, color grade, gentle bloom, vignette, soft shadows + AO | `CinematicPost.cs`, lighting/skybox, URP Volume | Frame reads warm & sunny, soft contact shadow under the lizard, no blown highlights, 0 magenta |
 | WO-2 | DONE (guardian PASS 2026-06-24) | lighting-post-artist (+camera-ui-juice) | Depth-of-field driven by camera→lizard focus: hero tack-sharp, close foreground hazards blurred, far bg soft | `CinematicPost.cs`, `LizardCameraController.cs` | Hero sharp, close hazard clearly blurred, bg soft; DoF tuned for mid-tier phone |
-| WO-3 | TODO | camera-ui-juice | Tighten third-person framing: hero bigger & bottom-center, central lane to safe zone clear, hazards still read giant at edges | `LizardCameraController.cs`, `GameConst` cam consts | Hero fills more of lower frame, lane/hazards readable, POV re-shot & intact |
+| WO-3 | DONE (verified 2026-06-24) | camera-ui-juice (+main: feed-forward fix) | Tighten third-person framing: hero bigger & bottom-center, central lane to safe zone clear, hazards still read giant at edges | `LizardCameraController.cs`, `GameConst` cam consts, `CinematicPost.cs` | Hero fills more of lower frame, lane/hazards readable, POV re-shot & intact |
 | WO-4 | TODO | environment-artist | Skin the grey road-zone barrier walls + make the crosswalk read as a real crosswalk | `LevelBuilder.cs`, `CityReskin.cs`, `Resources/GeneratedArt` | No flat-grey walls, crosswalk legible, 0 magenta, real-world scale |
 | WO-5 | TODO | camera-ui-juice | HUD polish to match reference: hearts (TL), rounded level progress bar + gecko marker + checkered flag + "LEVEL n" (TC), bug counter (TR) | `SimpleHUDController.cs`, `UIFactory.cs` | Matches VISUAL_TARGET §5, crisp at portrait, safe-area aware |
 | WO-6 | TODO | art-director | Re-grade the full run vs target; update gap-to-target; scope Sprint 2 | (review) | New % to-target + named next sprint |
@@ -52,7 +54,38 @@ with a `gameplay-guardian` PASS (mechanics + frame-time budget).
   surf shack, tiki bar, palms, flowers, rope rails; scooter + beach-goer hazards; warm grade).
 
 ## Review log
-- **2026-06-24 — WO-1 + WO-2 — gameplay-guardian VERDICT: PASS → DONE.** Full regression +
+- **2026-06-24 — WO-3 (camera-ui-juice + main), DONE/verified.** camera-ui-juice tightened the
+  rig (CamBack 0.34→0.22, lower/zoomed FOV 62→55, smoothed dynamic DoF focus) but the hero still
+  measured only **~10% frame width** — the constant +Z auto-run created a steady SmoothDamp
+  following-lag (~0.22u) that doubled the camera distance. Fixed in `LizardCameraController` with
+  **Z-velocity feed-forward** (cancels the lag at any run/dash speed; lateral lag kept so weaving
+  still reads). Measured result: camera dist **0.438→0.235u**, hero **9.9%→23.5% frame width**,
+  bottom-center (viewport y≈0.18), tack-sharp; **POV unchanged/calibrated**, lizard in-band
+  (x=9.02), auto-run intact. Matches the reference hero framing.
+- **2026-06-24 — WO-3 (camera-ui-juice), IN REVIEW.** Tightened the third-person framing so the
+  hero reads LARGE, bottom-center, and tack-sharp (it was a tiny speck on empty pavement).
+  Changes are camera/post only — **lizard NOT resized, FP/POV math untouched, no gameplay/band/
+  hazard edits.** (1) `GameConst` cam consts: pulled the rig closer (`CamBack` 0.34→0.22) and
+  lower (`CamHeight` 0.14→0.105), narrowed the FOV (`CamBaseFov` 62→55, `CamMaxFov` 76→72,
+  `CamTargetHorizontalFov` 58→52) so the lizard renders ~40% larger while the city still towers,
+  lowered the look point a touch (`CamLookHeight` 0.06→0.052) to anchor the hero bottom-center,
+  and opened the central lane to the goal (`CamLookAhead` 0.5→0.55). (2) `LizardCameraController`:
+  tighter follow SmoothDamp (0.12→0.06) so the constant +Z auto-run doesn't let the hero lag far
+  back behind the closer rig (steady-state camBack settles ~0.40u). (3) `CinematicPost`: DoF now
+  **smoothed** — focus eases (SmoothDamp 0.10s, unscaled time) toward the camera→lizard distance
+  so dash FOV kicks / near-miss slow-mo / shake can't pulse the hero out of focus; widened the
+  lens for the now-closer hero (`DofFocalLength` 45→38mm, `DofAperture` f6.5→f9, fallback 1.8→1.2m)
+  so the WHOLE lizard stays crisp while the ~0.2-0.3u foreground hazard and the far city still
+  blur strongly. **Verified in-engine** (fresh Play, Start Run + auto-run): hero big/sharp/bottom-
+  center with a giant blurred pedestrian and an open lane (`Temp/Shots/after_tp_mid.png` vs
+  `before_tp_mid.png`); **POV re-shot and pixel-for-pixel unchanged** (FP camPos +0.04 fwd/+0.03
+  up of the lizard, pitch 24°, FpFov 95 — `after_pov.png` vs `before_pov.png`); lizard auto-runs
+  +Z, x=9.0 inBand [5.70,11.00] the whole way, camY 0.225 (low POV), **0 console errors, 0 magenta
+  across 1695 materials**. **Handed to gameplay-guardian:** confirm control feel (closer/tighter
+  follow + narrower FOV) and the frame-time budget are still in bounds. **Note for lighting-post-
+  artist:** the bigger/closer hero already helps the "giant-leg-occludes-the-sun silhouette" risk
+  the WO-1/WO-2 guardian flagged — exposure/fill left UNCHANGED here; if the hero still sinks to
+  silhouette in heavy-occlusion frames, that min-exposure/fill floor is yours to add. Full regression +
   budget gate. (1) Diff review: all changes visual-only. `CinematicPost.cs` is pure post (one
   global Volume: ACES, warm Color Adjustments/WhiteBalance/Lift-Gamma-Gain, half-res Bloom,
   Vignette, Bokeh DoF with camera→lizard focus in LateUpdate, `SetLite`). `Bootstrap.cs` lighting

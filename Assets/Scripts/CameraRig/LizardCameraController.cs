@@ -17,7 +17,14 @@ namespace LizardCrossing
         private Transform _target;
         private float _fovVelocity;
         private Vector3 _posVelocity;
+        private Vector3 _lastTargetPos;
         private bool _firstPerson;
+
+        // Follow smoothing time. Against the constant +Z auto-run this SmoothDamp would settle to
+        // a steady following-lag of ~(forwardSpeed * FollowSmooth) ≈ 0.2u, which roughly doubles
+        // the camera→lizard distance and HALVES the on-screen hero. We cancel that with Z velocity
+        // feed-forward in UpdateThirdPerson, so the smoothing only ever damps dodges/shake.
+        private const float FollowSmooth = 0.06f;
 
         /// <summary>Toggle the optional first-person "lizard cam" POV. The body stays visible —
         /// in FP we ride just above/behind the lizard's own head so its real snout, side-eyes
@@ -72,6 +79,7 @@ namespace LizardCrossing
 
             transform.position = DesiredPosition();
             transform.rotation = Quaternion.LookRotation(LookPoint() - transform.position, Vector3.up);
+            _lastTargetPos = _target.position;
         }
 
         private void OnDestroy()
@@ -173,7 +181,15 @@ namespace LizardCrossing
             if (_cam.nearClipPlane != 0.05f) _cam.nearClipPlane = 0.05f; // restore from the FP close-up
 
             Vector3 desired = DesiredPosition();
-            transform.position = Vector3.SmoothDamp(transform.position, desired, ref _posVelocity, 0.12f);
+            // Cancel the auto-run following-lag: feed-forward the target's FORWARD (+Z) velocity
+            // by FollowSmooth so SmoothDamp's steady-state error is removed and the hero keeps a
+            // constant, close, BIG framing at any run/dash speed. Z only — the lateral lag is kept
+            // deliberately (below) so side-weaving still reads on screen.
+            float dt = Time.deltaTime;
+            float targetVelZ = dt > 0f ? (_target.position.z - _lastTargetPos.z) / dt : 0f;
+            _lastTargetPos = _target.position;
+            desired.z += targetVelZ * FollowSmooth;
+            transform.position = Vector3.SmoothDamp(transform.position, desired, ref _posVelocity, FollowSmooth);
 
             // Let the lizard visibly LEAD the camera sideways so a weave reads on screen, but
             // leash the camera to it so it can never slide out of frame. Without this the camera
