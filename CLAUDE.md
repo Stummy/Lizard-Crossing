@@ -61,11 +61,23 @@ Done and verified in-engine (0 console errors, mechanics intact):
   `.rotation`); clamp surface maps to 2048 + flag normals as NormalMap.
 
 ## Workflow rules (owner)
+- **Verify before "done" — the `verify-and-ship` loop** (owner rule, 2026-06-25): after
+  every completed unit of work, run the verification loop BEFORE calling it done —
+  compile clean (0 console errors) → bot playthrough reaches the safe zone (`State==Won`)
+  → scene validator → 0 console errors → capture a proof frame. Packaged as the
+  `verify-and-ship` skill (`.claude/skills/verify-and-ship/`). NEVER mark work done with
+  console errors or a failed playthrough. The owner judges *feel*; this loop checks
+  *correctness* so "approved" is never "unchecked."
 - **Commit AND push after every completed unit of work** (owner rule, 2026-06-25):
   once a change is made and verified in-engine, commit it with a clear message and
   `git push` to the GitHub repo (`origin`, branch `feat/realistic-city-crossing`).
   Keep commits narrowly scoped; never leave verified work sitting only on the local
   machine. Do NOT push to `main` or merge without asking.
+- **`/code-review ultra` at every sprint/stage gate** (owner rule, 2026-06-25): at the
+  end of each sprint or stage (see `docs/PROJECT_PLAN.md`), and before any merge to
+  `main`, REMIND the owner to run `/code-review ultra` (multi-agent cloud review of the
+  branch) — it's the owner's "second pair of eyes." Claude CANNOT launch it (owner-
+  triggered + billed); prompt the owner at the gate, never attempt to run it.
 
 ## Non-negotiable rules (from the packet)
 - The lizard moves **forward (+Z)** toward the safe zone; primary hazards move
