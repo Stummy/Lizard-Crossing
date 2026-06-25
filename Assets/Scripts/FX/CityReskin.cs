@@ -51,6 +51,17 @@ namespace LizardCrossing
             // (its baked albedo). Skin it to asphalt so it blends into the road instead of
             // splotching the crossing pink.
             { "Street_Assets.001",             new Skin("asphalt", null) },
+
+            // --- S2-3/S2-4: kill the giant flat PLACEHOLDER albedos on the imported GLB ---
+            // A scene audit found several huge (180–280u) un-skinned GLB materials rendering as
+            // pure primary placeholder colours — a magenta building face and green/blue/purple
+            // "metal" structures — which dominated the mid-ground and shattered the palette (the
+            // big "red wall" on approach was the magenta one read under the warm grade).
+            { "material_0",                          new Skin("wall_stone", "wall_normal") },                 // magenta (1,0,.5) building face -> stone
+            { "CityGenbasic_metal.001",              new Skin(null, null, new Color(0.24f, 0.25f, 0.26f)) },  // pure green -> dark weathered metal
+            { "CityGenbasic_rough_metal_dark",       new Skin(null, null, new Color(0.20f, 0.21f, 0.23f)) },  // pure blue -> dark metal
+            { "CityGenbasic_rough_metal_dark_.001",  new Skin(null, null, new Color(0.20f, 0.21f, 0.23f)) },  // pure purple -> dark metal
+            { "Material.002",                        new Skin(null, null, new Color(0.56f, 0.52f, 0.45f)) },  // electric yellow blob -> muted warm stone
         };
 
         const string Folder = "GeneratedArt/";
