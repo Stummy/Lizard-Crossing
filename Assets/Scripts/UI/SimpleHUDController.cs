@@ -201,24 +201,39 @@ namespace LizardCrossing
             BuildSteerButton(root, "SteerRight", "▶", +1f, false);
 
             // ----- dash button (bottom-center, between the steer buttons) -----
+            // Premium solid glossy disc (matches the steer arrows' weight, not a faint ghost
+            // circle): a warm amber face, a crisp DASH label, and a MOBA-style dark cooldown
+            // SWEEP on top — a dark wedge covers the face right after a dash and sweeps away as
+            // it recharges, so "ready" reads as a bright clean amber button.
             var dashBtnImg = UIFactory.CreateImage(root, "DashButton", ProceduralTextures.CircleSprite(),
-                new Color(1f, 1f, 1f, 0.25f));
+                new Color(1f, 0.62f, 0.18f, 0.96f));
             UIFactory.SetRect(dashBtnImg, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
                 new Vector2(0f, 70f), new Vector2(190f, 190f));
             var dashBtn = dashBtnImg.gameObject.AddComponent<Button>();
             dashBtn.targetGraphic = dashBtnImg;
             dashBtn.onClick.AddListener(InputProvider.PressDash);
+            // bright inner rim so the disc reads glossy, not flat
+            var dashRim = UIFactory.CreateImage(dashBtnImg.transform, "DashRim",
+                ProceduralTextures.CircleSprite(), new Color(1f, 0.82f, 0.45f, 0.9f));
+            var rimRect = dashRim.rectTransform;
+            rimRect.anchorMin = Vector2.zero; rimRect.anchorMax = Vector2.one;
+            rimRect.offsetMin = new Vector2(10f, 10f); rimRect.offsetMax = new Vector2(-10f, -10f);
+            dashRim.raycastTarget = false;
+            // dark cooldown sweep (depletes to reveal the button)
             _dashFill = UIFactory.CreateImage(dashBtnImg.transform, "DashFill",
-                ProceduralTextures.CircleSprite(), new Color(0.45f, 0.85f, 0.4f, 0.85f));
+                ProceduralTextures.CircleSprite(), new Color(0f, 0f, 0f, 0.55f));
             var dashFillRect = _dashFill.rectTransform;
             dashFillRect.anchorMin = Vector2.zero;
             dashFillRect.anchorMax = Vector2.one;
-            dashFillRect.offsetMin = new Vector2(14f, 14f);
-            dashFillRect.offsetMax = new Vector2(-14f, -14f);
+            dashFillRect.offsetMin = new Vector2(6f, 6f);
+            dashFillRect.offsetMax = new Vector2(-6f, -6f);
             _dashFill.type = Image.Type.Filled;
             _dashFill.fillMethod = Image.FillMethod.Radial360;
+            _dashFill.fillOrigin = (int)Image.Origin360.Top;
+            _dashFill.fillClockwise = false;
+            _dashFill.raycastTarget = false;
             var dashLabel = UIFactory.CreateText(dashBtnImg.transform, "Label", "DASH", 46,
-                new Color(0.1f, 0.2f, 0.1f));
+                new Color(1f, 1f, 1f, 1f));
             UIFactory.SetRect(dashLabel, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 Vector2.zero, new Vector2(200f, 60f));
 
@@ -717,11 +732,12 @@ namespace LizardCrossing
                         new Vector2(4f + trackW * t, _geckoMarker.rectTransform.anchoredPosition.y);
             }
 
-            // dash cooldown
+            // dash cooldown — dark sweep COVERS the button right after a dash, then sweeps
+            // away as it recharges (ready = no overlay = bright amber button)
             if (player != null)
             {
                 float cd = player.DashCooldownRemaining;
-                _dashFill.fillAmount = cd <= 0f ? 1f : 1f - cd / GameConst.DashCooldown;
+                _dashFill.fillAmount = cd <= 0f ? 0f : cd / GameConst.DashCooldown;
             }
 
             // predator danger meter — grows as the alley cat closes, hue ramps to red-hot

@@ -85,7 +85,7 @@ advances and the concept frame it moves toward. **`▶` = next up.**
 | ✅ | UI pass — premium hearts + steer arrows (Unity AI) | 2/4 | all (HUD) | `ui_heart`/`ui_arrow` wired |
 | ✅ | Fences **recolor** — kill the flat-red `Street_Assets` placeholder (→ asphalt via CityReskin) | 2 | run | red (1,0,0) eyesore gone, verified in Play |
 | ▶ | Fences **solid + close left gap** — register the panels as obstacles (lizard X-clamp / ObstacleField) so lizard + peds go around; close the open left section | 3 | run | spatial — co-design w/ owner on screen (ties into traffic/crossing flow) |
-| ⬜ | DASH button UI — resolve baked "BOOST" text + cooldown-fill conflict, wire `ui_dash` | 4 | all (HUD) | currently procedural circle |
+| ✅ | DASH button UI — premium amber disc + glossy rim + MOBA-style dark cooldown sweep + DASH label | 4 | all (HUD) | verified in Play; dropped the baked-"BOOST" sprite (no generation needed) |
 | ⬜ | More HUD via Unity AI — progress bar, bug icon, panels | 4 | all (HUD) | same generate→bg-remove→wire pipeline |
 | ⬜ | close_calls=0 — confirm near-miss detection fires | 2 | nearmiss | AutoPlaytest flagged it never triggers |
 | ⬜ | S2-6 on-device frame-time confirm (gameplay-guardian gate) → **closes Stage 2** | 2/5 | — | needs owner device |
