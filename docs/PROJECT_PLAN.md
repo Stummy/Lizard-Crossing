@@ -83,7 +83,8 @@ advances and the concept frame it moves toward. **`▶` = next up.**
 | ✅ | Sun-washout + hero-prominence + contact shadow | 2 | run | done |
 | ✅ | Yellow-pedestrians grade fix | 2 | run | warmth pulled back |
 | ✅ | UI pass — premium hearts + steer arrows (Unity AI) | 2/4 | all (HUD) | `ui_heart`/`ui_arrow` wired |
-| ▶ | **Solid fences** — make the red side panels solid colliders (lizard + peds go around), close the open left gap, recolor off flat-red | 2/3 | run | the big red panels = the fences (owner-confirmed) |
+| ✅ | Fences **recolor** — kill the flat-red `Street_Assets` placeholder (→ asphalt via CityReskin) | 2 | run | red (1,0,0) eyesore gone, verified in Play |
+| ▶ | Fences **solid + close left gap** — register the panels as obstacles (lizard X-clamp / ObstacleField) so lizard + peds go around; close the open left section | 3 | run | spatial — co-design w/ owner on screen (ties into traffic/crossing flow) |
 | ⬜ | DASH button UI — resolve baked "BOOST" text + cooldown-fill conflict, wire `ui_dash` | 4 | all (HUD) | currently procedural circle |
 | ⬜ | More HUD via Unity AI — progress bar, bug icon, panels | 4 | all (HUD) | same generate→bg-remove→wire pipeline |
 | ⬜ | close_calls=0 — confirm near-miss detection fires | 2 | nearmiss | AutoPlaytest flagged it never triggers |

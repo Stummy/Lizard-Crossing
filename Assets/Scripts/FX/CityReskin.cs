@@ -51,6 +51,13 @@ namespace LizardCrossing
             // (its baked albedo). Skin it to asphalt so it blends into the road instead of
             // splotching the crossing pink.
             { "Street_Assets.001",             new Skin("asphalt", null) },
+            // The RED twin (owner playtest: the "red fences/panels"): a second Street_Assets
+            // material baked PURE RED (1,0,0) on two map-spanning street-furniture meshes
+            // (Object_15/Object_16). Same placeholder class as .001 — never skinned, so it read
+            // as flat-red eyesores flanking the run under the warm grade. Skin to asphalt so it
+            // blends into the street instead of glowing red. (Making these solid colliders is a
+            // separate, spatial pass — see BUG_AND_GAP_LOG fences entry.)
+            { "Street_Assets",                 new Skin("asphalt", null) },
 
             // --- S2-3/S2-4: kill the giant flat PLACEHOLDER albedos on the imported GLB ---
             // A scene audit found several huge (180–280u) un-skinned GLB materials rendering as

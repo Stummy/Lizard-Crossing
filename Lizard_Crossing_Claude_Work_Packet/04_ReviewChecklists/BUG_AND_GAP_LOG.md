@@ -11,6 +11,21 @@ Awaiting first human playtest.
 2026-06-12 — Initial implementation; 5 smoke tests passing.
 
 ## Bugs found
+- PARTIAL (2026-06-25, owner playtest "the red/orange fences"): the red panels flanking
+  the run are a GLB material `Street_Assets` baked PURE RED (1,0,0) on two map-spanning
+  street-furniture meshes (`Object_15` center≈(28,5,80) size≈228×10×180; `Object_16`
+  flat decal). Same un-skinned-placeholder class as the magenta `Street_Assets.001`.
+  - **DONE — recolor:** added `Street_Assets`→asphalt to `CityReskin.Map`; verified in
+    Play the material now reads baseColor (1,1,1) + asphalt tex (was 1,0,0). Flat-red
+    eyesore gone, 0 console errors.
+  - **TODO — solid + close the left gap (needs owner's eyes):** owner wants the lizard +
+    pedestrians to NOT pass through the fences (go around), and the open section "towards
+    the left" closed. This is spatial: the lizard moves by analytic ground + an X-clamp
+    (not physics), and peds avoid via `ObstacleField` (not colliders), so a raw MeshCollider
+    won't stop either — the panels must be registered as obstacles at their real positions,
+    or the corridor band tightened near them. Deferred to co-design with the owner (ties
+    into the Stage-3 traffic/crossing flow) — confirm WHICH panels and WHERE the gap is on
+    screen before wiring, rather than guessing blind from combined-mesh bounds.
 - FIXED + FEATURE (2026-06-21, HIT ESCALATION + "lizard never got hit"): owner —
   driving forward, the lizard ran straight *through* pedestrians and was never hit.
   Root cause: the only pedestrian hazard was the overhead foot-PLANT squish
@@ -231,3 +246,21 @@ bypass, #4 cat multi-material remap, #10 FootBump doc. Remaining, tracked:
   path), `StreetGround.Configure` no-op.
 - **#15** Chameleon camouflage unreachable under auto-run (`wish.sqrMagnitude<0.02`
   never true). Decide if camouflage ships; if so, gate on steer-only stillness.
+
+## Owner playtest feedback 2026-06-25 (first real play)
+1. **Pedestrians look flat/yellow + blocky.** The warm sun/grade tints people yellow,
+   they read low-quality, and they're hard to see. → diagnose source (global warm grade
+   vs ped material remap vs low-poly model) and improve ped readability/quality.
+2. **Overall quality could be higher** — fun-first agreed, but keep pushing the look.
+3. **No cat appears at all.** Predator never shows (not provoking, or spawns behind the
+   cam, or model missing). Owner OK deferring the cat — decide later if it stays.
+4. **UI needs work.** Owner wants a nicer UI — generate via Unity AI (game-ui-elements-flux
+   / game-ui-essentials-2) and/or source a free kit (Kenney etc., asset-scout). YES, Unity
+   AI can generate UI sprites.
+5. **Orange fences/barricades are pass-through.** Lizard AND people can walk through them
+   (and through an open gap on the left). Owner wants them SOLID → go around. Make the
+   barricades real colliders + close the left gap.
+6. **No cars cross the crosswalk / wants a cross-traffic TRAFFIC SYSTEM** (task #24):
+   randomized waves of people OR cars crossing (both present), with a traffic light. Concern:
+   at the fenced area, people waiting at a light could pile up in a small space — must ensure
+   the lizard can fit (squeeze between people / around). Design together + playtest.
