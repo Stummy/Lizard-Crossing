@@ -24,6 +24,12 @@ ours is a realistic NYC street).
 >   in-engine; the concept should show that screen, not only a scene.
 > - **Getting hit by a car** should read distinctly from a pedestrian stomp (impact from the
 >   side, vehicle-specific) — keep it its own beat.
+> - **LIZARD FACING (important):** the game camera sits low and BEHIND the lizard, which
+>   auto-runs forward (+Z). So in gameplay frames the lizard shows its BACK and TAIL to us
+>   with its head pointing UP the street (away from camera) — it must NEVER face the viewer.
+>   Dodges/recoils are SIDEWAYS while still oriented up-street; the win is a leap AWAY into
+>   the park. Only the TITLE hero pose may face the camera. (People may walk both ways, but
+>   per the rule none ever approach from behind — that's an in-game spawn rule, not a frame.)
 > Style/quality/graphics were approved as-is — keep them; fix only the design logic.
 
 > **Generated target deck (2026-06-25):** 7 frames rendered via Unity AI (FLUX 2 dev,
