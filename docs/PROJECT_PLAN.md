@@ -72,5 +72,12 @@ part-time** (≈1.5 days/week). At full-time, divide calendar by ~5. Adjust to y
 ## 6. Risks / unknowns
 - **On-device perf** (Stage 5): DoF + Bloom + crowd of skinned pedestrians is the budget
   risk on mid-tier phones; the `SetLite` path exists but needs a real device test.
+- **Art/build weight** (Stage 5): `Assets/Resources/` is ~361 MB and EVERYTHING there ships
+  in the build; plus ~1.3 GB of untracked third-party asset-store packs (npc_casual_set_00,
+  Kevin Iglesias, Mirza, 404-gen, etc.) that are re-downloadable and deliberately not in git.
+  Needs a deliberate curation pass: move unused/heavy assets out of `Resources/`, decide LFS
+  vs re-import for third-party, and a `.gitignore` for the re-downloadable packs. The
+  AI-generated irreplaceable assets (lizard, rubble, Meshy props, GeneratedArt, FLUX concepts)
+  are already committed.
 - **Scope creep**: the sacred-mechanics list is locked; new features wait until v1.0.
 - **Art consistency across themes**: theme-swap plumbing must keep gameplay identical.
