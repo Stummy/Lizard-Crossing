@@ -23,6 +23,7 @@ namespace LizardCrossing
         private static readonly Color ButtonGreen = new Color(0.35f, 0.7f, 0.3f);
 
         private Image[] _hearts;
+        private Color _heartLit = HeartRed; // white when using the generated glossy heart sprite
         private Image _tailPip;
         private Text _bugText;
         private Image _progressFill;
@@ -75,7 +76,10 @@ namespace LizardCrossing
             int maxHearts = GameStateManager.Instance != null
                 ? GameStateManager.Instance.MaxHearts : GameConst.MaxHearts;
             _hearts = new Image[maxHearts];
-            var heartSprite = ProceduralTextures.HeartSprite();
+            // Generated premium UI heart (Unity AI) with a procedural fallback.
+            var heartSprite = UIFactory.LoadSprite("GeneratedArt/ui_heart") ?? ProceduralTextures.HeartSprite();
+            bool genHeart = UIFactory.LoadSprite("GeneratedArt/ui_heart") != null;
+            _heartLit = genHeart ? Color.white : HeartRed;
             for (int i = 0; i < _hearts.Length; i++)
             {
                 // a dim "socket" behind each heart so an empty (lost) life still reads as a slot
@@ -85,7 +89,9 @@ namespace LizardCrossing
                     new Vector2(72f + i * 92f, -68f), new Vector2(92f, 92f));
                 socket.raycastTarget = false;
 
-                var heart = UIFactory.CreateImage(safe, "Heart" + i, heartSprite, HeartRed);
+                // the generated heart is already glossy red, so show it untinted (white); the
+                // procedural fallback needs the red tint.
+                var heart = UIFactory.CreateImage(safe, "Heart" + i, heartSprite, genHeart ? Color.white : HeartRed);
                 UIFactory.SetRect(heart, new Vector2(0f, 1f), new Vector2(0.5f, 0.5f),
                     new Vector2(72f + i * 92f, -68f), new Vector2(80f, 80f));
                 heart.raycastTarget = false;
@@ -637,7 +643,7 @@ namespace LizardCrossing
         private void RefreshHearts(int hearts)
         {
             for (int i = 0; i < _hearts.Length; i++)
-                _hearts[i].color = i < hearts ? HeartRed : HeartDim;
+                _hearts[i].color = i < hearts ? _heartLit : HeartDim;
         }
 
         private void RefreshBugs(int collected, int total)
@@ -745,16 +751,24 @@ namespace LizardCrossing
         /// drives the auto-running lizard left/right; released → stops swaying.</summary>
         private void BuildSteerButton(Transform root, string name, string glyph, float value, bool leftCorner)
         {
-            var img = UIFactory.CreateImage(root, name, ProceduralTextures.CircleSprite(),
-                new Color(1f, 1f, 1f, 0.18f));
+            // Generated premium arrow button (Unity AI), mirrored for the left; procedural
+            // circle + glyph fallback if the sprite is missing.
+            var arrow = UIFactory.LoadSprite("GeneratedArt/ui_arrow");
+            var img = UIFactory.CreateImage(root, name, arrow != null ? arrow : ProceduralTextures.CircleSprite(),
+                arrow != null ? Color.white : new Color(1f, 1f, 1f, 0.18f));
+            img.preserveAspect = true;
             Vector2 anchor = leftCorner ? new Vector2(0f, 0f) : new Vector2(1f, 0f);
             Vector2 pos = leftCorner ? new Vector2(70f, 70f) : new Vector2(-70f, 70f);
-            UIFactory.SetRect(img, anchor, anchor, pos, new Vector2(300f, 300f));
+            UIFactory.SetRect(img, anchor, anchor, pos, new Vector2(280f, 280f));
+            if (arrow != null && leftCorner) img.rectTransform.localScale = new Vector3(-1f, 1f, 1f); // arrow art points right
             img.gameObject.AddComponent<HoldButton>().Value = value;
-            var label = UIFactory.CreateText(img.transform, "Glyph", glyph, 110,
-                new Color(0.97f, 1f, 0.97f, 0.92f));
-            UIFactory.SetRect(label, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
-                Vector2.zero, new Vector2(220f, 220f));
+            if (arrow == null)
+            {
+                var label = UIFactory.CreateText(img.transform, "Glyph", glyph, 110,
+                    new Color(0.97f, 1f, 0.97f, 0.92f));
+                UIFactory.SetRect(label, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                    Vector2.zero, new Vector2(220f, 220f));
+            }
         }
 
         /// <summary>Press-and-hold steer pad: sets <see cref="InputProvider.ButtonSteer"/> while
