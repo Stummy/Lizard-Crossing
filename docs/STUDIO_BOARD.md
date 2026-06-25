@@ -20,8 +20,10 @@ polish** (WO-5), plus an on-device frame-time confirm.
   (focus tracks camera→lizard; camera-ui-juice to drive it dynamically next).
 - ✅ Third-person framing tightened (WO-3): hero now reads large, bottom-center & tack-sharp
   with a giant blurred foreground pedestrian; DoF focus smoothed so the hero never blurs. (Pending guardian PASS.)
-- ❌ Grey un-skinned concrete barrier walls in the road/crossing zone.
-- ❌ Crosswalk reads as flat orange-red bands, not a legible crosswalk.
+- ✅ Road-zone barrier walls skinned (WO-4): the grey curb/barrier (`CityGen_Curb`) now reads
+  as granite stone, the flat-orange crosswalk band (`CityGen_lanes_secondary_color`) + a pink
+  ground-decal layer (`Street_Assets.001`) reskinned to asphalt, stripes (`CityGen_lanes_white`)
+  forced to clean painted white. Plus 8 generated NYC props scattered as set dressing.
 - ❔ HUD: needs comparison/polish vs reference (hearts / progress bar+gecko+flag / bug counter).
 
 ---
@@ -36,7 +38,7 @@ with a `gameplay-guardian` PASS (mechanics + frame-time budget).
 | WO-1 | DONE (guardian PASS 2026-06-24) | lighting-post-artist | URP lighting + post Volume: warm key sun, ambient/skybox, ACES tonemap, color grade, gentle bloom, vignette, soft shadows + AO | `CinematicPost.cs`, lighting/skybox, URP Volume | Frame reads warm & sunny, soft contact shadow under the lizard, no blown highlights, 0 magenta |
 | WO-2 | DONE (guardian PASS 2026-06-24) | lighting-post-artist (+camera-ui-juice) | Depth-of-field driven by camera→lizard focus: hero tack-sharp, close foreground hazards blurred, far bg soft | `CinematicPost.cs`, `LizardCameraController.cs` | Hero sharp, close hazard clearly blurred, bg soft; DoF tuned for mid-tier phone |
 | WO-3 | DONE (verified 2026-06-24) | camera-ui-juice (+main: feed-forward fix) | Tighten third-person framing: hero bigger & bottom-center, central lane to safe zone clear, hazards still read giant at edges | `LizardCameraController.cs`, `GameConst` cam consts, `CinematicPost.cs` | Hero fills more of lower frame, lane/hazards readable, POV re-shot & intact |
-| WO-4 | TODO | environment-artist | Skin the grey road-zone barrier walls + make the crosswalk read as a real crosswalk | `LevelBuilder.cs`, `CityReskin.cs`, `Resources/GeneratedArt` | No flat-grey walls, crosswalk legible, 0 magenta, real-world scale |
+| WO-4 | DONE (verified 2026-06-24) | environment-artist | Skin the grey road-zone barrier walls + make the crosswalk read as a real crosswalk (+ import/wire 8 generated NYC props) | `CityReskin.cs`, `LevelBuilder.cs`, `Resources/Models/Generated` | No flat-grey walls, crosswalk legible, 0 magenta, real-world scale |
 | WO-5 | TODO | camera-ui-juice | HUD polish to match reference: hearts (TL), rounded level progress bar + gecko marker + checkered flag + "LEVEL n" (TC), bug counter (TR) | `SimpleHUDController.cs`, `UIFactory.cs` | Matches VISUAL_TARGET §5, crisp at portrait, safe-area aware |
 | WO-6 | TODO | art-director | Re-grade the full run vs target; update gap-to-target; scope Sprint 2 | (review) | New % to-target + named next sprint |
 
@@ -54,6 +56,39 @@ with a `gameplay-guardian` PASS (mechanics + frame-time budget).
   surf shack, tiki bar, palms, flowers, rope rails; scooter + beach-goer hazards; warm grade).
 
 ## Review log
+- **2026-06-24 — WO-4 (environment-artist), DONE/verified.** Two jobs, both visual-only — no
+  gameplay/band/hazard edits. **(A) Road-zone walls + crosswalk.** Diagnosed by tinting the
+  NYCity GLB's own materials and surveying: the flat-grey "barrier walls" are the GLB material
+  `CityGen_Curb` (concrete curb/barrier, was un-skinned grey) and the "orange crosswalk" is the
+  white-stripe geometry `CityGen_lanes_white` sitting on an orange-brown band
+  `CityGen_lanes_secondary_color`, with a separate flat ground-decal layer `Street_Assets.001`
+  splotching the crossing magenta-pink. All fixed in `CityReskin.Map` (runtime, shader-agnostic,
+  glTF `baseColorTexture`/`baseColorFactor`): curb → granite scan; secondary band + the pink
+  decal layer → asphalt; stripes → forced clean painted white (added a Tint-only Skin path to
+  `CityReskin` for texture-keeping recolors). Verified at runtime — curb tex=granite, band
+  tex=asphalt, stripes col≈white; the road zone now reads as stone barriers + bright stripes on
+  dark asphalt, no flat grey, no pink. **(B) 8 generated NYC props.** Imported the Meshy GLBs
+  (hydrant 15.2k / mailbox 11.2k / newspaper box 9.2k / cone 11.8k / trash bags 11.5k / A-frame
+  10.4k / barricade 10.9k / boxes 11.2k tris; each one 2048² baked albedo, glTF shader = not
+  magenta) into `Assets/Art/Imported/Generated/`, vetted tris+tex, moved keepers to
+  `Resources/Models/Generated/`. New `LevelBuilder.BuildStreetProps`/`PlaceGeneratedProp`: each
+  prop re-normalized to a real-world height via combined bounds (hydrant 0.6 / cone 0.7 / bags
+  0.7 / mailbox 1.2 / newspaper 1.2 / A-frame 0.9 / barricade 1.0 / boxes 0.8 m) with the
+  Z-up→Y-up yaw composed (`AngleAxis(yaw,up)*rot`, never overwritten); GLB's own glTF materials
+  kept (no raw Standard). Small SOLID props (hydrant/cone/bags) scattered sparsely IN the band
+  (`PropObstacle` on a footprint-centred child + `ObstacleField`, like rubble); larger props are
+  pure EDGE dressing along the curb (x≈4.0, colliders stripped + `ObstacleField`) — moved OFF the
+  building side after finding the facade swallows ground props there. **Verified in-engine:** 0
+  console errors, 0 magenta (1400+ renderers), fresh Play bot run auto-ran +Z (z 2→56) with x
+  clamped in-band (8.96–9.00, inBand=True throughout — bot then died to un-dodgeable cross-traffic
+  as expected, not to a prop), 11 props placed at correct heights/positions, 9 PropObstacles live.
+  Frames: `Temp/Shots/wo4_before_start.png` (grey wall + orange band) vs `wo4_after2_roadzone.png`
+  (clean stone/asphalt), `wo4_props_closeup.png` (hydrant at scale by pedestrians),
+  `wo4_curbline2.png` (cone+barricade+props lining the curb). **Budget:** +~91k tris total across
+  8 unique props (instanced sparsely along the run), 8× 2048² albedos (at the mobile clamp) — only
+  the ~11 placed instances ship/draw; props are LOD-free so consider an LOD/cull pass if draw
+  count climbs. **Remaining gap (not WO-4):** the asphalt road reads washed-out/bright under the
+  current midday exposure — a lighting/grade call for lighting-post-artist, not a surface issue.
 - **2026-06-24 — WO-3 (camera-ui-juice + main), DONE/verified.** camera-ui-juice tightened the
   rig (CamBack 0.34→0.22, lower/zoomed FOV 62→55, smoothed dynamic DoF focus) but the hero still
   measured only **~10% frame width** — the constant +Z auto-run created a steady SmoothDamp
