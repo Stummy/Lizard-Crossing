@@ -701,6 +701,10 @@ namespace LizardCrossing
         {
             var garden = new GameObject("SafeZoneGarden").transform;
             garden.SetParent(root, false);
+            // Centre the whole goal on the run line (the lizard runs the NYC sidewalk band at
+            // x=CorridorCenterX≈9, NOT x=0) so the gate/sign/arch sit DEAD AHEAD as a beacon
+            // rather than off to the left. All children below are authored relative to this root.
+            garden.localPosition = new Vector3(GameConst.CorridorCenterX, 0f, 0f);
 
             // grass apron the lizard escapes onto
             Box(garden, new Vector3(0f, 0.025f, length + 9f), new Vector3(30f, 0.05f, 20f), GrassGreen, "Grass");
@@ -764,43 +768,107 @@ namespace LizardCrossing
                 bob.Speed = 0.6f + (float)rng.NextDouble() * 0.8f;
             }
 
-            // "SAFE ZONE" sign mounted at the arch crown (bright readable goal,
-            // per ART_DIRECTION; the opening below stays clear for the run-through)
-            BuildSafeSign(garden, new Vector3(0f, 7.4f, length + 1.8f));
+            // The readable "GOAL HERE" gate: emissive finish-gate spanning the corridor with a
+            // glowing SAFE ZONE sign crowned where the LOW game camera frames it, plus a checkered
+            // ground finish line — so the goal reads as a bright beacon from far down the run
+            // (S2-2; the old single dark sign at y7.4 sat off the top of frame and didn't read).
+            BuildGoalGate(garden, length);
         }
 
-        private static void BuildSafeSign(Transform parent, Vector3 pos)
+        /// <summary>
+        /// Emissive finish gate at the safe zone (S2-2). Two glowing posts + crossbar frame the
+        /// corridor; a bright emissive SAFE ZONE sign is crowned at ~y4.7 (centred in the low POV
+        /// frame, not clipped off the top); a checkered band marks the finish line on the ground.
+        /// Everything emits so it blooms and punches through the haze/DoF as a distant beacon.
+        /// </summary>
+        private static void BuildGoalGate(Transform parent, float length)
         {
-            Box(parent, pos, new Vector3(7.5f, 1.9f, 0.3f), new Color(0.16f, 0.42f, 0.2f), "SafeSignBoard");
-            Box(parent, pos + new Vector3(0f, 0f, 0.02f), new Vector3(7.9f, 2.3f, 0.25f),
-                new Color(0.55f, 0.38f, 0.22f), "SafeSignFrame");
+            float z = length + 1.8f;
+            Color amber = new Color(1f, 0.84f, 0.5f);     // warm glowing gate metal
+            Color signGreen = new Color(0.45f, 1f, 0.55f); // safe-green glow halo
 
-            // canvas parented to the (unscaled) garden root — NOT the scaled board,
+            // glowing gate posts flanking the corridor, with brighter lamp caps
+            for (int side = -1; side <= 1; side += 2)
+            {
+                float x = side * 6f;
+                EmissiveBox(parent, new Vector3(x, 3.25f, z), new Vector3(0.5f, 6.5f, 0.5f), amber, 2.2f, "GatePost");
+                var cap = Sphere(parent, new Vector3(x, 6.7f, z), Vector3.one * 0.9f, amber, "GateCap");
+                cap.GetComponent<Renderer>().sharedMaterial = EmissiveMat(amber, 3.0f);
+            }
+            // crossbar joining the posts above the sign
+            EmissiveBox(parent, new Vector3(0f, 6.4f, z), new Vector3(12.5f, 0.5f, 0.5f), amber, 2.0f, "GateBar");
+
+            // emissive SAFE ZONE sign, crowned where the low camera frames it. A glowing green halo
+            // behind a dark board so the bright text reads with contrast (board itself is NOT emissive).
+            Vector3 signPos = new Vector3(0f, 4.7f, z);
+            EmissiveBox(parent, signPos + new Vector3(0f, 0f, 0.06f), new Vector3(9.2f, 2.7f, 0.2f),
+                signGreen, 2.2f, "SignGlow");
+            var board = Box(parent, signPos, new Vector3(8.5f, 2.1f, 0.3f), new Color(0.09f, 0.28f, 0.14f), "SafeSignBoard");
+            Object.Destroy(board.GetComponent<Collider>());
+            BuildSignText(parent, signPos + new Vector3(0f, 0f, -0.2f), "SAFE ZONE");
+
+            // checkered finish line across the corridor at the goal Z — classic "you made it" read
+            const int cells = 14;
+            const float bandW = 18f;
+            float cellW = bandW / cells;
+            for (int i = 0; i < cells; i++)
+                for (int row = 0; row < 2; row++)
+                {
+                    bool white = ((i + row) & 1) == 0;
+                    float x = -bandW * 0.5f + (i + 0.5f) * cellW;
+                    float zz = length + (row == 0 ? -0.4f : 0.4f);
+                    FlatQuad(parent, new Vector3(x, 0.04f, zz), new Vector3(cellW, 0.8f, 1f), 0f,
+                        white ? new Color(0.95f, 0.95f, 0.95f) : new Color(0.07f, 0.07f, 0.07f), "FinishCell");
+                }
+        }
+
+        private static void BuildSignText(Transform parent, Vector3 pos, string msg)
+        {
+            // canvas parented to the (unscaled) garden root — NOT a scaled board,
             // which would multiply the text size by the board's scale
             var canvasGo = new GameObject("SafeSignText");
             canvasGo.transform.SetParent(parent, false);
             var canvas = canvasGo.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.WorldSpace;
             var rect = canvasGo.GetComponent<RectTransform>();
-            rect.sizeDelta = new Vector2(750f, 190f);
+            rect.sizeDelta = new Vector2(820f, 210f);
             rect.localScale = Vector3.one * 0.01f;
-            rect.localPosition = pos + new Vector3(0f, 0f, -0.18f);
+            rect.localPosition = pos;
             rect.localRotation = Quaternion.identity;
 
             var textGo = new GameObject("Text");
             textGo.transform.SetParent(canvasGo.transform, false);
             var text = textGo.AddComponent<UnityEngine.UI.Text>();
             text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            text.text = "SAFE ZONE";
-            text.fontSize = 110;
+            text.text = msg;
+            text.fontSize = 120;
             text.fontStyle = FontStyle.Bold;
             text.alignment = TextAnchor.MiddleCenter;
-            text.color = new Color(0.95f, 1f, 0.85f);
+            text.color = new Color(0.96f, 1f, 0.86f);
             var textRect = textGo.GetComponent<RectTransform>();
             textRect.anchorMin = Vector2.zero;
             textRect.anchorMax = Vector2.one;
             textRect.offsetMin = Vector2.zero;
             textRect.offsetMax = Vector2.zero;
+        }
+
+        /// <summary>An unlit-bright emissive material on the project's Lit shader (URP/Lit or
+        /// Standard fallback) — bright enough (intensity > bloom threshold) to glow as a beacon.</summary>
+        private static Material EmissiveMat(Color c, float intensity)
+        {
+            var m = new Material(MaterialCache.LitShaderAsset);
+            m.color = c;
+            m.EnableKeyword("_EMISSION");
+            m.SetColor("_EmissionColor", c * intensity);
+            return m;
+        }
+
+        private static GameObject EmissiveBox(Transform parent, Vector3 pos, Vector3 scale, Color c, float intensity, string name)
+        {
+            var go = Box(parent, pos, scale, c, name);
+            Object.Destroy(go.GetComponent<Collider>());
+            go.GetComponent<Renderer>().sharedMaterial = EmissiveMat(c, intensity);
+            return go;
         }
 
         // ---------- backdrop ----------

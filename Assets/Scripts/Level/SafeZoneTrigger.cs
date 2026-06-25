@@ -18,7 +18,7 @@ namespace LizardCrossing
         {
             var go = new GameObject("SafeZone");
             go.transform.SetParent(parent, false);
-            go.transform.position = new Vector3(0f, 2f, thresholdZ + 3f);
+            go.transform.position = new Vector3(GameConst.CorridorCenterX, 2f, thresholdZ + 3f);
 
             var col = go.AddComponent<BoxCollider>();
             col.isTrigger = true;
