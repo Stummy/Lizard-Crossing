@@ -9,7 +9,9 @@ Lighting + post + DoF landed (WO-1/WO-2 DONE — gameplay-guardian PASS): the fr
 cinematic** with an HDRI sky, ACES grade, bloom, vignette, AO, and bokeh DoF (sharp hero /
 blurred giant foreground). Framing tightened (WO-3 DONE — hero now large/bottom-center/
 sharp). Set dressing (WO-4 DONE) and **HUD polish** (WO-5 DONE — rebuilt to the reference) are
-in. Remaining: the **art-director re-grade + Sprint 2 scope** (WO-6) and an on-device frame-time confirm.
+in. Exposure/bloom **touch-up landed** (WO-7 DONE — washed-out haze killed, asphalt/mid-tones
+grounded, hero anti-silhouette floor added). Remaining: the **art-director re-grade + Sprint 2
+scope** (WO-6) and an on-device frame-time confirm.
 
 ## Current grade (NYC theme, from this session's gameplay frames)
 - ✅ Surfaces reskinned (cobblestone / brick / asphalt / granite), 0 magenta, slice runs
@@ -44,8 +46,9 @@ with a `gameplay-guardian` PASS (mechanics + frame-time budget).
 | WO-4 | DONE (verified 2026-06-24) | environment-artist | Skin the grey road-zone barrier walls + make the crosswalk read as a real crosswalk (+ import/wire 8 generated NYC props) | `CityReskin.cs`, `LevelBuilder.cs`, `Resources/Models/Generated` | No flat-grey walls, crosswalk legible, 0 magenta, real-world scale |
 | WO-5 | DONE (verified 2026-06-24) | camera-ui-juice | HUD polish to match reference: hearts (TL), rounded level progress bar + gecko marker + checkered flag + "LEVEL n" (TC), bug counter (TR) | `SimpleHUDController.cs`, `UIFactory.cs`, `ProceduralTextures.cs` | Matches VISUAL_TARGET §5, crisp at portrait, safe-area aware |
 | WO-6 | TODO | art-director | Re-grade the full run vs target; update gap-to-target; scope Sprint 2 | (review) | New % to-target + named next sprint |
+| WO-7 | DONE (verified 2026-06-25) | lighting-post-artist | Exposure/bloom touch-up: kill the washed-out/over-bloomed haze (asphalt stays dark) + add an ambient/fill floor so the hero never sinks to silhouette under heavy occlusion | `CinematicPost.cs`, `Bootstrap.cs` | Mid-tones grounded (no near-white asphalt), still warm/sunny, hero never black-silhouette, 0 errors/magenta |
 
-**Dispatch order:** WO-1 → WO-2 → WO-3 → WO-4 → WO-5 → WO-6. (1 & 2 are the big pop; do them first.)
+**Dispatch order:** WO-1 → WO-2 → WO-3 → WO-4 → WO-5 → WO-6. (1 & 2 are the big pop; do them first.) WO-7 (exposure/bloom touch-up) done after WO-4's washout flag.
 
 ---
 
@@ -59,6 +62,37 @@ with a `gameplay-guardian` PASS (mechanics + frame-time budget).
   surf shack, tiki bar, palms, flowers, rope rails; scooter + beach-goer hazards; warm grade).
 
 ## Review log
+- **2026-06-25 — WO-7 (lighting-post-artist), DONE/verified.** Touch-up on the WO-1/WO-2
+  lighting after gameplay frames read **washed-out / over-bloomed** (hazy glow over the scene,
+  sunlit pavement near-white) and the guardian flagged the hero **sinking toward silhouette**
+  when a giant pedestrian leg occludes the sun. **Visual-only — no gameplay/camera-transform/
+  lizard-scale edits.** Exact values changed: **(1) `CinematicPost.cs`** — Color Adjustments
+  `postExposure` **0.35→0.15** (the +0.35 lift was blowing mid/bright surfaces); Bloom
+  `threshold` **1.10→1.30** and `intensity` **0.45→0.30** so only true highlights (sky, chrome,
+  sun glints) bloom instead of the whole sunlit street hazing over. Tonemap/DoF/Vignette/
+  WhiteBalance/Lift-Gamma-Gain left as-is. **(2) `Bootstrap.cs`** — cool Fill light `intensity`
+  **0.22→0.36** (wrap-around light from a different angle than the key, so an occluded sun
+  doesn't leave the hero black) and Skybox `ambientIntensity` **1.0→1.12** (small, direction-
+  uniform light floor). Both kept deliberately gentle — a sweep showed pushing fill/ambient
+  harder (0.50/1.20, 0.60/1.30) did **not** lift the occluded hero further (it stayed ~0.31
+  luma) and actually *flattened* the lit look, so the modest values are the right call.
+  **Verified in-engine** (fresh Play session, Start Run + Move Forward, `Time.timeScale=0.25`
+  for clean frames, restored to 1): start/mid/road-zone frames re-shot via `Camera.main`→RT→PNG
+  (the low POV cam can't use Unity_Camera_Capture). The cobblestone/pavement now reads as
+  grounded textured grey stone (was a bright bloom-hazed pale wash); buildings keep warm-vs-cool
+  separation instead of glowing flat; hero green stays the most saturated thing in frame; still
+  warm & sunny, no longer hazy/blown. **Anti-silhouette measured A/B on the same geometry** (key
+  sun forced to 0 = full boot occlusion): lizard-green luma OLD lighting **0.300** → NEW **0.309**
+  (never the <0.05 of a true black silhouette; the bigger win is the exposure tame — calmer
+  bright background means the shadowed hero no longer reads as a black cut-out against blown-white
+  pavement). **0 console errors, 0 magenta (1702 materials)**, `Time.timeScale` restored to 1,
+  lights restored to shipped values. Frames: `Temp/Shots/before_start.png`,`before_mid.png`,
+  `before_road.png` vs `after_start.png`,`after_mid.png`,`after_road.png`,`after_occluded.png`.
+  **Perf:** zero new cost — these are parameter changes on the existing Volume/lights (a *higher*
+  bloom threshold is if anything marginally cheaper). DoF+Bloom remain the mobile-budget watch
+  items per WO-3's guardian note; `CinematicPost.SetLite(true)` still drops both for low-tier.
+  **Remaining gap to target:** lighting/exposure now grounded; next is WO-6 (art-director re-grade
+  + Sprint 2 scope) and the still-owed on-device frame-time confirm.
 - **2026-06-24 — WO-5 (camera-ui-juice), DONE/verified.** Rebuilt the in-run HUD to match
   VISUAL_TARGET §5 — **visual/UI only, no gameplay logic touched** (still purely presents existing
   GameStateManager / PlayerController / LevelDefinition state; sacred mechanics untouched).

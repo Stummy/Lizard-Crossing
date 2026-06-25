@@ -38,13 +38,17 @@ namespace LizardCrossing
             // matching the puresky sun disc — gives the lizard a readable lit/shadow side.
             sunGo.transform.rotation = Quaternion.Euler(48f, -128f, 0f);
 
-            // gentle cool fill from the opposite side keeps the shadow side from going
-            // muddy and reads the lizard's form (the HDRI ambient is the primary fill).
+            // Cool fill from the opposite side keeps the shadow side from going muddy and
+            // reads the lizard's form. WO-7 (anti-silhouette): raised 0.22→0.36 so when a
+            // giant pedestrian leg / boot occludes the warm key, the hero still gets a
+            // wrap-around light from a DIFFERENT angle and never sinks to a black silhouette.
+            // Kept cool + shadowless so it doesn't flatten the warm key contrast on lit
+            // surfaces (the sun still owns the highlight side).
             var fillGo = new GameObject("Fill");
             var fill = fillGo.AddComponent<Light>();
             fill.type = LightType.Directional;
             fill.color = new Color(0.66f, 0.76f, 0.95f);
-            fill.intensity = 0.22f;
+            fill.intensity = 0.36f;
             fill.shadows = LightShadows.None;
             fillGo.transform.rotation = Quaternion.Euler(40f, 52f, 0f);
 
@@ -56,7 +60,11 @@ namespace LizardCrossing
             {
                 RenderSettings.skybox = skybox;
                 RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Skybox;
-                RenderSettings.ambientIntensity = 1.0f;
+                // WO-7 (anti-silhouette): nudged 1.0→1.12 so the sky-derived SH ambient gives
+                // the hero a slightly higher light floor under heavy occlusion (giant leg blocks
+                // the key) without washing out the grade. Small, deliberate — the fill light does
+                // the directional work; this just keeps the darkest shaded surfaces off pure black.
+                RenderSettings.ambientIntensity = 1.12f;
                 DynamicGI.UpdateEnvironment(); // compute SH ambient from the skybox once
             }
             else

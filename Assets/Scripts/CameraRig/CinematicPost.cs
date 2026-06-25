@@ -77,7 +77,11 @@ namespace LizardCrossing
 
             // --- Color Adjustments: warm, sunny, bright-but-not-blown grade ---
             var color = profile.Add<ColorAdjustments>(true);
-            color.postExposure.value = 0.35f;                    // lift overall exposure (warm midday)
+            // WO-7 (overexposure fix): +0.35 was blowing mid/bright surfaces — the sunlit
+            // pavement read hazy and near-white. Pulled to +0.15 so the asphalt and mid-tones
+            // stay grounded; the scene is still warm/sunny from the grade + HDRI ambient, just
+            // no longer washed out.
+            color.postExposure.value = 0.15f;                    // gentle lift (was 0.35 — too hot)
             color.contrast.value = 12f;                          // gentle punch
             color.saturation.value = 18f;                        // slightly saturated (hero pops)
             color.colorFilter.value = new Color(1.05f, 1.0f, 0.92f); // faint warm wash
@@ -97,9 +101,13 @@ namespace LizardCrossing
 
             // --- Bloom: gentle sun-kissed glow on the brightest highlights (sky, lit
             //     stone, chrome). Half-res (HQ filtering OFF) to stay cheap on mobile. ---
+            // WO-7 (overexposure fix): the old 0.45 intensity / 1.10 threshold let the whole
+            // sunlit street glow, hazing over mid-tones and pushing the asphalt toward white.
+            // Raised the threshold so ONLY true highlights (sky, chrome, sun glints) bloom, and
+            // dropped the intensity so the glow is a sun-kiss, not a haze. Mid surfaces stay solid.
             _bloom = profile.Add<Bloom>(true);
-            _bloom.intensity.value = 0.45f;
-            _bloom.threshold.value = 1.10f;        // only genuinely bright pixels glow
+            _bloom.intensity.value = 0.30f;        // gentler glow (was 0.45 — hazy)
+            _bloom.threshold.value = 1.30f;        // only genuinely bright highlights glow (was 1.10)
             _bloom.scatter.value = 0.60f;
             _bloom.highQualityFiltering.value = false; // half-res, the mobile-friendly path
             _bloom.tint.value = new Color(1f, 0.96f, 0.88f); // warm glow
