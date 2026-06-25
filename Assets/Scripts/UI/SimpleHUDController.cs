@@ -41,6 +41,14 @@ namespace LizardCrossing
         private Text _rewardText;
         private float _popupUntil;
 
+        // full-screen damage/feedback flash (S2-5 juice): a colour pulse that fades on
+        // UNSCALED time so it still reads during hit-stop / near-miss slow-mo. Renders over
+        // the world but under the HUD so hearts/bar stay legible through it.
+        private Image _damageFlash;
+        private Color _flashColor = Color.red;
+        private float _flashAlpha;
+        private float _flashDecay = 0.35f;
+
         public static SimpleHUDController Create()
         {
             var canvas = UIFactory.CreateCanvas("HUD");
@@ -54,6 +62,14 @@ namespace LizardCrossing
             // Everything that hugs a screen edge lives inside a safe-area inset so the
             // notch / rounded corners / home indicator never clip the HUD.
             var safe = UIFactory.CreateSafeArea(root);
+
+            // ----- full-screen damage flash (behind the HUD, over the world) -----
+            _damageFlash = UIFactory.CreateImage(root, "DamageFlash", null, new Color(1f, 0f, 0f, 0f));
+            var dfRect = _damageFlash.rectTransform;
+            dfRect.anchorMin = Vector2.zero; dfRect.anchorMax = Vector2.one;
+            dfRect.offsetMin = Vector2.zero; dfRect.offsetMax = Vector2.zero;
+            _damageFlash.raycastTarget = false;
+            _damageFlash.transform.SetAsFirstSibling(); // backmost: world < flash < HUD
 
             // ----- hearts (top-left) — count includes the lizard's heart bonus -----
             int maxHearts = GameStateManager.Instance != null
@@ -491,12 +507,14 @@ namespace LizardCrossing
         {
             RefreshHearts(heartsLeft);
             ShowPopup("OUCH!", new Color(1f, 0.4f, 0.35f));
+            Flash(new Color(1f, 0.18f, 0.12f), 0.55f, 0.4f); // red damage pulse
         }
 
         private void OnTailLost(Vector3 pos)
         {
             RefreshTail(false);
             ShowPopup("TAIL DROPPED!", new Color(0.6f, 1f, 0.5f));
+            Flash(new Color(0.5f, 1f, 0.45f), 0.42f, 0.35f); // green "free hit" pulse
         }
 
         private void OnTailRegrown()
@@ -515,6 +533,7 @@ namespace LizardCrossing
             _lastDeathCause = cause;
             RefreshHearts(0);
             ShowPopup(DeathCauseText(cause), new Color(1f, 0.3f, 0.2f));
+            Flash(new Color(1f, 0.12f, 0.08f), 0.8f, 0.7f); // strong red death pulse
             StartCoroutine(DeathPanelAfterBeat());
         }
 
@@ -567,6 +586,7 @@ namespace LizardCrossing
         private void OnNearMiss(Vector3 pos)
         {
             ShowPopup("CLOSE CALL!", new Color(1f, 0.62f, 0.15f));
+            Flash(new Color(0.5f, 0.78f, 1f), 0.4f, 0.45f); // cool blue near-miss whoosh
         }
 
         // ---------- refresh ----------
@@ -619,6 +639,16 @@ namespace LizardCrossing
             _popupUntil = Time.unscaledTime + 0.9f;
         }
 
+        /// <summary>Trigger a full-screen colour flash that fades over ~<paramref name="decay"/>
+        /// seconds on unscaled time (so it survives hit-stop / slow-mo). <paramref name="strength"/>
+        /// is the peak alpha. Takes the max so a stronger flash isn't stomped by a weaker one.</summary>
+        private void Flash(Color c, float strength, float decay)
+        {
+            _flashColor = c;
+            _flashAlpha = Mathf.Max(_flashAlpha, strength);
+            _flashDecay = Mathf.Max(0.05f, decay);
+        }
+
         private void Update()
         {
             var gm = GameStateManager.Instance;
@@ -654,6 +684,14 @@ namespace LizardCrossing
                 rect.sizeDelta = new Vector2(rect.sizeDelta.x, (parent.rect.height - 6f) * threat);
                 _dangerFill.color = Color.Lerp(new Color(0.95f, 0.55f, 0.2f),
                     new Color(1f, 0.16f, 0.12f), threat);
+            }
+
+            // damage/feedback flash fade (unscaled so it reads through slow-mo / hit-stop)
+            if (_damageFlash != null)
+            {
+                if (_flashAlpha > 0f)
+                    _flashAlpha = Mathf.Max(0f, _flashAlpha - Time.unscaledDeltaTime / _flashDecay);
+                _damageFlash.color = new Color(_flashColor.r, _flashColor.g, _flashColor.b, _flashAlpha);
             }
 
             if (_popup.gameObject.activeSelf && Time.unscaledTime > _popupUntil)
