@@ -362,7 +362,11 @@ namespace LizardCrossing
 
             Vector3 plant = foot.position;
             plant.y = GameConst.GroundY;
-            bool inCorridor = Mathf.Abs(plant.x) < GameConst.CorridorHalfWidth + killRadius;
+            // The play corridor is centred on CorridorCenterX (~9 on the NYC sidewalk), NOT
+            // world x=0. Gating on Abs(plant.x) left the lizard's right band (x>~9.3, where it
+            // starts) outside the stomp zone, so the right-sidewalk lanes' feet never landed a
+            // squish. Centre the gate on the corridor so the whole band is covered.
+            bool inCorridor = Mathf.Abs(plant.x - GameConst.CorridorCenterX) < GameConst.CorridorHalfWidth + killRadius;
 
             if (descending && lift < teleLift && inCorridor)
             {

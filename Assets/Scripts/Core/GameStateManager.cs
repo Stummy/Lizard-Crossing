@@ -96,9 +96,10 @@ namespace LizardCrossing
         }
 
         /// <summary>
-        /// The lizard ran head-on into a pedestrian's leg/shoe. This never costs a
-        /// tail or heart — it staggers the lizard (handled by the player) and, the
-        /// first time it happens, wakes the alley cat to begin the chase.
+        /// The lizard ran head-on into a pedestrian's leg/shoe. Costs shared damage
+        /// (tail first, then a heart) via HitPlayer, staggers the lizard, and — the
+        /// first time it happens — wakes the alley cat to begin the chase. The post-hit
+        /// invulnerability window (the player's i-frames) keeps one bump to one cost.
         /// </summary>
         public void FootBump(Vector3 pedPos)
         {

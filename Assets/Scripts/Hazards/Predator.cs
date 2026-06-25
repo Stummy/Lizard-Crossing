@@ -56,8 +56,15 @@ namespace LizardCrossing
             if (model != null)
             {
                 _visual = model;
+                // Remap EVERY submesh material, not just slot 0 — a multi-material cat model
+                // would otherwise lose all but its first material (mirrors GiantPedestrian.BuildHuman).
                 foreach (var r in _visual.GetComponentsInChildren<Renderer>())
-                    r.sharedMaterial = MaterialCache.GetUrpEquivalent(r.sharedMaterial);
+                {
+                    var mats = r.sharedMaterials;
+                    for (int i = 0; i < mats.Length; i++)
+                        mats[i] = MaterialCache.GetUrpEquivalent(mats[i]);
+                    r.sharedMaterials = mats;
+                }
                 return;
             }
             _visual = BuildProceduralCat();
@@ -137,7 +144,12 @@ namespace LizardCrossing
             // strike when it closes in. The cat normally rides behind the camera, so a
             // bare hit would be invisible — telegraph the swipe with a forward lunge into
             // frame, a claw puff, and camera trauma so the scratch is seen and felt.
-            if (_gap <= GameConst.CatCatchDistance + 0.01f && Time.time >= _nextHitTime)
+            // Respect the player's invincibility window like every other hazard (Car,
+            // GiantPedestrian, PropObstacle all gate on IsInvulnerable/IsAirborne). HitPlayer
+            // itself has no i-frame guard, so without this the cat could double-dip damage
+            // inside another hazard's i-frames, or strike the lizard mid-hop.
+            if (_gap <= GameConst.CatCatchDistance + 0.01f && Time.time >= _nextHitTime
+                && player != null && !player.IsInvulnerable && !player.IsAirborne)
             {
                 _nextHitTime = Time.time + GameConst.CatHitCooldown;
                 _lungeUntil = Time.time + 0.25f;
