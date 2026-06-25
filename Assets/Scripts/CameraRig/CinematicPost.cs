@@ -42,13 +42,21 @@ namespace LizardCrossing
         //     lizard, the close foreground hazard ~0.3-0.8u, the background tens of u). ---
         // WO-3: the tighter framing pulls the camera to ~0.4-0.5u from the hero, so the focus
         // distance is now CLOSE — at that range a 45mm/f6.5 lens is too shallow and softens the
-        // hero's own front/back. Shorter focal length (45→38) + wider aperture (6.5→9) deepens
-        // the band around the hero so the WHOLE lizard stays tack-sharp, while the much-closer
-        // foreground hazards (~0.2-0.3u) and the far city (tens of u) still blur strongly.
-        private const float DofFocalLength = 38f;   // mm; longer = shallower, stronger bg blur
-        private const float DofAperture = 9f;        // f-stop; higher = deeper field. Keeps the
-                                                     // close hero fully crisp while near hazards
-                                                     // and the far background still fall off.
+        // hero's own front/back. Shorter focal length + wider aperture deepens the band around
+        // the hero so the WHOLE lizard stays tack-sharp.
+        // S2-1 (DoF discipline): 38mm/f9 was OVER-applied — the far falloff blurred the ENTIRE
+        // city + running lane into a soft wash, erasing the mid-ground / lane-to-goal read (the
+        // single gating issue per the art-director re-grade, WO-6). Pulled to 26mm/f14 to deepen
+        // the field a LOT: a shorter focal length (38→26) and a much higher f-number (9→14) push
+        // the far-blur falloff out by tens of metres, so the mid-distance city, lane and an
+        // upcoming safe-zone sign read as soft-but-LEGIBLE instead of a smear, while the hero (at
+        // the ~0.2-0.5u focus distance) stays tack-sharp. The very-close foreground hazard (giant
+        // leg/wheel <0.2u from the lens, well inside the near-blur zone even at f14) still blurs
+        // clearly — that's the win the close-up still keeps. Tune by eye via captures, not theory.
+        private const float DofFocalLength = 26f;   // mm; longer = shallower, stronger bg blur (was 38)
+        private const float DofAperture = 14f;       // f-stop; higher = deeper field, mid/far stays
+                                                     // legible. Close hazard still blurs (it's <0.2u,
+                                                     // far inside the near falloff). (was 9)
         private const float DofFocusFallback = 1.2f; // m, used until the lizard is found
 
         public void Setup(Camera cam, Transform focusTarget)
@@ -113,9 +121,13 @@ namespace LizardCrossing
             _bloom.tint.value = new Color(1f, 0.96f, 0.88f); // warm glow
 
             // --- Vignette: subtle edge darkening to frame the hero at bottom-center ---
+            // S2-1: 0.26/0.45 was crushing the TOP of frame (the skyline) to near-black, so the
+            // buildings/sky didn't read at the top. Eased to 0.16/0.30 — the falloff is lighter
+            // and pulled tighter into the corners, so the skyline reads while the bottom-center
+            // hero is still gently framed. Subtle, not gone.
             var vig = profile.Add<Vignette>(true);
-            vig.intensity.value = 0.26f;
-            vig.smoothness.value = 0.45f;
+            vig.intensity.value = 0.16f;
+            vig.smoothness.value = 0.30f;
 
             // --- Depth Of Field (Bokeh): the signature cinematic effect. Hero sharp,
             //     close foreground hazards blurred, far background soft. Focus distance is
