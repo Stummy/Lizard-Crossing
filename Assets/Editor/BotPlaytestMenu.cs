@@ -54,5 +54,15 @@ namespace LizardCrossing.EditorTools
             if (gm != null && p != null)
                 gm.FootBump(p.transform.position + p.transform.forward * 0.3f);
         }
+
+        // Autonomous playtest: plays N full runs with a dodge AI and writes a telemetry
+        // report to Temp/Playtest/report.txt (outcomes, distance, frame time, errors).
+        // Must be in Play mode first.
+        [MenuItem(Root + "Auto-Playtest (8 runs)")]
+        private static void AutoPlaytest8()
+        {
+            if (!Application.isPlaying) { Debug.LogWarning("[AutoPlaytest] Enter Play mode first."); return; }
+            LizardCrossing.Testing.AutoPlaytest.Launch(8);
+        }
     }
 }
