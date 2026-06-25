@@ -17,6 +17,18 @@ namespace LizardCrossing
         private Transform _target;
         private float _fovVelocity;
         private Vector3 _posVelocity;
+        private bool _firstPerson;
+
+        /// <summary>Toggle the optional first-person "lizard cam" POV. The body stays visible —
+        /// in FP we ride just above/behind the lizard's own head so its real snout, side-eyes
+        /// and front legs frame the view.</summary>
+        public void ToggleView()
+        {
+            _firstPerson = !_firstPerson;
+            GameAudio.Play(Sfx.UiClick);
+        }
+
+        public bool IsFirstPerson { get { return _firstPerson; } }
 
         public static LizardCameraController Create(Transform target)
         {
@@ -40,15 +52,18 @@ namespace LizardCrossing
             _cam.fieldOfView = BaseFov();
             _cam.nearClipPlane = 0.05f;
             _cam.farClipPlane = 400f;
-            _cam.clearFlags = CameraClearFlags.SolidColor;
-            _cam.backgroundColor = new Color(0.78f, 0.88f, 0.92f); // bright tropical sky
+            // render the HDRI skybox behind the world (WO-1) instead of a flat fill colour,
+            // so the sky reads as a real sunny sky and lights the scene image-based.
+            _cam.clearFlags = CameraClearFlags.Skybox;
+            _cam.backgroundColor = new Color(0.78f, 0.88f, 0.92f); // fallback only (if skybox unset)
 
-            // warm garden haze: depth + scale
+            // subtle warm atmospheric haze, pushed out so it only softens the far city
+            // backdrop into the sky band — it must NOT grey-out the readable mid lane.
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.Linear;
-            RenderSettings.fogStartDistance = 60f;
-            RenderSettings.fogEndDistance = 260f;
-            RenderSettings.fogColor = new Color(0.8f, 0.88f, 0.86f);
+            RenderSettings.fogStartDistance = 110f;
+            RenderSettings.fogEndDistance = 320f;
+            RenderSettings.fogColor = new Color(0.83f, 0.86f, 0.84f);
 
             GameEvents.HazardImpact += OnHazardImpact;
             GameEvents.NearMiss += OnNearMiss;
@@ -100,15 +115,23 @@ namespace LizardCrossing
         private Vector3 DesiredPosition()
         {
             Vector3 anchor = _target.position;
-            // ride above the lizard's ground height so the camera lifts onto the
-            // sidewalk with it instead of clipping through the raised curb
-            return new Vector3(anchor.x * 0.85f, anchor.y + GameConst.CamHeight, anchor.z - GameConst.CamBack);
+            // Track the lizard's X directly so it stays centred in frame. (The old
+            // 0.85 pull toward world-centre assumed the lizard plays near x=0; on the
+            // city street it starts at x≈6 on the sidewalk, which pushed it clean off
+            // the right edge of the screen.) Steadiness comes from the SmoothDamp lag
+            // and the world-axis +Z look direction, not from re-centring X.
+            float camX = anchor.x;
+            float camY = anchor.y + GameConst.CamHeight;
+            // Hard floor: never let the camera dip into the ground it's over.
+            float groundUnderCam = StreetGround.HeightAt(camX, anchor.z);
+            camY = Mathf.Max(camY, groundUnderCam + GameConst.CamMinGroundClearance);
+            return new Vector3(camX, camY, anchor.z - GameConst.CamBack);
         }
 
         private Vector3 LookPoint()
         {
             Vector3 anchor = _target.position;
-            return new Vector3(anchor.x * 0.9f, anchor.y + GameConst.CamLookHeight, anchor.z + GameConst.CamLookAhead);
+            return new Vector3(anchor.x, anchor.y + GameConst.CamLookHeight, anchor.z + GameConst.CamLookAhead);
         }
 
         /// <summary>Portrait phones need a taller FOV to keep cross-traffic visible.</summary>
@@ -125,11 +148,10 @@ namespace LizardCrossing
         {
             if (_target == null) return;
 
-            Vector3 desired = DesiredPosition();
-            transform.position = Vector3.SmoothDamp(transform.position, desired, ref _posVelocity, 0.12f);
+            if (Input.GetKeyDown(KeyCode.V)) ToggleView(); // desktop POV toggle (HUD button on touch)
 
-            Quaternion lookRot = Quaternion.LookRotation(LookPoint() - transform.position, Vector3.up);
-            transform.rotation = Quaternion.Slerp(transform.rotation, lookRot, 1f - Mathf.Exp(-10f * Time.deltaTime));
+            if (_firstPerson) UpdateFirstPerson();
+            else UpdateThirdPerson();
 
             Vector3 shakeOffset;
             float roll;
@@ -141,8 +163,66 @@ namespace LizardCrossing
             }
 
             bool dashing = PlayerController.Instance != null && PlayerController.Instance.IsDashing;
-            float targetFov = BaseFov() + (dashing ? GameConst.CamDashFovKick : 0f);
+            float baseFov = _firstPerson ? GameConst.FpFov : BaseFov();
+            float targetFov = baseFov + (dashing ? GameConst.CamDashFovKick : 0f);
             _cam.fieldOfView = Mathf.SmoothDamp(_cam.fieldOfView, targetFov, ref _fovVelocity, 0.08f);
+        }
+
+        private void UpdateThirdPerson()
+        {
+            if (_cam.nearClipPlane != 0.05f) _cam.nearClipPlane = 0.05f; // restore from the FP close-up
+
+            Vector3 desired = DesiredPosition();
+            transform.position = Vector3.SmoothDamp(transform.position, desired, ref _posVelocity, 0.12f);
+
+            // Let the lizard visibly LEAD the camera sideways so a weave reads on screen, but
+            // leash the camera to it so it can never slide out of frame. Without this the camera
+            // tracks the lizard's x exactly and it sits dead-centre — making side movement invisible.
+            float lizX = _target.position.x;
+            Vector3 p = transform.position;
+            p.x = Mathf.Clamp(p.x, lizX - GameConst.CamMaxLateralLead, lizX + GameConst.CamMaxLateralLead);
+            transform.position = p;
+
+            Quaternion lookRot = Quaternion.LookRotation(LookPoint() - transform.position, Vector3.up);
+            transform.rotation = Quaternion.Slerp(transform.rotation, lookRot, 1f - Mathf.Exp(-10f * Time.deltaTime));
+        }
+
+        /// <summary>Lizard cam: ride at the lizard's OWN snout/eye line and look FORWARD +
+        /// slightly down, so the real snout sits at the bottom-centre and the two scurrying
+        /// front feet splay into the bottom corners — a true ground-level reptile POV down the
+        /// sidewalk (the actual model — no primitive viewmodel). Aim is blended slightly toward
+        /// +Z so quick dodges don't whip the view; from ground level the humans and the cat
+        /// tower over the speck of a lizard. Anchored on the measured model head so the snout
+        /// frames the lower view instead of the camera staring down at the lizard's back.</summary>
+        private void UpdateFirstPerson()
+        {
+            // Measured head geometry (scales with the model, so the framing survives a resize).
+            var body = PlayerController.Instance != null ? PlayerController.Instance.Body : null;
+            float snoutZ = body != null && body.HasModel ? body.ModelSnoutZ : 0.055f;
+            float eyeY = body != null && body.HasModel ? body.ModelEyeY : 0.023f;
+
+            _cam.nearClipPlane = snoutZ * GameConst.FpNearClipFrac; // the snout is millimetres away — don't clip it
+
+            Vector3 fwd = _target.forward; fwd.y = 0f;
+            if (fwd.sqrMagnitude < 1e-4f) fwd = Vector3.forward;
+            fwd.Normalize();
+            Vector3 flat = Vector3.Slerp(fwd, Vector3.forward, 0.35f).normalized;
+
+            // Perch the lens right at the lizard's eyes (forward of the body, just above the
+            // eye line) and look forward, so the snout drops into the bottom-centre and the
+            // sidewalk recedes ahead — not the camera staring down at the lizard's back.
+            Vector3 eye = _target.position
+                          + flat * (snoutZ * GameConst.FpForwardFrac)
+                          + Vector3.up * (eyeY * GameConst.FpUpFrac);
+            float g = StreetGround.HeightAt(eye.x, eye.z);
+            eye.y = Mathf.Max(eye.y, g + eyeY * 0.4f); // never sink below the pavement
+
+            // a gentle downward tilt so the snout + scurrying front feet sit in the lower frame
+            Vector3 right = Vector3.Cross(Vector3.up, flat);
+            Vector3 aim = Quaternion.AngleAxis(GameConst.FpPitchDown, right) * flat;
+
+            transform.position = eye;
+            transform.rotation = Quaternion.LookRotation(aim, Vector3.up);
         }
     }
 }

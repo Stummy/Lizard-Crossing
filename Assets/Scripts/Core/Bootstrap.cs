@@ -23,30 +23,51 @@ namespace LizardCrossing
             systems.AddComponent<GameAudio>().Init();
             systems.AddComponent<ParticleFx>().Init();
 
-            // --- lighting: warm late-afternoon sun, long readable shadows ---
+            // --- lighting (WO-1): warm key sun aligned to the HDRI sun + image-based
+            //     ambient. The qwantani_puresky HDRI puts its sun high and to one side;
+            //     the directional light is rotated to match so contact shadows agree
+            //     with the baked-in sky highlight. Warm colour, soft shadows. ---
             var sunGo = new GameObject("Sun");
             var sun = sunGo.AddComponent<Light>();
             sun.type = LightType.Directional;
-            sun.color = new Color(1f, 0.93f, 0.76f);
-            sun.intensity = 1.32f;
+            sun.color = new Color(1f, 0.95f, 0.84f);   // warm midday key
+            sun.intensity = 1.18f;                       // bright but the HDRI ambient does a lot of the lift
             sun.shadows = LightShadows.Soft;
-            sun.shadowStrength = 0.74f;
-            sunGo.transform.rotation = Quaternion.Euler(38f, -34f, 0f);
+            sun.shadowStrength = 0.62f;                  // soft, not crushed-black contact shadows
+            // pitch 48° (high sun), yaw -128° so the key rakes from the upper-right/behind,
+            // matching the puresky sun disc — gives the lizard a readable lit/shadow side.
+            sunGo.transform.rotation = Quaternion.Euler(48f, -128f, 0f);
 
-            // cool fill from the opposite side gives the giant shoes & lizard form
+            // gentle cool fill from the opposite side keeps the shadow side from going
+            // muddy and reads the lizard's form (the HDRI ambient is the primary fill).
             var fillGo = new GameObject("Fill");
             var fill = fillGo.AddComponent<Light>();
             fill.type = LightType.Directional;
-            fill.color = new Color(0.6f, 0.72f, 0.95f);
-            fill.intensity = 0.35f;
+            fill.color = new Color(0.66f, 0.76f, 0.95f);
+            fill.intensity = 0.22f;
             fill.shadows = LightShadows.None;
-            fillGo.transform.rotation = Quaternion.Euler(40f, 150f, 0f);
+            fillGo.transform.rotation = Quaternion.Euler(40f, 52f, 0f);
 
-            // tropical sky/ground ambient gradient: saturated, with depth
-            RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor = new Color(0.55f, 0.72f, 0.95f);
-            RenderSettings.ambientEquatorColor = new Color(0.62f, 0.64f, 0.5f);
-            RenderSettings.ambientGroundColor = new Color(0.34f, 0.28f, 0.22f);
+            // --- environment: image-based skybox + ambient (no baked GI; the world is
+            //     built at runtime so we light it from the HDRI sky every session). The
+            //     skybox material ships in Resources/Sky and uses the staged 2K HDRI. ---
+            var skybox = Resources.Load<Material>("Sky/PureSkySkybox");
+            if (skybox != null)
+            {
+                RenderSettings.skybox = skybox;
+                RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Skybox;
+                RenderSettings.ambientIntensity = 1.0f;
+                DynamicGI.UpdateEnvironment(); // compute SH ambient from the skybox once
+            }
+            else
+            {
+                // fallback if the skybox asset is missing: keep a saturated gradient so
+                // the game still reads as a sunny day instead of going black.
+                RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
+                RenderSettings.ambientSkyColor = new Color(0.62f, 0.78f, 0.98f);
+                RenderSettings.ambientEquatorColor = new Color(0.70f, 0.70f, 0.62f);
+                RenderSettings.ambientGroundColor = new Color(0.34f, 0.28f, 0.22f);
+            }
             QualitySettings.shadowDistance = 95f;
 
             // --- world (HazardLaneManager now spawns the giant pedestrians as the
@@ -56,12 +77,22 @@ namespace LizardCrossing
 
             // --- player ---
             var playerGo = new GameObject("Lizard");
-            // start on the right sidewalk in the real-city street (else centered)
-            float startX = GameObject.Find("NYCity") != null ? 6f : 0f;
-            playerGo.transform.position = new Vector3(startX, 0.02f, 2f); // low: the lizard is ~0.04u tall
+            // start at the centre of the straight sidewalk corridor, on the sidewalk surface
+            playerGo.transform.position = new Vector3(GameConst.CorridorCenterX, StreetGround.SidewalkY, 2f);
             playerGo.AddComponent<CharacterController>();
             var player = playerGo.AddComponent<PlayerController>();
             player.Init();
+
+            // --- predator: the alley cat sleeps until the lizard first bumps a
+            //     pedestrian (GameStateManager.FootBump → CatProvoked). Only then does
+            //     it spawn behind (-Z) and give chase; closing to striking range costs
+            //     tail/heart. One-shot — Predator.Instance guards against re-spawn, and
+            //     GameEvents.Clear() drops this handler on the next scene load. ---
+            GameEvents.CatProvoked += () =>
+            {
+                if (Predator.Instance == null)
+                    Predator.Spawn(levelRoot, playerGo.transform);
+            };
 
             // --- camera + HUD ---
             LizardCameraController.Create(playerGo.transform);

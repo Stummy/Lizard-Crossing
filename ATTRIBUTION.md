@@ -28,6 +28,12 @@ author · license · what it replaces.)_
 |---|---|---|---|---|
 | _pending_ | — | — | — | — |
 
+## HDRI / Environment lighting
+
+| Asset | Source | Author | License | Used for |
+|---|---|---|---|---|
+| Qwantani (Pure Sky) — 2K HDR | https://polyhaven.com/a/qwantani_puresky | Greg Zaal (capture) · Jarod Guest (sky edits) | **CC0** | Outdoor sky HDRI for NYC theme image-based lighting + skybox (`Assets/Art/Imported/HDRI/qwantani_puresky_2k.hdr`) |
+
 ## Notes
 - CC0 assets require no attribution but are listed here for provenance/traceability.
 - CC-BY assets **must** keep their author + source credit in shipped builds
