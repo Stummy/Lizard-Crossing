@@ -79,6 +79,14 @@ Done and verified in-engine (0 console errors, mechanics intact):
   branch) — it's the owner's "second pair of eyes." Claude CANNOT launch it (owner-
   triggered + billed); prompt the owner at the gate, never attempt to run it.
 
+## North star (owner, 2026-06-25)
+- **Always build toward the concept target deck.** `Assets/Art/Concept/` (run / squished /
+  faceplant / win / gameover / nearmiss / title) is THE quality bar — a real, polished,
+  cohesive game that looks and feels like those frames. Every visual, animation, juice, and
+  optimization change is measured against them: does this move the live game closer to the
+  concept? Don't just "make it work" — make it *high quality and matching the concept*.
+  Record the game, watch it, and fix/optimize against this goal continuously.
+
 ## Agent usage rules (owner, 2026-06-25)
 - **Every AI-GENERATED asset gets a design-review before it's accepted/committed.** Concept
   frames, textures, models, sprites — all are CANDIDATES, not final. Before committing, the
