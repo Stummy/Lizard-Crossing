@@ -18,6 +18,7 @@ namespace LizardCrossing
     public static class MaterialCache
     {
         private static readonly Dictionary<Color, Material> Lit = new Dictionary<Color, Material>();
+        private static readonly Dictionary<Material, Material> Remap = new Dictionary<Material, Material>();
         private static Material _shadowBlob;
         private static Material _warningRing;
         private static Material _softParticle;
@@ -105,6 +106,35 @@ namespace LizardCrossing
             return m;
         }
 
+        /// <summary>
+        /// Convert an imported material (often a Standard/HDRP-shader asset that
+        /// renders magenta under the active URP pipeline) into a URP/Lit equivalent,
+        /// preserving its albedo texture, tint and normal map. Cached per source
+        /// material so shared submeshes across a prefab stay batched. Used to make
+        /// imported character prefabs render under whichever pipeline is active.
+        /// </summary>
+        public static Material GetUrpEquivalent(Material src)
+        {
+            if (src == null) return GetLit(Color.gray);
+            Material m;
+            if (Remap.TryGetValue(src, out m) && m != null) return m;
+
+            m = new Material(LitShaderAsset);
+            m.color = src.HasProperty("_Color") ? src.color : Color.white;
+            if (src.mainTexture != null) m.mainTexture = src.mainTexture; // _MainTex → _BaseMap
+            SetPbr(m, 0.18f, 0f);
+
+            Texture bump = src.HasProperty("_BumpMap") ? src.GetTexture("_BumpMap") : null;
+            if (bump != null)
+            {
+                m.EnableKeyword("_NORMALMAP");
+                m.SetTexture("_BumpMap", bump);
+                m.SetFloat("_BumpScale", 1f);
+            }
+            Remap[src] = m;
+            return m;
+        }
+
         /// <summary>Soft round transparent blob used for warning shadows.</summary>
         public static Material ShadowBlob
         {
@@ -149,6 +179,7 @@ namespace LizardCrossing
         public static void ClearRuntimeCache()
         {
             Lit.Clear();
+            Remap.Clear();
             _shadowBlob = null;
             _warningRing = null;
             _softParticle = null;

@@ -128,7 +128,7 @@ namespace LizardCrossing
             float halfL = Length * 0.5f - GameConst.StompKillPad;
             float halfW = Width * 0.5f - GameConst.StompKillPad;
             if (Mathf.Abs(local.z) <= halfL && Mathf.Abs(local.x) <= halfW)
-                gm.HitPlayer(player.KillCheckPosition);
+                gm.HitPlayer(player.KillCheckPosition, DeathCause.Squashed);
         }
 
         void Box(Vector3 pos, Vector3 scale, Color col, string name) { Prim(PrimitiveType.Cube, pos, scale, col, name); }

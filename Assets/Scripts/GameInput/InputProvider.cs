@@ -13,6 +13,13 @@ namespace LizardCrossing
         /// <summary>Test seam: when set, bot playtests drive the lizard.</summary>
         public static Vector2? MoveOverride;
 
+        /// <summary>Test seam: set true to fire the start gate once (bot playtests).</summary>
+        public static bool StartOverride;
+
+        /// <summary>Held steer from the on-screen LEFT/RIGHT buttons: -1 (left), 0, +1 (right).
+        /// Auto-run uses this (and A/D / drag) as the lizard's only directional control.</summary>
+        public static float ButtonSteer;
+
         private static Vector2 _touchMove;
         private static bool _dashQueued;
         private static bool _touchActive;
@@ -27,6 +34,7 @@ namespace LizardCrossing
                 if (MoveOverride.HasValue) return Vector2.ClampMagnitude(MoveOverride.Value, 1f);
                 Vector2 kb = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
                 if (kb.sqrMagnitude > 0.01f) return Vector2.ClampMagnitude(kb, 1f);
+                if (Mathf.Abs(ButtonSteer) > 0.01f) return new Vector2(Mathf.Clamp(ButtonSteer, -1f, 1f), 0f);
                 return _touchMove;
             }
         }
@@ -43,6 +51,7 @@ namespace LizardCrossing
 
         public static bool AnyStartPressed()
         {
+            if (StartOverride) { StartOverride = false; return true; }
             return Input.GetMouseButtonDown(0) || Input.touchCount > 0 || Input.anyKeyDown;
         }
 
@@ -82,6 +91,8 @@ namespace LizardCrossing
         public static void Reset()
         {
             MoveOverride = null;
+            StartOverride = false;
+            ButtonSteer = 0f;
             _touchMove = Vector2.zero;
             _dashQueued = false;
             _touchActive = false;

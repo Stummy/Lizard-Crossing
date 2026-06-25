@@ -18,7 +18,8 @@ namespace LizardCrossing
     /// </summary>
     public static class ModelLibrary
     {
-        public const string LizardKey = "lizard";
+        public const string LizardKey = "lizard_gen";   // AI-generated rigged lizard (Tripo); falls back to procedural gecko if absent
+        public const string CatKey = "cat";
         public const string SneakerKey = "sneaker";
         public const string WheelKey = "wheel";
         public const string DrainKey = "drain";

@@ -46,36 +46,40 @@ namespace LizardCrossing
             {
                 Id = GardenEscapeId,
                 Name = "Garden Escape",
-                Length = 205f,
+                // The run ends INSIDE the real NYC city block (its avenue is solid, straight
+                // floor to ~z=165). Length is the safe-zone threshold; keeping it at 140 lands
+                // the goal + its apron comfortably within the city edge so the whole run is on
+                // real street — no void, no drift off the end. (Cross-traffic lanes below are
+                // only used in the non-NYC fallback; on the avenue StreetTraffic drives flow.)
+                Length = 140f,
                 Lanes = new[]
                 {
                     // City crossing: sidewalks (pedestrians) and roads (cars) alternate,
                     // an alley (debris) breaks up the middle, busier/faster toward the end.
-                    new LaneSpec { Z = 26f,  Dir = +1, StepDuration = 0.62f, StartDelay = 1.0f, RespawnDelay = 2.6f,  Type = LaneType.Sidewalk },
-                    new LaneSpec { Z = 48f,  Dir = -1, StepDuration = 0.60f, StartDelay = 2.2f, RespawnDelay = 2.3f,  Type = LaneType.Road },
-                    new LaneSpec { Z = 70f,  Dir = +1, StepDuration = 0.55f, StartDelay = 0.4f, RespawnDelay = 2.0f,  Type = LaneType.Sidewalk },
-                    new LaneSpec { Z = 92f,  Dir = -1, StepDuration = 0.52f, StartDelay = 1.6f, RespawnDelay = 1.7f,  Type = LaneType.Road },
-                    new LaneSpec { Z = 115f, Dir = +1, StepDuration = 0.50f, StartDelay = 0.8f, RespawnDelay = 1.5f,  Type = LaneType.Alley },
-                    new LaneSpec { Z = 138f, Dir = -1, StepDuration = 0.47f, StartDelay = 2.0f, RespawnDelay = 1.35f, Type = LaneType.Road },
-                    new LaneSpec { Z = 162f, Dir = +1, StepDuration = 0.45f, StartDelay = 0.2f, RespawnDelay = 1.2f,  Type = LaneType.Sidewalk },
-                    new LaneSpec { Z = 185f, Dir = -1, StepDuration = 0.42f, StartDelay = 1.2f, RespawnDelay = 1.05f, Type = LaneType.Road },
+                    new LaneSpec { Z = 22f,  Dir = +1, StepDuration = 0.62f, StartDelay = 1.0f, RespawnDelay = 2.6f,  Type = LaneType.Sidewalk },
+                    new LaneSpec { Z = 40f,  Dir = -1, StepDuration = 0.60f, StartDelay = 2.2f, RespawnDelay = 2.3f,  Type = LaneType.Road },
+                    new LaneSpec { Z = 58f,  Dir = +1, StepDuration = 0.55f, StartDelay = 0.4f, RespawnDelay = 2.0f,  Type = LaneType.Sidewalk },
+                    new LaneSpec { Z = 76f,  Dir = -1, StepDuration = 0.52f, StartDelay = 1.6f, RespawnDelay = 1.7f,  Type = LaneType.Road },
+                    new LaneSpec { Z = 94f,  Dir = +1, StepDuration = 0.50f, StartDelay = 0.8f, RespawnDelay = 1.5f,  Type = LaneType.Alley },
+                    new LaneSpec { Z = 112f, Dir = -1, StepDuration = 0.47f, StartDelay = 2.0f, RespawnDelay = 1.35f, Type = LaneType.Road },
+                    new LaneSpec { Z = 128f, Dir = +1, StepDuration = 0.45f, StartDelay = 0.2f, RespawnDelay = 1.2f,  Type = LaneType.Sidewalk },
                 },
                 BugPositions = new[]
                 {
-                    // safe pockets between lanes
-                    new Vector3(-4f, 0f, 16f),
-                    new Vector3( 5f, 0f, 37f),
-                    new Vector3(-6f, 0f, 59f),
-                    new Vector3( 3f, 0f, 81f),
-                    new Vector3( 6f, 0f, 104f),
-                    new Vector3(-5f, 0f, 127f),
-                    new Vector3( 0f, 0f, 150f),
-                    new Vector3( 5f, 0f, 174f),
-                    new Vector3(-4f, 0f, 196f),
-                    // risky in-lane prizes (right on a crossing track)
-                    new Vector3( 0f, 0f, 70f),
-                    new Vector3(-2f, 0f, 138f),
-                    new Vector3( 2f, 0f, 185f),
+                    // spread along the right sidewalk (SpawnBugs clamps x to the run band)
+                    new Vector3( 4f, 0f, 14f),
+                    new Vector3( 7f, 0f, 30f),
+                    new Vector3( 5f, 0f, 46f),
+                    new Vector3( 8f, 0f, 62f),
+                    new Vector3( 4f, 0f, 78f),
+                    new Vector3( 7f, 0f, 94f),
+                    new Vector3( 5f, 0f, 110f),
+                    new Vector3( 8f, 0f, 124f),
+                    new Vector3( 6f, 0f, 134f),
+                    // risky in-lane prizes (near a crossing track)
+                    new Vector3( 6f, 0f, 70f),
+                    new Vector3( 4f, 0f, 112f),
+                    new Vector3( 7f, 0f, 128f),
                 },
             };
         }

@@ -3,61 +3,73 @@ using UnityEngine;
 namespace LizardCrossing
 {
     /// <summary>
-    /// A giant pedestrian that WALKS across the corridor — the realistic
-    /// replacement for the disembodied shoe stride. A real humanoid model towers
-    /// over the lizard from its low POV, legs and arms swinging procedurally
-    /// through the Humanoid avatar's bones (no animation clip needed). Each
-    /// footfall is the hazard: a descending foot telegraphs a shadow at its
-    /// landing spot, then stomps. The player weaves between footfalls.
+    /// A pedestrian that walks/runs across or along the street using a real
+    /// imported casual character (npc_casual_set_00) driven by Humanoid walk/run
+    /// animation clips (Kevin Iglesias). The legs are animated by the clip — so a
+    /// walker looks like it's walking and a runner like it's running — and the
+    /// squish hazard is synced to the ACTUAL footfall: we watch the live foot
+    /// bones each frame and the stomp resolves exactly when a foot plants on the
+    /// pavement. The player weaves between the planting feet.
     ///
-    /// Gait uses a deterministic stance model: the left foot "strikes" at gait
-    /// phase pi/2 and the right at 3pi/2, so the kill zone and its telegraph are
-    /// exact and fair (no guessing from skating ankle positions). When no human
-    /// model is present the lane falls back to the procedural shoe hazard
-    /// (see HazardLaneManager), so the game still runs asset-free.
+    /// The character mesh, materials and Humanoid avatar all come from the prefab;
+    /// we only assign the shared locomotion controller, drive forward translation
+    /// in code, and keep the body grounded on the curb/road surface. When no NPC
+    /// prefab is present the lane manager falls back to the procedural shoe hazard,
+    /// so the game still runs asset-free.
     /// </summary>
     public class GiantPedestrian : MonoBehaviour
     {
+        // ---- asset paths (under a Resources/ folder so the runtime-built world loads them) ----
+        const string PrefabFolder = "NPC";                  // Resources/NPC/ped_*.prefab
+        const string ControllerPath = "NPC/PedestrianLocomotion";
+
         // ---- tuning (public so they can be tweaked live in the editor) ----
         public float height = 2.5f;       // sized to the kit's grand building doors (~2.8u);
                                           // ~12x the 0.2u lizard, a touch under a doorway
-        public float thighAmp = 26f;      // deg the upper legs swing fore/aft
-        public float kneeAmp = 34f;       // deg the knee flexes on the back-swing
-        public float kneePhase = 0.9f;    // rad the knee flex trails the thigh swing
-        public float armAmp = 18f;        // deg the arms counter-swing
-        public float armDown = 72f;       // deg the arms drop from the T-pose to the sides
-        public float bobAmp = 0.055f;     // world units the body bobs per step
         public float faceYaw = 0f;        // extra yaw if the model's forward isn't +Z
         public float killRadius = 0.25f;  // ground radius under a planted foot that squishes
-        public float forwardReachMul = 1f;// scales how far ahead a foot plants
+        public float groundSink = 0.0f;   // small downward nudge so soles meet the pavement
 
         const float MarginOutside = 16f;  // how far off-corridor the walk starts/ends
 
-        // ---- gait state ----
-        float _phase;
-        float _cadence;       // rad/s (one step = pi)
+        // foot-lift heights (scaled by height) that bound the telegraph/strike window
+        const float TelegraphLift = 0.22f; // a descending foot this close to the ground telegraphs
+        const float StrikeLift = 0.06f;    // ...and resolves the stomp once it plants this low
+
+        // ---- motion state ----
+        bool _running;
+        bool _sprint;
+        float _ankleHeight;   // ground offset: gap from the ankle bone down to the sole
+
+        const float AnkleFraction = 0.05f; // sole sits ~5% of body height below the ankle bone
         float _speed;         // world units/s along the walk direction
-        float _legLen;        // measured hip->foot distance (for stride/foot reach)
         Vector3 _startPos, _endPos;  // walks from start to end (any horizontal direction)
         float _respawnDelay;
         bool _resting;
         float _restTimer;
 
         Vector3 _walkDir;
-        Vector3 _lateral;     // horizontal axis the legs swing about (sagittal plane)
+
+        // ---- rolling (player-relative) recycle: sidewalk streams ----
+        bool _rolling;
+        float _laneX, _groundY, _aheadMin, _aheadMax, _behindCull;
 
         // ---- rig ----
         Transform _holder;
         Animator _animator;
-        Transform _hips, _spine, _thighL, _calfL, _footL, _thighR, _calfR, _footR, _armL, _armR;
-        Quaternion _bThighL, _bCalfL, _bThighR, _bCalfR, _bArmL, _bArmR;
+        Transform _footL, _footR;
 
-        // ---- per-foot hazard bookkeeping ----
+        // ---- per-foot footfall tracking (drives the squish hazard) ----
         WarningMarker _markerL, _markerR;
-        bool _struckL, _struckR;          // already resolved this foot's current strike
+        FootTrack _trackL, _trackR;
 
-        /// <summary>Legacy crossing-lane spawn (kit-city fallback): walks across the
-        /// corridor (±X) at the lane's Z.</summary>
+        struct FootTrack { public float prevY; public bool wasDescending; public bool struck; public bool init; }
+
+        // shared, loaded once
+        static GameObject[] _prefabs;
+        static RuntimeAnimatorController _controller;
+
+        /// <summary>Legacy crossing-lane spawn: walks across the corridor (±X) at the lane's Z.</summary>
         public static GiantPedestrian Spawn(Transform parent, LaneSpec lane)
         {
             int dir = lane.Dir >= 0 ? 1 : -1;
@@ -73,9 +85,10 @@ namespace LizardCrossing
         /// walking the sidewalk down the avenue (±Z) is just start/end along Z.
         /// </summary>
         public static GiantPedestrian SpawnTrack(Transform parent, Vector3 start, Vector3 end,
-            float stepDuration, float startDelay, float respawnDelay, float scale, float startProgress = 0f)
+            float stepDuration, float startDelay, float respawnDelay, float scale,
+            float startProgress = 0f, bool running = false, bool sprint = false)
         {
-            var go = new GameObject("GiantPedestrian");
+            var go = new GameObject(sprint ? "Sprinter" : running ? "Runner" : "GiantPedestrian");
             go.transform.SetParent(parent, false);
             var p = go.AddComponent<GiantPedestrian>();
             p.height *= scale;
@@ -83,17 +96,24 @@ namespace LizardCrossing
             p._respawnDelay = respawnDelay;
             p._restTimer = startDelay;
             p._resting = true; // hold off until the start delay elapses
-            p._cadence = Mathf.PI / Mathf.Max(0.05f, stepDuration);
+            p._sprint = sprint;
+            p._running = running || sprint;
 
             p._startPos = start;
             p._endPos = end;
             p._walkDir = (end - start).normalized;
-            p._lateral = Vector3.Cross(Vector3.up, p._walkDir).normalized;
 
             if (!p.BuildHuman()) { Destroy(go); return null; }
 
-            float reach = p._legLen * Mathf.Sin(p.thighAmp * Mathf.Deg2Rad) * p.forwardReachMul;
-            p._speed = (2f * reach) / Mathf.Max(0.05f, stepDuration);
+            // Translation speed is set directly per gait tier (real metres/second, scaled)
+            // and matched to the clip's natural ground speed so the legs don't skate. The
+            // animator plays each clip at ~1x (set in BuildHuman) so a runner actually
+            // looks like it's running — the old "step duration" coupling slowed the run
+            // clip below 1x, which read as a slow walk while the body glided forward.
+            float moveSpeed = sprint ? Random.Range(5.5f, 7.5f)
+                            : running ? Random.Range(3.8f, 5.0f)
+                                      : Random.Range(1.3f, 2.1f);
+            p._speed = moveSpeed * scale;
 
             float footW = p.killRadius * 2f;
             p._markerL = WarningMarker.Create(go.transform, footW, footW);
@@ -109,21 +129,55 @@ namespace LizardCrossing
             return p;
         }
 
+        /// <summary>
+        /// A sidewalk pedestrian walking ALONG the avenue (±Z) in a player-relative
+        /// rolling window. <paramref name="dir"/> &gt; 0 strolls forward (away from the
+        /// lizard); &lt; 0 is oncoming (toward it). Whichever way it faces, it is always
+        /// recycled to a fresh spot AHEAD of the lizard once overtaken or drifted off,
+        /// so the crowd never streams up from behind.
+        /// </summary>
+        public static GiantPedestrian SpawnSidewalk(Transform parent, float laneX, float groundY, int dir,
+            float stepDuration, bool running, float aheadMin, float aheadMax, float behindCull, float initialZ,
+            bool sprint = false)
+        {
+            Vector3 dirVec = new Vector3(0f, 0f, dir >= 0 ? 1f : -1f);
+            Vector3 start = new Vector3(laneX, groundY, initialZ);
+            Vector3 end = start + dirVec * 1000f; // rolling recycle handles the real wrap, not this end
+            var p = SpawnTrack(parent, start, end, stepDuration, 0f, 0f, 1f, 0f, running, sprint);
+            if (p == null) return null;
+            p._rolling = true;
+            p._laneX = laneX;
+            p._groundY = groundY;
+            p._aheadMin = aheadMin;
+            p._aheadMax = aheadMax;
+            p._behindCull = behindCull;
+            p.transform.position = start;
+            p._resting = false;
+            p.SetVisible(true);
+            return p;
+        }
+
         bool BuildHuman()
         {
-            var prefab = Resources.Load<GameObject>(ModelLibrary.HumanPath);
-            if (prefab == null) return false;
+            if (_prefabs == null)
+            {
+                _prefabs = Resources.LoadAll<GameObject>(PrefabFolder);
+                _controller = Resources.Load<RuntimeAnimatorController>(ControllerPath);
+            }
+            if (_prefabs == null || _prefabs.Length == 0 || _controller == null) return false;
 
             _holder = new GameObject("human").transform;
             _holder.SetParent(transform, false);
             _holder.localRotation = Quaternion.LookRotation(_walkDir, Vector3.up)
                                     * Quaternion.Euler(0f, faceYaw, 0f);
 
+            var prefab = _prefabs[Random.Range(0, _prefabs.Length)];
             var go = Instantiate(prefab);
             go.transform.SetParent(_holder, false);
             go.transform.localScale = Vector3.one;
 
-            // normalize to target height, base on the ground, centered on x/z
+            // normalize to target height, base on the ground, centered on x/z (keep
+            // the prefab's own materials/textures — they're already clothed & textured)
             Bounds b;
             if (!LocalBounds(go, _holder, out b)) { Destroy(_holder.gameObject); return false; }
             float h = Mathf.Max(b.size.y, 1e-4f);
@@ -131,53 +185,66 @@ namespace LizardCrossing
             if (LocalBounds(go, _holder, out b))
                 go.transform.localPosition = new Vector3(-b.center.x, -b.min.y, -b.center.z);
 
-            // URP-safe textured material (never the Standard-shader magenta trap)
-            var albedo = Resources.Load<Texture2D>("Models/Human/human_albedo");
-            var normal = Resources.Load<Texture2D>("Models/Human/human_normal");
-            var mat = MaterialCache.GetTexturedNormal(albedo, normal, Color.white, 0.28f, 1f, 1f);
-            foreach (var r in _holder.GetComponentsInChildren<Renderer>())
-                r.sharedMaterial = mat;
             foreach (var c in _holder.GetComponentsInChildren<Collider>())
                 Destroy(c);
 
+            // The prefab's imported materials use a Standard/HDRP shader that renders
+            // magenta under this project's URP pipeline. Remap each one to a URP/Lit
+            // equivalent (per submesh, so face/shirt/pants/hair keep their own texture).
+            foreach (var r in _holder.GetComponentsInChildren<Renderer>())
+            {
+                var mats = r.sharedMaterials;
+                for (int i = 0; i < mats.Length; i++)
+                    mats[i] = MaterialCache.GetUrpEquivalent(mats[i]);
+                r.sharedMaterials = mats;
+            }
+
             _animator = go.GetComponent<Animator>();
+            if (_animator == null) _animator = go.GetComponentInChildren<Animator>();
             if (_animator == null || !_animator.isHuman) { Destroy(_holder.gameObject); return false; }
 
-            _hips   = _animator.GetBoneTransform(HumanBodyBones.Hips);
-            _spine  = _animator.GetBoneTransform(HumanBodyBones.Spine);
-            _thighL = _animator.GetBoneTransform(HumanBodyBones.LeftUpperLeg);
-            _calfL  = _animator.GetBoneTransform(HumanBodyBones.LeftLowerLeg);
-            _footL  = _animator.GetBoneTransform(HumanBodyBones.LeftFoot);
-            _thighR = _animator.GetBoneTransform(HumanBodyBones.RightUpperLeg);
-            _calfR  = _animator.GetBoneTransform(HumanBodyBones.RightLowerLeg);
-            _footR  = _animator.GetBoneTransform(HumanBodyBones.RightFoot);
-            _armL   = _animator.GetBoneTransform(HumanBodyBones.LeftUpperArm);
-            _armR   = _animator.GetBoneTransform(HumanBodyBones.RightUpperArm);
-            if (_thighL == null || _footL == null || _thighR == null || _footR == null)
-            { Destroy(_holder.gameObject); return false; }
+            _footL = _animator.GetBoneTransform(HumanBodyBones.LeftFoot);
+            _footR = _animator.GetBoneTransform(HumanBodyBones.RightFoot);
+            if (_footL == null || _footR == null) { Destroy(_holder.gameObject); return false; }
 
-            _bThighL = _thighL.localRotation; _bCalfL = _calfL.localRotation;
-            _bThighR = _thighR.localRotation; _bCalfR = _calfR.localRotation;
-            _bArmL = _armL != null ? _armL.localRotation : Quaternion.identity;
-            _bArmR = _armR != null ? _armR.localRotation : Quaternion.identity;
+            // Sole-below-ankle gap used to plant the foot. Grounding reads the ankle
+            // bones (cheap, exact) instead of aggregate skinned bounds — the modular
+            // character has many sub-meshes whose loose bounds dipped below the soles,
+            // which both lifted the body (the hover) and forced costly per-frame skin
+            // bounds (updateWhenOffscreen) that tanked the framerate.
+            _ankleHeight = height * AnkleFraction;
 
-            _legLen = Vector3.Distance(_thighL.position, _footL.position);
+            // Drive the rig with the locomotion clip. Forward translation is in code,
+            // not root motion. Cull animation when off-screen (CullUpdateTransforms):
+            // an unseen pedestrian can't squish the lizard, so skipping its rig sampling
+            // is free perf for a big crowd — only the visible peds (the ones that can hit
+            // the player) pay the animation cost.
+            _animator.runtimeAnimatorController = _controller;
+            _animator.applyRootMotion = false;
+            _animator.cullingMode = AnimatorCullingMode.CullUpdateTransforms;
 
-            // Drive the bones ourselves: a controller-less Animator still resamples
-            // the rig back to bind pose, fighting our Pose(). Disable it and keep the
-            // skinned bounds valid by hand so the giant is never wrongly culled.
-            _animator.enabled = false;
-            foreach (var smr in _holder.GetComponentsInChildren<SkinnedMeshRenderer>())
-                smr.updateWhenOffscreen = true;
+            // Cadence must MATCH the ground speed or the gait misreads. Runners
+            // translate at 3.8-5.0 m/s and sprinters 5.5-7.5 — well above a walk — so
+            // the leg clip has to cycle fast enough to cover that ground, else the body
+            // glides forward on under-cycling legs and a run reads as a brisk walk
+            // (exactly the bug owner saw). Run/sprint clip speeds raised so the legs
+            // visibly pump at run cadence and the feet keep up with the body.
+            // (Tune in-editor: faster = busier legs / less forward skate; too fast skates
+            // backward.)
+            _animator.speed = _sprint ? Random.Range(1.5f, 1.8f)
+                            : _running ? Random.Range(1.2f, 1.45f)
+                                       : Random.Range(0.9f, 1.1f);
+            string state = _sprint ? "Sprint" : _running ? "Run" : "Walk";
+            _animator.Play(state, 0, Random.value); // desync the crowd
+
             return true;
         }
 
         void PlaceAtStart()
         {
             transform.position = _startPos;
-            _phase = 0f;
-            _struckL = _struckR = false;
-            Pose(0f);
+            _trackL = default(FootTrack);
+            _trackR = default(FootTrack);
             SetVisible(false);
             if (_markerL != null) _markerL.Hide();
             if (_markerR != null) _markerR.Hide();
@@ -192,9 +259,9 @@ namespace LizardCrossing
         {
             var gm = GameStateManager.Instance;
             if (gm == null) return;
-            // Walk as ambient cross-traffic the moment the level loads (Ready),
-            // not only once the run starts — an empty alley reads as broken.
-            // Only telegraph and stomp once the run is actually Playing.
+            // Walk as ambient traffic the moment the level loads (Ready), not only
+            // once the run starts — an empty street reads as broken. Only telegraph
+            // and stomp once the run is actually Playing.
             bool active = gm.State == GameState.Ready || gm.State == GameState.Playing;
             if (!active) return;
             bool playing = gm.State == GameState.Playing;
@@ -206,15 +273,23 @@ namespace LizardCrossing
                 else return;
             }
 
-            _phase += _cadence * Time.deltaTime;
-            transform.position += _walkDir * (_speed * Time.deltaTime);
-            Pose(_phase);
+            // Steer around solid street props (rubble, furniture) registered in ObstacleField
+            // instead of walking through them: a lateral nudge away from anything in the path.
+            Vector3 avoid = ObstacleField.Avoidance(transform.position, _walkDir,
+                GameConst.PedAvoidRadius, GameConst.PedAvoidLookahead, _speed);
+            transform.position += (_walkDir * _speed + avoid) * Time.deltaTime;
+
+            // One ground raycast per frame, shared by grounding and both feet (the feet
+            // are <1u apart, so the body-centre surface height is close enough). Cheaper
+            // than three raycasts per pedestrian across a whole crowd.
+            float ground = StreetGround.HeightAt(transform.position.x, transform.position.z);
+            GroundBody(ground);
 
             if (playing)
             {
-                // left foot strikes at pi/2, right at 3pi/2 (mod 2pi)
-                UpdateFoot(_markerL, Mathf.PI * 0.5f, ref _struckL);
-                UpdateFoot(_markerR, Mathf.PI * 1.5f, ref _struckR);
+                TrackFoot(_footL, _markerL, ref _trackL, ground);
+                TrackFoot(_footR, _markerR, ref _trackR, ground);
+                CheckFootBump();
             }
             else
             {
@@ -222,7 +297,11 @@ namespace LizardCrossing
                 _markerR.Hide();
             }
 
-            if (Vector3.Dot(transform.position - _endPos, _walkDir) > 0f) // walked past the end
+            if (_rolling)
+            {
+                RecycleRolling();
+            }
+            else if (Vector3.Dot(transform.position - _endPos, _walkDir) > 0f) // walked past the end
             {
                 _resting = true;
                 _restTimer = _respawnDelay;
@@ -231,101 +310,108 @@ namespace LizardCrossing
         }
 
         /// <summary>
-        /// Pose every driven bone for a gait phase. Public so the editor can scrub
-        /// the walk cycle without entering Play. Each bone resets to its bind
-        /// rotation then swings about the world sagittal axis, so we never need to
-        /// know the rig's per-bone local axes.
+        /// Pin the planted foot's sole to the pavement off the live ANKLE bones. The
+        /// clips plant the foot at the avatar's root plane (well above the bind-pose
+        /// feet on these rigs), so a one-time bind-pose seat hovers; instead, every
+        /// frame we drop the body so the lower ankle's sole (ankle minus _ankleHeight)
+        /// rests on the surface under it. Reading the foot's own XZ for the ground
+        /// height grounds it to whatever it's over (sidewalk or road), so curbs are
+        /// crossed smoothly. Two bone reads per frame — no skinned-bounds cost.
         /// </summary>
-        public void Pose(float phase)
+        void GroundBody(float ground)
         {
-            if (_thighL == null) return;
-            float l = Mathf.Sin(phase);
-            float r = Mathf.Sin(phase + Mathf.PI);
+            if (_footL == null || _footR == null) return;
 
-            Swing(_thighL, _bThighL, thighAmp * l);
-            Swing(_thighR, _bThighR, thighAmp * r);
+            Transform planted = _footL.position.y <= _footR.position.y ? _footL : _footR;
+            float soleY = planted.position.y - _ankleHeight;
 
-            // knees flex (one direction only) as each leg swings through the back
-            Swing(_calfL, _bCalfL, -kneeAmp * Mathf.Max(0f, Mathf.Sin(phase + kneePhase)));
-            Swing(_calfR, _bCalfR, -kneeAmp * Mathf.Max(0f, Mathf.Sin(phase + Mathf.PI + kneePhase)));
+            Vector3 pos = transform.position;
+            pos.y += (ground - groundSink) - soleY; // moving the body moves soleY equally → settles in one step
+            transform.position = pos;
+        }
 
-            // arms drop from the imported T-pose to the sides, then counter-swing
-            PoseArm(_armL, _bArmL, -armDown, armAmp * r); // arms oppose same-side legs
-            PoseArm(_armR, _bArmR,  armDown, armAmp * l);
-
-            if (_holder != null)
+        void RecycleRolling()
+        {
+            var player = PlayerController.Instance;
+            if (player == null) return;
+            float pz = player.KillCheckPosition.z;
+            float z = transform.position.z;
+            if (z < pz - _behindCull || z > pz + _aheadMax + _behindCull)
             {
-                Vector3 lp = _holder.localPosition;
-                lp.y = bobAmp * Mathf.Abs(Mathf.Cos(phase));
-                _holder.localPosition = lp;
+                float nz = pz + Random.Range(_aheadMin, _aheadMax);
+                transform.position = new Vector3(_laneX, _groundY, nz);
+                _trackL = default(FootTrack);
+                _trackR = default(FootTrack);
             }
-        }
-
-        void Swing(Transform bone, Quaternion bind, float angleDeg)
-        {
-            if (bone == null) return;
-            bone.localRotation = bind;
-            bone.Rotate(_lateral, angleDeg, Space.World);
-        }
-
-        // Arms need two rotations: first drop to the sides about the walk axis
-        // (flips correctly with direction since both axis and arm side flip), then
-        // counter-swing fore/aft about the sagittal axis like the legs.
-        void PoseArm(Transform bone, Quaternion bind, float downDeg, float swingDeg)
-        {
-            if (bone == null) return;
-            bone.localRotation = bind;
-            bone.Rotate(_walkDir, downDeg, Space.World);
-            bone.Rotate(_lateral, swingDeg, Space.World);
         }
 
         /// <summary>
-        /// Telegraph the foot's predicted landing, then resolve the stomp at strike.
-        /// The landing spot is forward of the body by the leg's reach; the marker
-        /// fills as the gait phase approaches the strike phase, giving a readable
-        /// lead even though the body is occluded by buildings.
+        /// Watch one foot's live height. While it descends toward the pavement inside
+        /// the corridor, telegraph the landing; the instant it stops descending near
+        /// the ground (the footfall) resolve the squish exactly under it. Reading the
+        /// real bone means the kill is in sync with the animation, whatever the clip.
         /// </summary>
-        void UpdateFoot(WarningMarker marker, float strikePhase, ref bool struck)
+        void TrackFoot(Transform foot, WarningMarker marker, ref FootTrack t, float groundY)
         {
-            float wrapped = Mathf.Repeat(_phase - strikePhase + Mathf.PI, Mathf.PI * 2f) - Mathf.PI;
-            // wrapped in (-pi, pi]: 0 == striking now, negative == approaching, positive == lifted
+            float lift = foot.position.y - groundY;            // height of the foot above ground
+            float teleLift = TelegraphLift * (height / 2.5f);
+            float strikeLift = StrikeLift * (height / 2.5f);
 
-            Vector3 plant = PredictedPlant(strikePhase);
+            float dy = t.init ? foot.position.y - t.prevY : 0f;
+            bool descending = dy < -1e-4f;
 
-            if (wrapped < 0f)
+            Vector3 plant = foot.position;
+            plant.y = GameConst.GroundY;
+            bool inCorridor = Mathf.Abs(plant.x) < GameConst.CorridorHalfWidth + killRadius;
+
+            if (descending && lift < teleLift && inCorridor)
             {
-                // approaching: ramp the telegraph over the final ~half step
-                float t = Mathf.Clamp01(1f + wrapped / (Mathf.PI * 0.9f));
-                if (Mathf.Abs(plant.x) < GameConst.CorridorHalfWidth + killRadius)
-                {
-                    marker.SetWorldPosition(plant);
-                    marker.SetIntensity(t);
-                }
-                else marker.Hide();
-                struck = false;
+                marker.SetWorldPosition(plant);
+                marker.SetIntensity(Mathf.Clamp01(1f - lift / teleLift));
+                t.struck = false;
             }
-            else
+            else if (t.init && t.wasDescending && !descending && lift < strikeLift)
             {
-                // strike just happened (phase passed the strike point)
-                if (!struck)
+                // footfall: the descending foot just planted
+                if (!t.struck)
                 {
-                    struck = true;
-                    // ambient foot traffic must NOT shake the screen or thud every step
-                    // (dozens of pedestrians = constant trauma) — only resolve the squish.
-                    if (Mathf.Abs(plant.x) < GameConst.CorridorHalfWidth + killRadius)
-                        ResolveStomp(plant);
+                    t.struck = true;
+                    if (inCorridor) ResolveStomp(plant);
                 }
                 marker.Hide();
             }
+            else if (lift > teleLift)
+            {
+                marker.Hide();
+                t.struck = false;
+            }
+
+            t.prevY = foot.position.y;
+            t.wasDescending = descending;
+            t.init = true;
         }
 
-        Vector3 PredictedPlant(float strikePhase)
+        /// <summary>
+        /// Head-on body collision: the lizard ran into this pedestrian's leg column.
+        /// Distinct from the overhead foot-plant squish (<see cref="ResolveStomp"/>) — a
+        /// leg is a standing vertical obstacle, so we test horizontal nearness to the
+        /// body centre regardless of foot height. Non-damaging: it routes to FootBump,
+        /// which staggers the lizard and wakes the cat. The player owns the re-trigger
+        /// cooldown (CanFootBump) so one walk-through can't chain-stagger.
+        /// </summary>
+        void CheckFootBump()
         {
-            float reach = _legLen * Mathf.Sin(thighAmp * Mathf.Deg2Rad) * forwardReachMul;
-            // foot lands ahead of the body along the walk direction
-            Vector3 plant = transform.position + _walkDir * reach;
-            plant.y = GameConst.GroundY;
-            return plant;
+            var player = PlayerController.Instance;
+            var gm = GameStateManager.Instance;
+            if (player == null || gm == null) return;
+            if (player.IsAirborne || player.IsInvulnerable || !player.CanFootBump) return;
+
+            Vector3 p = player.KillCheckPosition;
+            float r = GameConst.FootBumpRadius * (height / 2.5f); // widen with the pedestrian's size
+            float dx = transform.position.x - p.x;
+            float dz = transform.position.z - p.z;
+            if (dx * dx + dz * dz <= r * r)
+                gm.FootBump(transform.position);
         }
 
         void ResolveStomp(Vector3 plant)

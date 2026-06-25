@@ -18,6 +18,11 @@ namespace LizardCrossing
         public float RunTime { get; private set; }
         public int Hearts { get; private set; } = GameConst.MaxHearts;
         public int MaxHearts { get; private set; } = GameConst.MaxHearts;
+        /// <summary>The lizard still has its tail: the next hit drops it instead of a heart.</summary>
+        public bool HasTail { get; private set; } = true;
+        /// <summary>The lizard has bumped a pedestrian, so the alley cat is now hunting.</summary>
+        public bool CatProvoked { get; private set; }
+        private float _lastHitTime = -999f;
         public int BugsCollected { get; private set; }
         public int BugsTotal { get; set; }
         public int CloseCalls { get; private set; }
@@ -36,9 +41,13 @@ namespace LizardCrossing
             Instance = this;
             _ads = ads ?? new StubAdService();
             Application.targetFrameRate = 60;
+            Application.runInBackground = true; // keep ticking when the window isn't focused
+                                                // (smooth alt-tab; lets automated playtests drive it)
             // starting hearts include the selected lizard's ability bonus (e.g. Skink)
             MaxHearts = GameConst.MaxHearts + Mathf.Max(0, MetaProgress.SelectedLizard.Modifiers.BonusHearts);
             Hearts = MaxHearts;
+            HasTail = true;
+            CatProvoked = false;
             GameEvents.NearMiss += OnNearMiss;
         }
 
@@ -54,7 +63,17 @@ namespace LizardCrossing
                 StartRun();
 
             if (State == GameState.Playing)
+            {
                 RunTime += Time.deltaTime;
+
+                // Anole autotomy: the tail grows back after surviving a stretch unhurt,
+                // so the player is rewarded with a fresh "free hit" buffer for playing well.
+                if (!HasTail && Time.time - _lastHitTime >= GameConst.TailRegrowDelay)
+                {
+                    HasTail = true;
+                    GameEvents.RaisePlayerTailRegrown();
+                }
+            }
         }
 
         public void StartRun()
@@ -76,10 +95,48 @@ namespace LizardCrossing
             CloseCalls++;
         }
 
-        /// <summary>A hazard connected with the lizard. Costs a heart; 0 hearts = death.</summary>
-        public void HitPlayer(Vector3 hazardPos)
+        /// <summary>
+        /// The lizard ran head-on into a pedestrian's leg/shoe. This never costs a
+        /// tail or heart — it staggers the lizard (handled by the player) and, the
+        /// first time it happens, wakes the alley cat to begin the chase.
+        /// </summary>
+        public void FootBump(Vector3 pedPos)
         {
             if (State != GameState.Playing) return;
+
+            if (!CatProvoked)
+            {
+                CatProvoked = true;
+                GameEvents.RaiseCatProvoked();
+            }
+            GameEvents.RaiseFootBumped(pedPos); // stumble/roll visual
+            HitPlayer(pedPos);                  // shared tail→heart pool (knockback + i-frames)
+        }
+
+        /// <summary>The lizard ran into a solid prop/wall: a faceplant + shared damage.</summary>
+        public void PropBump(Vector3 propPos)
+        {
+            if (State != GameState.Playing) return;
+            GameEvents.RaiseFaceplanted(propPos); // splat visual
+            HitPlayer(propPos);                   // shared tail→heart pool
+        }
+
+        /// <summary>A hazard connected with the lizard. Costs a heart; 0 hearts = death.</summary>
+        public void HitPlayer(Vector3 hazardPos, DeathCause cause = DeathCause.Stomped)
+        {
+            if (State != GameState.Playing) return;
+
+            _lastHitTime = Time.time;
+
+            // First hit drops the tail (autotomy) instead of a heart — the lizard's
+            // signature escape. Stomps and the cat both route through here, so either
+            // one spends the tail first.
+            if (HasTail)
+            {
+                HasTail = false;
+                GameEvents.RaisePlayerTailLost(hazardPos);
+                return;
+            }
 
             Hearts--;
             if (Hearts > 0)
@@ -91,7 +148,7 @@ namespace LizardCrossing
                 Hearts = 0;
                 State = GameState.Dead;
                 MetaProgress.RecordDeath();
-                GameEvents.RaisePlayerDied(DeathCause.Stomped);
+                GameEvents.RaisePlayerDied(cause);
             }
         }
 

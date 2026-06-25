@@ -2,16 +2,19 @@
 
 > Living plan for the push to the visual target (`docs/VISUAL_TARGET.md`). Maintained by
 > the **studio-producer** role. Status keys: TODO · IN PROGRESS · IN REVIEW · DONE.
-> **Last updated: 2026-06-24.**
+> **Last updated: 2026-06-25.**
 
 ## Gap-to-target (one line)
-Lighting + post + DoF landed (WO-1/WO-2 DONE — gameplay-guardian PASS): the frame now reads **warm, sunny, and
-cinematic** with an HDRI sky, ACES grade, bloom, vignette, AO, and bokeh DoF (sharp hero /
-blurred giant foreground). Framing tightened (WO-3 DONE — hero now large/bottom-center/
-sharp). Set dressing (WO-4 DONE) and **HUD polish** (WO-5 DONE — rebuilt to the reference) are
-in. Exposure/bloom **touch-up landed** (WO-7 DONE — washed-out haze killed, asphalt/mid-tones
-grounded, hero anti-silhouette floor added). Remaining: the **art-director re-grade + Sprint 2
-scope** (WO-6) and an on-device frame-time confirm.
+**~78% to target (art-director re-grade, WO-6 DONE 2026-06-25).** Sprint 1 "Cinematic NYC" closed
+the big theme-independent levers: the run now reads **warm, sunny, cinematic** with a sharp
+hero lizard bottom-center, a **genuinely giant blurred foreground hazard** (the mid-run boot and
+the POV pedestrian both nail "I am tiny in a huge world"), grounded mid-tones, and a reference-
+layout HUD. **The single gating issue is DoF discipline: the background is over-blurred** (38mm/f9
+Bokeh blurs the whole city to a soft wash), which erases two target reads — the **clear lane to a
+visible SAFE-ZONE marker** (there is no goal marker in frame at all) and the **crosswalk** (flat
+stripes at distance dissolve in the blur). Secondary gaps: heavy top vignette crushing the
+skyline to near-black, set-dressing/palette cohesion + prop-scale spot checks, and HUD top-bar
+contrast. **Next:** Sprint 2 "Cohesive NYC" (below) + the still-owed on-device frame-time confirm.
 
 ## Current grade (NYC theme, from this session's gameplay frames)
 - ✅ Surfaces reskinned (cobblestone / brick / asphalt / granite), 0 magenta, slice runs
@@ -45,16 +48,30 @@ with a `gameplay-guardian` PASS (mechanics + frame-time budget).
 | WO-3 | DONE (verified 2026-06-24) | camera-ui-juice (+main: feed-forward fix) | Tighten third-person framing: hero bigger & bottom-center, central lane to safe zone clear, hazards still read giant at edges | `LizardCameraController.cs`, `GameConst` cam consts, `CinematicPost.cs` | Hero fills more of lower frame, lane/hazards readable, POV re-shot & intact |
 | WO-4 | DONE (verified 2026-06-24) | environment-artist | Skin the grey road-zone barrier walls + make the crosswalk read as a real crosswalk (+ import/wire 8 generated NYC props) | `CityReskin.cs`, `LevelBuilder.cs`, `Resources/Models/Generated` | No flat-grey walls, crosswalk legible, 0 magenta, real-world scale |
 | WO-5 | DONE (verified 2026-06-24) | camera-ui-juice | HUD polish to match reference: hearts (TL), rounded level progress bar + gecko marker + checkered flag + "LEVEL n" (TC), bug counter (TR) | `SimpleHUDController.cs`, `UIFactory.cs`, `ProceduralTextures.cs` | Matches VISUAL_TARGET §5, crisp at portrait, safe-area aware |
-| WO-6 | TODO | art-director | Re-grade the full run vs target; update gap-to-target; scope Sprint 2 | (review) | New % to-target + named next sprint |
+| WO-6 | DONE (2026-06-25) | art-director | Re-grade the full run vs target; update gap-to-target; scope Sprint 2 | (review) | New % to-target + named next sprint |
 | WO-7 | DONE (verified 2026-06-25) | lighting-post-artist | Exposure/bloom touch-up: kill the washed-out/over-bloomed haze (asphalt stays dark) + add an ambient/fill floor so the hero never sinks to silhouette under heavy occlusion | `CinematicPost.cs`, `Bootstrap.cs` | Mid-tones grounded (no near-white asphalt), still warm/sunny, hero never black-silhouette, 0 errors/magenta |
 
 **Dispatch order:** WO-1 → WO-2 → WO-3 → WO-4 → WO-5 → WO-6. (1 & 2 are the big pop; do them first.) WO-7 (exposure/bloom touch-up) done after WO-4's washout flag.
 
 ---
 
+## SPRINT 2 — "Cohesive NYC" (scoped by art-director, WO-6, 2026-06-25)
+Goal: convert Sprint 1's cinematic base into a *legible, cohesive* frame — restore the reads the
+strong DoF currently eats (goal marker, lane, crosswalk), tighten set/palette cohesion, and add
+the missing game-feel juice. Each work-order ends with a `gameplay-guardian` PASS (mechanics +
+frame-time). **Dispatch order: S2-1 → S2-2 → S2-3 → S2-4 → S2-5 → S2-6.** S2-1 is the single
+highest-leverage change (it gates the "% to target").
+
+| # | Status | Owner | Work-order | Files (likely) | Acceptance test |
+|---|---|---|---|---|---|
+| S2-1 | TODO | lighting-post-artist (+camera-ui-juice for focus target) | **DoF discipline + readable lane.** Background is over-blurred (38mm/f9 Bokeh washes the whole city). Pull the far falloff back so the mid-ground city + the running lane read as a recognizable place, while KEEPING the hero tack-sharp and the close foreground hazard strongly blurred. Tune focal length/aperture/`focusDistance` curve (or a far-blur clamp). Also tame the top vignette so the skyline isn't crushed to near-black. | `CinematicPost.cs` (`DofFocalLength` 38 / `DofAperture` f9 / focus track), Vignette override | Hero + close hazard read exactly as now; the mid-ground city/lane is recognizable (not a wash); skyline not black-crushed; still cinematic; 0 magenta; DoF still mobile-tunable via `SetLite` |
+| S2-2 | TODO | environment-artist (+camera-ui-juice) | **Visible SAFE-ZONE goal marker.** Target §1/§5 demand a clear destination vanishing toward the horizon; there is currently NO goal marker in the near-safe-zone frame. Add a readable safe-zone marker/sign/arch at z≈140 (and a faint progress read down the lane) so the player always knows where to run. Visual-only — do not move the z=140 threshold or narrow the band. | `LevelBuilder.cs` (safe-zone build), `CityReskin.cs`/props, `GameConst` | A safe-zone marker is clearly visible from ~10-20u out down the central lane; reads at lizard-eye height; band/threshold unchanged; loop `gameplay-guardian` |
+| S2-3 | TODO | environment-artist | **Crosswalk that reads from the game camera.** WO-4 made the stripes correct in data, but flat-on-ground stripes at distance dissolve under the low POV + DoF (see `grade_crosswalk.png`). Make the crossing read AS a crosswalk from the actual camera — bolder/wider high-contrast stripes, a curb/stop-line cue, or a subtle raised/edge read so it survives foreshortening + blur. | `CityReskin.cs` (`CityGen_lanes_white`/`_secondary`), road-zone build | From a TP frame approaching a road lane, the crosswalk is unmistakably a crosswalk; no flat-grey road; 0 magenta |
+| S2-4 | TODO | environment-artist | **Set-dressing cohesion + palette discipline + prop-scale audit.** One cohesive NYC block: spot-check each generated prop for scale/orientation/texture quality (hydrant verified glTF/2048/not-magenta this pass — confirm the rest), kill any mismatched/clashing props, and enforce the §3 palette so the hero green stays the most saturated thing in frame. | `LevelBuilder.cs` (`BuildStreetProps`/furniture), `CityReskin.cs` | Every placed prop is real-world-scale, correctly oriented, ≤2048 textures, palette-consistent; nothing out-competes the hero green; 0 magenta |
+| S2-5 | TODO | camera-ui-juice | **Tail-drop + near-miss juice + HUD contrast.** Add the tasteful game-feel the reference implies: tail-drop/heart-loss feedback, near-miss slow-mo/hit-stop, light screen shake/particles on hit — all visual, no mechanic/feel change to steer/dash/band. Also lift the top-HUD text/icon contrast (title + gecko marker + fly icon read marginally over bright scenes) and confirm the gecko marker is always visible on the bar. | `camera-ui-juice` FX, `SimpleHUDController.cs`, `CinematicPost.cs` (slow-mo hook) | Hit/near-miss have clear feedback; HUD legible over bright/dark backgrounds; gecko marker always visible; sacred mechanics untouched (loop `gameplay-guardian`) |
+| S2-6 | TODO | gameplay-guardian | **On-device frame-time confirm (still owed from Sprint 1).** Confirm the DoF+Bloom+SSAO stack (post S2-1 tuning) holds frame budget on a real mid-tier phone at 1080×2400, and validate the `CinematicPost.SetLite(true)` low-tier path drops DoF+Bloom (+gate SSAO) cleanly. | `CinematicPost.cs` `SetLite`, build/profiler | Mid-tier device hits target frame time; lite path verified; sign-off recorded |
+
 ## BACKLOG (later sprints)
-- **Sprint 2 — "Cohesive NYC":** material/texture quality pass, set-dressing cohesion (kill
-  mismatched props, palette discipline), light tail-drop/juice polish, near-miss slow-mo feel.
 - **Sprint 3 — "Theme-swap plumbing":** environment-artist adds a data-driven theme system to
   `LevelBuilder` (surface set + prop/furniture kit + hazard skin + palette/grade per theme),
   mechanics unchanged.
@@ -62,6 +79,51 @@ with a `gameplay-guardian` PASS (mechanics + frame-time budget).
   surf shack, tiki bar, palms, flowers, rope rails; scooter + beach-goer hazards; warm grade).
 
 ## Review log
+- **2026-06-25 — WO-6 (art-director), DONE. Sprint 1 capstone re-grade + Sprint 2 scope.**
+  Fresh in-engine grade of the full NYC run vs `VISUAL_TARGET.md` — captured `Camera.main`→RT→PNG
+  frames (the low POV cam can't use `Unity_Camera_Capture`) at start, mid-run, road, crosswalk,
+  near-safe-zone, a hydrant close-up, and one POV; HUD via a full-screen `ScreenCapture`. Fresh
+  Play session, `Time.timeScale=0.25` for clean frames, restored to 1; **0 console errors, 0
+  magenta across 1678 materials**; POV cam calibrated (camY 0.152, pitch 24°, FpFov 95). Frames:
+  `Temp/Shots/grade_start.png`, `grade_mid.png`, `grade_road.png`, `grade_crosswalk.png`,
+  `grade_safe.png`, `grade_pov.png`, `grade_hydrant.png`, `grade_hud.png`.
+  **Verdict: ~78% to target. Gating issue = DoF over-blur of the background.**
+  **Per-lever grade (VISUAL_TARGET §2):**
+  - **Lighting/exposure/grade — ~90% (AT BAR).** Warm, sunny, grounded mid-tones; cobble/asphalt
+    read as textured grey stone (no wash), buildings keep warm/cool separation, hero green is the
+    most saturated thing in frame. WO-7's exposure/bloom tame held. Soft contact shadow under the
+    hero. (`grade_start.png`, `grade_pov.png`.)
+  - **Depth of field — ~70% (the lever that's now OVER-applied).** Hero is tack-sharp, the close
+    foreground hazard blurs strongly and beautifully (mid-run boot + POV pedestrian both nail the
+    giant-foreground read). BUT the far falloff is too aggressive (38mm/f9 Bokeh) — the entire
+    city/lane becomes a soft wash (`grade_safe.png`, `grade_crosswalk.png`), erasing the lane-to-
+    goal read. This is the #1 Sprint 2 fix (S2-1).
+  - **Cohesive themed set + palette — ~75%.** Warm brick NYC reads as one place in the POV/road
+    frames; hydrant verified (glTF shader, 2048 albedo, baseColorFactor white, not magenta). Needs
+    a full prop scale/quality/palette audit (S2-4).
+  - **Composition/framing — ~80%.** Hero bottom-center & large (WO-3 feed-forward win), low POV,
+    giant side hazards — all on target. Two misses: NO visible safe-zone goal marker at the lane
+    end (`grade_safe.png`), and a heavy top vignette crushing the skyline to near-black
+    (`grade_start.png`). (S2-1 vignette + S2-2 goal marker.)
+  - **HUD — ~80%.** Reference layout present: hearts TL, "DOWNTOWN DASH" + green progress bar +
+    checkered flag + "LEVEL 1" TC, "n/total" bug counter TR, friendly game-over (STOMPED!/REVIVE/
+    TRY AGAIN/HOME). Top-bar text/icon contrast is marginal over bright scenes and the gecko marker
+    is hard to spot (`grade_hud.png`). (S2-5.)
+  - **Materials/textures — ~80%.** Believable, not noisy at the mobile clamp; the crosswalk is the
+    one surface that fails to read from the game camera (flat stripes + distance + blur). (S2-3.)
+  **Sprint 2 "Cohesive NYC" scoped above** (S2-1…S2-6): DoF discipline + lane read (gating),
+  safe-zone goal marker, camera-readable crosswalk, set/palette cohesion + prop audit, tail-drop/
+  near-miss juice + HUD contrast, and the on-device frame-time confirm. **No code changed in this
+  WO — review-only** (timeScale restored to 1, exited Play cleanly; the only console errors were my
+  own malformed MCP calls, not game/compile errors).
+  **Sprint 1 retro:** the dispatch order was right — lighting/post/DoF first delivered the biggest
+  pop and got us from "flat grey midday" to a genuinely cinematic ground-level POV. The two
+  best frames (`grade_mid.png` boot, `grade_pov.png` pedestrian) already look like the reference's
+  feel. The lesson for Sprint 2: **the same DoF that created the cinematic pop is now over-applied
+  and eating legibility** (lane, goal, crosswalk) — Sprint 1 maximized "cinematic," Sprint 2 must
+  rebalance toward "cinematic AND readable." Set-dressing/HUD landed structurally but need a
+  cohesion/contrast polish pass, not a rebuild. On-device frame-time confirm is still owed and is
+  now folded into Sprint 2 (S2-6) so it can't slip again.
 - **2026-06-25 — WO-7 (lighting-post-artist), DONE/verified.** Touch-up on the WO-1/WO-2
   lighting after gameplay frames read **washed-out / over-bloomed** (hazy glow over the scene,
   sunlit pavement near-white) and the guardian flagged the hero **sinking toward silhouette**
