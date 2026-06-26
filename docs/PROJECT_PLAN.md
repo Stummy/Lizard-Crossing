@@ -23,7 +23,7 @@ re-breaking finished work.
 | **Lizard** | asset-scout | 🔒 Locked | model · rig · run cycle |
 | **Controls + camera** | camera-ui-juice | 🔒 Locked | auto-run · steer · dash · low POV |
 | **World + corridor** | environment-artist | 🟧 **ACTIVE** | straight walled run · real wall/fence colliders · safe zone |
-| **Hazards** | environment-artist | 🟦 Open | crowd ✅ · cars/cross-traffic ⬜ · alley/debris ⬜ |
+| **Hazards** | environment-artist | 🟦 Open | crowd ✅ · cars/cross-traffic ✅ (crosswalk crossings + traffic light, 2026-06-26) · alley/debris ⬜ |
 | **Lighting + grade** | lighting-post-artist | 🟦 Open | golden-hour · readability (near sign-off) |
 | **HUD + juice** | camera-ui-juice | 🟦 Open | hearts · dash btn · shake · hit-stop (near sign-off) |
 | **Screens + flow** | camera-ui-juice | 🟦 Open | start / death / win panels |
@@ -50,7 +50,7 @@ render. **v1.0 = the NYC theme shipped to a store.** Boardwalk is a fast-follow 
 | **0 — Foundations & mechanics** | Auto-run corridor, steer/dash, 3-hearts + tail-autotomy, faceplant, pedestrians/cars/bugs, win/lose | ✅ DONE |
 | **1 — First cinematic art pass** (Sprint 1) | HDRI sky, ACES grade, Bokeh DoF, hero framing fix, road reskin, Megascans props, HUD rebuild | ✅ DONE (~78% to target) |
 | **2 — Polish to target** (Sprint 2) | DoF discipline, goal beacon, palette/placeholder cleanup, juice, HUD contrast, perf gate | 🔄 IN PROGRESS (~70%) — remaining: solid fences, DASH UI, near-miss check, perf gate |
-| **3 — Content completeness** | Alley zone + debris hazard, lane TYPES, tail-drop FX, traffic-light/cross-traffic, audio pass, polished death/win screens | ⬜ NOT STARTED |
+| **3 — Content completeness** | Alley zone + debris hazard, lane TYPES, tail-drop FX, traffic-light/cross-traffic, audio pass, polished death/win screens | 🟡 PARTIAL — tail-drop FX ✅, **crosswalk traffic + traffic light ✅ (2026-06-26)**; remaining: alley/debris + lane types, audio, death/win screens |
 | **4 — Game-feel & UX** | Difficulty curve, onboarding/tutorial, title/menu/settings/pause, near-miss & combo juice | 🟡 PARTIAL (some juice exists) |
 | **5 — Production hardening** | Mobile perf budget + on-device test, Android/iOS build pipeline, save/progression, store assets | ⬜ NOT STARTED |
 | **6 — Boardwalk theme** | Theme-swap plumbing, beach surfaces/props/palette/HDRI (the concept setting) | ⬜ NOT STARTED |
@@ -134,13 +134,28 @@ advances and the concept frame it moves toward. **`▶` = next up.**
 | ⬜ | art-director re-grade vs target sheet → if it reads the target, **M1 hit** | 2 | all | gate |
 
 ### Stage 3 — Content completeness (the big build)
+> **Approved 5-stage plan (`~/.claude/plans/mighty-prancing-pie.md`, owner-locked 2026-06-26):**
+> S1 polish/fixes ✅ · S2 realistic city dressing ✅ · **S3 crosswalk traffic ✅ (this session)** ·
+> S4 realistic hero models (lizard/tail/bug/car) ⬜ · S5 Central Park finale ⬜.
+
 | ✓ | Item | Stage | Concept target | Notes |
 |---|------|-------|----------------|-------|
-| ⬜ | **Traffic system** — randomized cross-traffic waves (people/cars) + traffic light; solve pile-up at fences so lizard can squeeze through | 3 | run/nearmiss | owner request #6 (ledger #24) |
+| ✅ | **Crosswalk traffic system** — cars sweep ±X across the lizard's lane at each ROAD lane (z=40/76/112); a per-crossing **traffic light** cycles cars-go↔safe + GATES the cars (Car goGate) so a recurring telegraphed gap opens; painted asphalt+zebra crosswalk; car hit = a heart (Car.KillCheck→HitPlayer). | 3 | run/nearmiss | owner request #6 (ledger #24). Commits 8db8aa6 (crossings), 4c899dc (traffic light), 2039e12 (recorder reaches crossing). Verified: compile clean · **Invariant PASS** · cross-traffic + red light + heart-loss confirmed on the 14s clip · Gemini gate = no regression. **Owner to judge feel** (auto-run can't stop at red, so it's dodge-the-gap, not stop-and-wait). |
+| ⬜ | Cars **distinct hazard beat** polish — side-impact juice ≠ ped stomp; crowd should PART at the crossing (peds wait at the curb) instead of walking through the cross-street | 3 | nearmiss | next Stage-3 polish; crowd-gap not built yet |
+| ⬜ | **Traffic system** — (kept for context) randomized cross-traffic waves (people/cars) + traffic light — core ✅ above; remaining: alley/debris lane | 3 | run/nearmiss | owner request #6 (ledger #24) |
 | ⬜ | Lane TYPES in LevelDefinition/LaneSpec (sidewalk/road/alley) | 3 | run | prerequisite for alley |
 | ⬜ | Alley zone + falling/scattered debris hazard | 3 | faceplant | needs lane types first |
 | ⬜ | Cars as a distinct hazard beat (side impact ≠ ped stomp) | 3 | nearmiss | per VISUAL_TARGET_SHEET §4 |
 | ⬜ | Polished death/win SCREENS (panel + stats + RETRY / SAFE! banner) | 3/4 | gameover/win | in-engine UI, match concept |
+
+#### Gemini findings — 2026-06-26 crossing clip (logged, routed; not Stage-3 regressions)
+| ✓ | Item | Stage | Concept target | Notes |
+|---|------|-------|----------------|-------|
+| ⬜ | **Lighting reads too COOL/blue** — Gemini (which earlier pushed golden) now calls the current grade cold/flat-blue vs the owner's NEUTRAL daylight. Caveat: Gemini unreliable on lighting; judge on the real MP4. | 2 | run | → **lighting-post-artist + owner judgment**; nudge toward neutral, not cool |
+| ⬜ | **Lizard feet clip/sink into the ground** (recurring) — soles penetrate the sidewalk strip; foot plant vs StreetGround.SidewalkY (0.12). | 4 | run | 🔒 **Lizard LOCKED** — needs owner OK; pairs with the Stage-4 model/anim pass |
+| ⬜ | **CLOSE CALL! / TAIL DROPPED! text too LARGE** — obstructs upcoming hazards. Shrink + reposition. | 4 | run/nearmiss | → **camera-ui-juice** (HUD/juice) |
+| ⬜ | Near-field **ground texture warps/stretches** under the lizard — heavy foreground DoF + low near-res. | 2/3 | run | → lighting-post (DoF) + environment (texture res) |
+| ℹ️ | Gemini did **NOT** flag the crosswalk / cross-traffic / traffic light as broken — the new intersection reads correctly. | 3 | run | Stage-3 verification capstone |
 | ⬜ | Audio pass (SFX + ambience + music bed) | 3 | — | ElevenLabs/Lyria via Unity AI |
 | 🅿️ | Cat / Predator — decide if it stays (never appears today) | 3 | — | owner-deferred |
 
