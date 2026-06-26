@@ -97,17 +97,31 @@ namespace LizardCrossing
         // (CamBack 0.22→0.185 = bigger hero) and dropped the look point (CamLookHeight 0.052→0.036
         // = camera pitches down so the hero rises off the bottom edge into the lower third). Still
         // a low ground-level POV; the city still towers.
-        public const float CamBack = 0.185f;
+        // PORTRAIT-OPEN pass (2026-06-26, owner "looks zoomed in"): the game ships PORTRAIT 9:16
+        // but was tuned at landscape. At true 9:16 BaseFov()'s portrait formula WANTS ~82° vertical
+        // to hit the 52° horizontal design target, but CamMaxFov=72 CLAMPED it down to only ~44°
+        // horizontal — far narrower/zoomed than the open-avenue concept. Raised CamMaxFov 72→84 so
+        // the portrait FOV is no longer throttled (84° vertical ≈ 52° horizontal at 9:16, well shy
+        // of fisheye for a phone-portrait frame), and pulled the rig back a touch (CamBack 0.185→0.21)
+        // so the avenue reads DEEP again. Hero stays prominent bottom-centre (the de-clip below keeps
+        // the close low POV from burying into rubble — that was the worst "zoomed brown blob" moment).
+        public const float CamBack = 0.21f;
         public const float CamHeight = 0.105f;
         public const float CamLookAhead = 0.55f;
         public const float CamLookHeight = 0.036f;
         public const float CamBaseFov = 55f;
-        public const float CamMaxFov = 72f;
+        public const float CamMaxFov = 84f;   // portrait ceiling: lets BaseFov() reach the 52° horizontal target at 9:16 instead of clamping to a narrow ~44°
         public const float CamTargetHorizontalFov = 52f;
         public const float CamDashFovKick = 8f;
         public const float CamTraumaDecay = 1.4f;
         public const float CamMinGroundClearance = 0.1f; // camera never sinks closer than this above the ground it pans over
         public const float CamMaxLateralLead = 0.13f;  // the lizard may slide this far off-centre when strafing so side-to-side weaving READS on screen; the camera leashes to it so it never leaves the frame
+        // De-clip: when a solid prop/wall is between the camera and the lizard, pull the rig IN
+        // (toward the lizard) so the lens never ends up inside faceted rubble filling the frame.
+        // A short sphere of this radius is swept from the lizard back toward the desired cam slot;
+        // the first solid hit caps how far back the camera may sit (kept a hair off the surface).
+        public const float CamDeClipRadius = 0.08f;     // sweep thickness — a touch under the lizard so it slips through its own gaps but not a rock
+        public const float CamDeClipSkin = 0.04f;       // stop this far in front of the blocking surface so the lens stays outside it
 
         // First-person "lizard cam" (optional POV toggle): the camera rides at the lizard's
         // OWN snout/eye line and looks FORWARD + slightly down, so the real snout sits at the

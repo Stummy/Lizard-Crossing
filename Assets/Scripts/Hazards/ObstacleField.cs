@@ -62,5 +62,33 @@ namespace LizardCrossing
             if (bestUrgency <= 0f) return Vector3.zero;
             return right * (bestSide * maxSpeed * bestUrgency);
         }
+
+        /// <summary>
+        /// Camera de-clip helper: how far back (along the horizontal -Z look-back from the lizard)
+        /// the camera may sit before a registered solid obstacle would be between it and the lizard.
+        /// The rig sweeps a thin column from the lizard at <paramref name="from"/> straight back by
+        /// <paramref name="maxBack"/> (a positive distance); returns the smallest clear distance, or
+        /// <paramref name="maxBack"/> if nothing blocks. Obstacles register only their (x,z)+radius,
+        /// so this is the prop counterpart to the physics sphere-cast that catches walls/colliders —
+        /// rubble piles often have no collider but DO live here, which is exactly the "buried in the
+        /// brown rock" case. <paramref name="camHalfWidth"/> pads the obstacle radius so the lens
+        /// body, not just its centre, clears the rock.
+        /// </summary>
+        public static float ClearBackDistance(Vector3 from, float maxBack, float camHalfWidth)
+        {
+            if (Obs.Count == 0 || maxBack <= 0f) return maxBack;
+            float best = maxBack;
+            for (int i = 0; i < Obs.Count; i++)
+            {
+                var o = Obs[i];
+                float dz = from.z - o.Z;          // obstacle behind the lizard (toward the camera) => dz > 0
+                if (dz <= 0f || dz > maxBack) continue;
+                float dx = Mathf.Abs(from.x - o.X);
+                float clear = o.Radius + camHalfWidth;
+                if (dx > clear) continue;          // the back-sweep misses it laterally
+                if (dz < best) best = dz;          // camera must stop in front of this obstacle
+            }
+            return best;
+        }
     }
 }

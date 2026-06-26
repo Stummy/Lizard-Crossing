@@ -19,6 +19,7 @@ namespace LizardCrossing
         private Vector3 _posVelocity;
         private Vector3 _lastTargetPos;
         private bool _firstPerson;
+        private int _deClipMask = ~0; // computed in Setup: everything EXCEPT the lizard + its own ground
 
         // Follow smoothing time. Against the constant +Z auto-run this SmoothDamp would settle to
         // a steady following-lag of ~(forwardSpeed * FollowSmooth) ≈ 0.2u, which roughly doubles
@@ -55,6 +56,14 @@ namespace LizardCrossing
             Instance = this;
             _cam = cam;
             _target = target;
+
+            // De-clip mask: stop the back-sweep on props/walls only — never on the lizard itself
+            // (it sits at the sweep origin) nor on the street/curb it rides analytically.
+            _deClipMask = ~0;
+            int lizLayer = LayerMask.NameToLayer("Lizard");
+            if (lizLayer >= 0) _deClipMask &= ~(1 << lizLayer);
+            int groundLayer = LayerMask.NameToLayer("CityGround");
+            if (groundLayer >= 0) _deClipMask &= ~(1 << groundLayer);
 
             _cam.fieldOfView = BaseFov();
             _cam.nearClipPlane = 0.05f;
@@ -157,10 +166,31 @@ namespace LizardCrossing
             // and the world-axis +Z look direction, not from re-centring X.
             float camX = anchor.x;
             float camY = anchor.y + GameConst.CamHeight;
+
+            // DE-CLIP: the low close follow-cam can end up INSIDE a solid prop (a rubble pile sits
+            // right at spawn) — the lens buries in faceted rock and the frame goes to a brown
+            // close-up (the owner's worst "zoomed in" moment). Cap how far back the rig sits so it
+            // never crosses a blocker. Two catches: (1) a physics sphere-cast from the lizard's
+            // chest straight back hits any wall/prop WITH a collider; (2) ObstacleField — where
+            // rubble piles register (x,z)+radius even when they carry no collider. We take whichever
+            // stops the camera nearer the lizard. The low ground POV is untouched (Y unchanged) —
+            // only the back distance shrinks, so the hero just sits a hair larger when crowded.
+            float back = GameConst.CamBack;
+            float chestY = camY; // sweep at the camera's own height so it tests what the lens passes through
+            Vector3 sweepFrom = new Vector3(camX, chestY, anchor.z);
+            RaycastHit hit;
+            if (Physics.SphereCast(sweepFrom, GameConst.CamDeClipRadius, Vector3.back, out hit, back,
+                                   _deClipMask, QueryTriggerInteraction.Ignore))
+            {
+                back = Mathf.Min(back, Mathf.Max(0f, hit.distance - GameConst.CamDeClipSkin));
+            }
+            float fieldClear = ObstacleField.ClearBackDistance(anchor, back, GameConst.CamDeClipRadius);
+            back = Mathf.Min(back, Mathf.Max(0f, fieldClear - GameConst.CamDeClipSkin));
+
             // Hard floor: never let the camera dip into the ground it's over.
             float groundUnderCam = StreetGround.HeightAt(camX, anchor.z);
             camY = Mathf.Max(camY, groundUnderCam + GameConst.CamMinGroundClearance);
-            return new Vector3(camX, camY, anchor.z - GameConst.CamBack);
+            return new Vector3(camX, camY, anchor.z - back);
         }
 
         private Vector3 LookPoint()
