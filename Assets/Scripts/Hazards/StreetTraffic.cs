@@ -50,6 +50,38 @@ namespace LizardCrossing
             // --- jaywalkers crossing the road, staggered down the avenue, so the
             //     lizard can't treat the roadway as a safe gap between car waves ---
             CrossLane(parent, level.Length, 5);
+
+            // --- STAGE 3: the crosswalk crossing. At each ROAD lane the forward-running
+            //     lizard reaches a cross-street where cars sweep ±X straight across its
+            //     lane; it must time the GAP between waves to get through. A car hit costs a
+            //     heart (Car.KillCheck → GameStateManager.HitPlayer). The painted asphalt +
+            //     zebra crosswalk at these Z's is laid by LevelBuilder.BuildStreetCrossings,
+            //     so the cross-traffic reads as an intersection, not cars on the sidewalk. ---
+            if (level.Lanes != null)
+                foreach (var lane in level.Lanes)
+                    if (lane.Type == LaneType.Road)
+                        CarCrossLane(parent, lane.Z, lane.Dir);
+        }
+
+        // A wave of cars crossing the avenue (±X) at one cross-street Z. The wave comes in a
+        // burst and then a shared rest, so there's a readable GAP between waves — the safe
+        // window the auto-running lizard threads. Mostly one-way (the lane's Dir) with one car
+        // the other way so the crossing reads as two-way cross-traffic. Cars run fast so each
+        // clears the lizard's lane quickly; the rest (RespawnDelay) is the crossing window.
+        static void CarCrossLane(Transform parent, float z, int laneDir)
+        {
+            float margin = GameConst.CorridorHalfWidth + 12f;
+            int primary = laneDir >= 0 ? 1 : -1;
+            float[] delays = { 0.0f, 1.3f, 2.4f };
+            int[] dirs = { primary, primary, -primary };
+            float[] speeds = { 11f, 12f, 10f };
+            for (int i = 0; i < delays.Length; i++)
+            {
+                int dir = dirs[i];
+                Vector3 start = new Vector3(dir > 0 ? -margin : margin, GameConst.GroundY, z);
+                Vector3 end = new Vector3(-start.x, GameConst.GroundY, z);
+                Car.SpawnTrack(parent, start, end, speeds[i], delays[i], 3.4f);
+            }
         }
 
         static void CarLane(Transform parent, float x, int dir, float speed, int count, float zLow, float zHigh)

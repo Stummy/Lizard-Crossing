@@ -55,6 +55,7 @@ namespace LizardCrossing
                 BuildInvisibleGround(root, level.Length);
                 CityReskin.Apply(GameObject.Find("NYCity")); // re-skin the GLB's baked surfaces with Megascans scans
                 BuildStraightCorridor(root, level);          // our OWN straight, walled run surface over the crooked GLB
+                BuildStreetCrossings(root, level);           // painted crosswalk + asphalt band at each ROAD lane (the crossings)
             }
             else
             {
@@ -161,6 +162,61 @@ namespace LizardCrossing
                 w.GetComponent<Renderer>().sharedMaterial = MaterialCache.GetTexturedNormal(
                     tex, normal, color, 0.18f, zlen / 8f, Mathf.Max(1f, height / 4f));
             }
+        }
+
+        // ---------- Stage 3: crosswalk crossings ----------
+        /// <summary>
+        /// At each ROAD lane the continuous sidewalk strip is over-painted with a dark asphalt
+        /// cross-street band + a white zebra crosswalk, so the ±X car cross-traffic
+        /// (StreetTraffic.CarCrossLane) reads as a real intersection the lizard crosses — not
+        /// cars driving over the sidewalk. It's a FLAT overlay a few mm above the strip (no
+        /// height change, colliders stripped), so the run band stays dead straight and the
+        /// Foundation invariant (sidewalk height holds end-to-end) still passes.
+        /// </summary>
+        private static void BuildStreetCrossings(Transform root, LevelDefinition level)
+        {
+            if (level.Lanes == null) return;
+            var cross = new GameObject("StreetCrossings").transform;
+            cross.SetParent(root, false);
+
+            float cx = GameConst.CorridorStripCenterX;            // 8 — strip centre
+            float bandW = GameConst.CorridorStripHalfWidth * 2f;  // ~9.2 — span the full strip width
+            float y = GameConst.CorridorStripY + 0.004f;          // a hair above the sidewalk strip
+            const float roadDepth = 6.5f;                         // z-depth of the cross-street band
+
+            var asphalt = new Color(0.16f, 0.16f, 0.17f);
+            var paint = new Color(0.92f, 0.92f, 0.88f);
+
+            foreach (var lane in level.Lanes)
+            {
+                if (lane.Type != LaneType.Road) continue;
+                float z = lane.Z;
+
+                // 1) dark asphalt cross-street band over-printing the sidewalk strip
+                Decal(cross, new Vector3(cx, y, z), new Vector3(bandW, 0.02f, roadDepth), asphalt, "Crossing_Asphalt");
+
+                // 2) white zebra: bars spanning the lizard's crossing lane (x), repeated along
+                //    +Z so it walks OVER the stripes as it crosses. Bars sit just above the asphalt.
+                const int bars = 7;
+                float barW = bandW * 0.78f;     // a touch inset from the band edges
+                float span = roadDepth - 1.0f;  // leave a front/back margin
+                for (int i = 0; i < bars; i++)
+                {
+                    float t = i / (float)(bars - 1);
+                    float bz = z - span * 0.5f + t * span;
+                    Decal(cross, new Vector3(cx, y + 0.004f, bz), new Vector3(barW, 0.02f, 0.34f), paint, "Crossing_Stripe");
+                }
+            }
+        }
+
+        /// <summary>A flat painted overlay quad (Box with its collider stripped) — used for the
+        /// crosswalk asphalt/stripes so the lizard runs over them without tripping.</summary>
+        private static GameObject Decal(Transform parent, Vector3 pos, Vector3 scale, Color color, string name)
+        {
+            var go = Box(parent, pos, scale, color, name);
+            var col = go.GetComponent<Collider>();
+            if (col != null) Object.Destroy(col);
+            return go;
         }
 
         private static void BuildGround(Transform root, float length)
