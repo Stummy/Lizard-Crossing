@@ -141,6 +141,9 @@ namespace LizardCrossing
         public const float StompKillPad = 0.03f;       // margin trimmed off the sole: edges are forgiving
         public const float MinWarningLead = 0.7f;      // guaranteed telegraph lead (s) before any footfall lands
         public const float HitStopDuration = 0.07f;
+        // A full-speed faceplant into a wall/prop is the hardest non-death impact — give it a
+        // longer freeze-frame than a glancing stomp so the wall reads as a WALL (hit-juice pass).
+        public const float FaceplantHitStop = 0.11f;
         public const float NearMissSlowScale = 0.45f;
         public const float NearMissSlowDuration = 0.35f;
 

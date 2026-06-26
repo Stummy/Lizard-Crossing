@@ -75,6 +75,8 @@ namespace LizardCrossing
             GameEvents.HazardImpact += OnHazardImpact;
             GameEvents.NearMiss += OnNearMiss;
             GameEvents.PlayerHit += OnPlayerHit;
+            GameEvents.PlayerTailLost += OnTailLost;
+            GameEvents.Faceplanted += OnFaceplanted;
             GameEvents.PlayerDied += OnPlayerDied;
 
             transform.position = DesiredPosition();
@@ -87,6 +89,8 @@ namespace LizardCrossing
             GameEvents.HazardImpact -= OnHazardImpact;
             GameEvents.NearMiss -= OnNearMiss;
             GameEvents.PlayerHit -= OnPlayerHit;
+            GameEvents.PlayerTailLost -= OnTailLost;
+            GameEvents.Faceplanted -= OnFaceplanted;
             GameEvents.PlayerDied -= OnPlayerDied;
             if (Instance == this) Instance = null;
         }
@@ -105,8 +109,31 @@ namespace LizardCrossing
 
         private void OnPlayerHit(int heartsLeft, Vector3 hazardPos)
         {
-            _shake.AddTrauma(0.75f);
+            // Losing a heart is the serious hit — make it LAND. (0.75 -> 0.85; trauma is squared
+            // in the shake, so this is a noticeably harder jolt than a near-miss.)
+            _shake.AddTrauma(0.85f);
             if (TimeEffects.Instance != null) TimeEffects.Instance.HitStop();
+        }
+
+        // Hit-juice pass: the FIRST hit of a run sheds the tail (autotomy) instead of a heart, and
+        // it's the most COMMON hit — yet the camera never reacted to it, so contact read as a
+        // delayed HUD flash with no impact ("clips then OUCH", Gemini). Give tail loss a real
+        // kinetic punch: a strong shake + a freeze-frame, just under a heart loss (it's the "free"
+        // hit). Pairs with the existing lizard knockback + green damage flash.
+        private void OnTailLost(Vector3 pos)
+        {
+            _shake.AddTrauma(0.7f);
+            if (TimeEffects.Instance != null) TimeEffects.Instance.HitStop();
+        }
+
+        // A full-speed faceplant into a wall/prop is the hardest non-death impact. PropBump fires
+        // Faceplanted ALONGSIDE the routed HitPlayer (tail/heart), so this trauma STACKS on top of
+        // that hit's — a wall slam punches harder than a glancing stomp. Trauma clamps at 1, so the
+        // stack is safe; the longer FaceplantHitStop freeze sells the wall as a wall.
+        private void OnFaceplanted(Vector3 pos)
+        {
+            _shake.AddTrauma(0.45f);
+            if (TimeEffects.Instance != null) TimeEffects.Instance.HitStop(GameConst.FaceplantHitStop);
         }
 
         private void OnPlayerDied(DeathCause cause)
