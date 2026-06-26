@@ -600,21 +600,57 @@ namespace LizardCrossing
             drop.gameObject.AddComponent<DroppedTailFx>();
         }
 
-        /// <summary>Makes a detached tail wriggle, drift back and shrink away, then vanish.</summary>
+        /// <summary>A severed tail with a real autotomy FLICK: it pops UP and to a random side,
+        /// tumbles through a ballistic arc, bounces on the pavement, then wriggles in place and
+        /// fades. Replaces the old slow drift-and-fade (owner: "the tail-drop needs fixing").</summary>
         private class DroppedTailFx : MonoBehaviour
         {
             private float _t;
             private Vector3 _baseScale;
-            private void Start() { _baseScale = transform.localScale; }
+            private Vector3 _vel;
+            private Vector3 _spin;
+            private float _groundY;
+            private const float Gravity = 7f;
+            private void Start()
+            {
+                _baseScale = transform.localScale;
+                _groundY = StreetGround.HeightAt(transform.position.x, transform.position.z) + 0.01f;
+                // EJECT: a strong UP pop + a random horizontal flick (direction-agnostic so it reads
+                // regardless of the drop object's orientation) — the reptile autotomy "throw".
+                Vector3 horiz = new Vector3(Random.Range(-1f, 1f), 0f, Random.Range(-1f, 1f));
+                if (horiz.sqrMagnitude < 0.01f) horiz = Vector3.forward;
+                _vel = horiz.normalized * Random.Range(0.8f, 1.3f) + Vector3.up * Random.Range(1.6f, 2.2f);
+                _spin = new Vector3(Random.Range(-1f, 1f), Random.Range(-1f, 1f), Random.Range(-1f, 1f)).normalized
+                        * Random.Range(520f, 900f);
+            }
             private void Update()
             {
                 _t += Time.deltaTime;
-                float wob = Mathf.Sin(_t * 26f) * Mathf.Lerp(14f, 2f, Mathf.Clamp01(_t / 1.6f));
-                transform.rotation *= Quaternion.Euler(0f, wob * Time.deltaTime * 6f, 0f);
-                transform.position += (-transform.forward * 0.04f + Vector3.down * 0.02f) * Time.deltaTime;
-                if (_t > 1.3f)
+                float dt = Time.deltaTime;
+                // ballistic arc + a small bounce off the pavement
+                _vel.y -= Gravity * dt;
+                Vector3 p = transform.position + _vel * dt;
+                bool grounded = false;
+                if (p.y <= _groundY)
                 {
-                    float k = Mathf.Clamp01(1f - (_t - 1.3f) / 0.6f);
+                    p.y = _groundY;
+                    if (_vel.y < 0f) _vel.y = -_vel.y * 0.32f;   // damped bounce
+                    _vel.x *= 0.5f; _vel.z *= 0.5f;               // ground friction
+                    _spin *= 0.4f;
+                    grounded = Mathf.Abs(_vel.y) < 0.25f;
+                }
+                transform.position = p;
+                transform.rotation *= Quaternion.Euler(_spin * dt);
+                // once it settles, wriggle in place (decaying)
+                if (grounded)
+                {
+                    float wob = Mathf.Sin(_t * 24f) * Mathf.Lerp(12f, 1f, Mathf.Clamp01((_t - 0.5f) / 1.3f));
+                    transform.rotation *= Quaternion.Euler(0f, wob * dt * 6f, 0f);
+                }
+                // hold on the ground, then shrink away
+                if (_t > 1.9f)
+                {
+                    float k = Mathf.Clamp01(1f - (_t - 1.9f) / 0.5f);
                     transform.localScale = _baseScale * k;
                     if (k <= 0.001f) Destroy(gameObject);
                 }
