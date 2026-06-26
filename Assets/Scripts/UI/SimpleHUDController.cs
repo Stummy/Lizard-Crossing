@@ -207,8 +207,12 @@ namespace LizardCrossing
             // it recharges, so "ready" reads as a bright clean amber button.
             var dashBtnImg = UIFactory.CreateImage(root, "DashButton", ProceduralTextures.CircleSprite(),
                 new Color(1f, 0.62f, 0.18f, 0.96f));
-            UIFactory.SetRect(dashBtnImg, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
-                new Vector2(0f, 70f), new Vector2(190f, 190f));
+            // Bottom-RIGHT, riding just above the right steer arrow — keeps the right thumb on
+            // both steer + dash, but clears the bottom-center column where the camera frames the
+            // hero lizard (it used to sit dead-center ON TOP of the lizard). HUD corners stay clean
+            // like the concept; the hero is never covered.
+            UIFactory.SetRect(dashBtnImg, new Vector2(1f, 0f), new Vector2(1f, 0f),
+                new Vector2(-95f, 320f), new Vector2(180f, 180f));
             var dashBtn = dashBtnImg.gameObject.AddComponent<Button>();
             dashBtn.targetGraphic = dashBtnImg;
             dashBtn.onClick.AddListener(InputProvider.PressDash);
