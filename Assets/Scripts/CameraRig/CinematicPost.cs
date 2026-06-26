@@ -103,18 +103,18 @@ namespace LizardCrossing
             // clip, so postExposure goes to 0 — any positive lift here re-blew the peds/hero. Push
             // SATURATION harder so the now-unclipped mid-tones read as vivid golden + a clearly
             // EMERALD hero (the wash had desaturated both toward white).
-            color.postExposure.value = 0.0f;                     // 0.14->0.0: no extra lift; the lights set the level
-            color.contrast.value = 16f;                          // a touch more punch to separate warm planes from cool sky/shadow
-            color.saturation.value = 30f;                        // 22->30: vivid golden tones + emerald hero pops (was washing white)
-            // Gentle warm filter — blue restored so the cyan sky and grey asphalt survive (the v1
-            // 0.86 blue crushed both into yellow). Warmth is a nudge on top of the warm sun, not a wash.
-            color.colorFilter.value = new Color(1.05f, 1.005f, 0.93f); // gentle warm nudge, blue kept alive
+            color.postExposure.value = 0.0f;                     // KEEP: no extra lift; the lights set the level (even exposure)
+            color.contrast.value = 16f;                          // KEEP: a touch of punch to separate planes from sky/shadow
+            color.saturation.value = 30f;                        // KEEP: vivid tones + emerald hero pops (owner wants the lizard to pop on its own)
+            // OWNER COLOR OVERRIDE 2026-06-26: golden/warm REJECTED → clean NEUTRAL DAYLIGHT. The warm
+            // color filter is removed (back to true white) so the grade no longer tints the frame orange.
+            color.colorFilter.value = Color.white;               // 1.05,1.005,0.93 (warm) -> 1,1,1 (neutral): no orange cast
 
-            // White balance: warm but moderate. v1's 20 stacked with the warm filter/LGG into the
-            // monochrome yellow; pulled to 11 so the SUN owns the warmth and the sky stays cyan.
+            // White balance: NEUTRAL daylight (owner override). The warm +11 temperature is zeroed so the
+            // SUN no longer paints the avenue golden. A hair of cool-neutral tint is fine; NOT orange.
             var wb = profile.Add<WhiteBalance>(true);
-            wb.temperature.value = 11f;                          // 20->11: warm, but the cyan sky lives
-            wb.tint.value = 2f;                                  // a hair of magenta kills the green cast on skin
+            wb.temperature.value = 0f;                           // 11->0: neutral white balance, no warm/golden push
+            wb.tint.value = 0f;                                  // 2->0: neutral (no magenta nudge needed without the warm stack)
 
             // --- Lift / Gamma / Gain: the cohesive cinematic grade toward the §3 palette
             //     (warm sun in highlights, neutral-warm mids, faintly cool shadows so the
@@ -131,10 +131,13 @@ namespace LizardCrossing
             // EXPOSURE-EVENNESS FIX: lift the shadows a touch more (the global lift .01->.04) so the
             // occluded "pure black" giant-ped/building moments come up off black — squeezing the dark
             // end up to meet the (now-tamed) bright end for an even read across the run.
+            // OWNER COLOR OVERRIDE 2026-06-26: neutralized the warm LGG bias back toward neutral grey so
+            // the grade reads as clean daylight, NOT golden pavement / warm highlights. The gentle global
+            // shadow lift (.02) is KEPT for the even-exposure read; only the per-channel warm tilt is removed.
             var lgg = profile.Add<LiftGammaGain>(true);
-            lgg.lift.value = new Vector4(0.995f, 0.997f, 1.005f, 0.02f); // warm-neutral shadows, gentle lift (0.04 washed the hero's shadows)
-            lgg.gamma.value = new Vector4(1.03f, 1.0f, 0.96f, 0.0f);     // warm mids (golden pavement), gentler
-            lgg.gain.value = new Vector4(1.03f, 1.01f, 0.97f, 0.0f);     // lightly warm highlights, sky stays cyan
+            lgg.lift.value = new Vector4(1.0f, 1.0f, 1.0f, 0.02f);  // neutral shadows + gentle lift (was warm-cool tilt)
+            lgg.gamma.value = new Vector4(1.0f, 1.0f, 1.0f, 0.0f);  // neutral mids (was warm golden pavement)
+            lgg.gain.value = new Vector4(1.0f, 1.0f, 1.0f, 0.0f);   // neutral highlights (was lightly warm)
 
             // --- Bloom: gentle sun-kissed glow on the brightest highlights (sky, lit
             //     stone, chrome). Half-res (HQ filtering OFF) to stay cheap on mobile. ---
@@ -163,11 +166,11 @@ namespace LizardCrossing
             // v2: cut bloom back (v1's 0.20/1.25 contributed to the overblown wash, esp. on the bright
             // sky strip up the avenue). A gentle kiss on only the genuine hotspots, near-neutral tint
             // so the glow doesn't paint the sky yellow.
-            _bloom.intensity.value = 0.11f;        // 0.20->0.11: a real sun-kiss, not a wash
-            _bloom.threshold.value = 1.60f;        // 1.45->1.60: guarantee even a sun-front-lit ped sits below bloom (no halo)
-            _bloom.scatter.value = 0.60f;
-            _bloom.highQualityFiltering.value = false; // half-res, the mobile-friendly path
-            _bloom.tint.value = new Color(1f, 0.96f, 0.90f); // faintly warm glow (near-neutral, no yellow paint)
+            _bloom.intensity.value = 0.11f;        // KEEP: a real sun-kiss, not a wash
+            _bloom.threshold.value = 1.60f;        // KEEP: even a front-lit ped sits below bloom (no halo)
+            _bloom.scatter.value = 0.60f;          // KEEP
+            _bloom.highQualityFiltering.value = false; // KEEP: half-res, the mobile-friendly path
+            _bloom.tint.value = Color.white;       // OWNER OVERRIDE: 1,0.96,0.90 (warm) -> white (neutral glow, no golden tint)
 
             // --- Vignette: subtle edge darkening to frame the hero at bottom-center ---
             // S2-1: 0.26/0.45 was crushing the TOP of frame (the skyline) to near-black, so the

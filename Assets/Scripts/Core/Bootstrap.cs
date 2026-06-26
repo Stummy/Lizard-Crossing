@@ -46,7 +46,10 @@ namespace LizardCrossing
             // v2 (Gemini re-review): the v1 sun (1,0.83,0.58) was too ORANGE — as the dominant light
             // it painted the whole avenue monochrome yellow. Golden, but pulled back toward a
             // late-afternoon gold so lit stone reads warm-grey, not orange.
-            sun.color = new Color(1f, 0.89f, 0.70f);   // golden-hour sun, less orange (was 1,0.83,0.58)
+            // OWNER COLOR OVERRIDE 2026-06-26: golden-hour sun REJECTED → clean NEUTRAL DAYLIGHT key.
+            // The warm sun was the dominant source painting the avenue golden; make it near-white so the
+            // frame reads as true-to-life daytime and the emerald lizard pops on its own colour.
+            sun.color = new Color(1f, 0.98f, 0.95f);   // 1,0.89,0.70 (golden) -> near-white daylight key
             // EXPOSURE FIX (real game-view ScreenCapture truth, not the brighter cam.Render() RT):
             // at 1.28 the key drove even a capped 0.46-albedo pedestrian (0.46 x ~2.2 light) PAST 1.0,
             // so the peds + the lizard's light dorsal clipped to glowing WHITE in the actual frame
@@ -71,7 +74,9 @@ namespace LizardCrossing
             // the whole frame read evening/cold. Soften it to a gentle sky-cyan (less blue, lifted
             // toward white) so it still keeps the shadow side off pure black + reads the hero's form,
             // but no longer fights the warm golden key. Slightly lower so the sun clearly owns the look.
-            fill.color = new Color(0.62f, 0.72f, 0.86f); // softer cyan fill (was a deep saturated blue)
+            // OWNER COLOR OVERRIDE 2026-06-26: drop the cyan push toward a clean daylight balance. A faint
+            // cool-neutral fill still reads the hero's shadow side without tinting the frame blue.
+            fill.color = new Color(0.82f, 0.86f, 0.92f); // 0.62,0.72,0.86 (cyan) -> near-neutral, faint cool
             // EXPOSURE-EVENNESS FIX: nudged 0.30->0.38 so a giant ped/building that occludes the warm
             // key gets enough wrap light to read as a shaded shape instead of going to "pure black"
             // (Gemini's under-exposed end of the flicker). Still well below the key, so lit planes
@@ -95,10 +100,11 @@ namespace LizardCrossing
                 // bright frames toward the shadowed ones for an EVEN exposure across the run. A soft
                 // cyan tint keeps the "soft cyan sky" read without a saturated electric blue.
                 if (skybox.HasProperty("_Exposure")) skybox.SetFloat("_Exposure", 0.88f); // 0.85->0.88: a touch brighter sky so it reads day, not dusk
-                // Soft CYAN sky (concept), not a deep blue: lift the green channel toward the blue and
-                // raise both so the sky reads as a pale daytime cyan rather than the saturated dark
-                // blue the reviewer kept calling "night". R lifted a hair too so it's airy, not steely.
-                if (skybox.HasProperty("_Tint")) skybox.SetColor("_Tint", new Color(0.66f, 0.78f, 0.82f)); // pale soft cyan
+                // OWNER COLOR OVERRIDE 2026-06-26: clean daylight sky. The cyan-leaning tint is pulled
+                // toward a near-neutral pale blue-grey so the sky reads as true daytime, not a pushed
+                // cyan that would lean the whole ambient blue. Still slightly blue (a real sky is), but
+                // balanced — paired with the neutral key/grade this gives a clean true-to-life daylight.
+                if (skybox.HasProperty("_Tint")) skybox.SetColor("_Tint", new Color(0.80f, 0.82f, 0.84f)); // 0.66,0.78,0.82 -> near-neutral pale sky
                 RenderSettings.skybox = skybox;
                 RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Skybox;
                 // GOLDEN-HOUR pass: the 1.12 sky-derived ambient was over-lighting the pedestrians'
