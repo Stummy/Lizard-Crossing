@@ -24,8 +24,14 @@ namespace LizardCrossing
         const string ControllerPath = "NPC/PedestrianLocomotion";
 
         // ---- tuning (public so they can be tweaked live in the editor) ----
-        public float height = 2.5f;       // sized to the kit's grand building doors (~2.8u);
-                                          // ~12x the 0.2u lizard, a touch under a doorway
+        public float height = 1.8f;       // REAL human height (CLAUDE.md spec: person ≈ 1.8u).
+                                          // Was 2.5u — ~39% oversized, which (with the 3cm camera)
+                                          // maximized the faceted low-poly "placeholder" silhouette
+                                          // the QA reviews kept flagging. At 1.8u it's still ~12x the
+                                          // ~0.15u lizard and towers from the low POV, but reads as a
+                                          // real person. Squish is unaffected: killRadius is absolute
+                                          // (0.25u) at spawn-scale 1 and the telegraph self-scales by
+                                          // (height/2.5), so a planted foot still squishes the same.
         public float faceYaw = 0f;        // extra yaw if the model's forward isn't +Z
         public float killRadius = 0.25f;  // ground radius under a planted foot that squishes
         public float groundSink = 0.0f;   // small downward nudge so soles meet the pavement
