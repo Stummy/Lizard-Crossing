@@ -72,7 +72,11 @@ namespace LizardCrossing
             // turn the camera into a post-processing camera
             var data = cam.GetUniversalAdditionalCameraData();
             data.renderPostProcessing = true;
-            data.antialiasing = AntialiasingMode.FastApproximateAntialiasing; // FXAA: cheap edge smoothing
+            // SMAA (sharper) over FXAA (which BLURRED the whole frame — a big part of the "soft/cheap"
+            // look the owner flagged). Paired with 4x MSAA on the URP asset (geometric edges), the city
+            // + hero edges read crisp instead of fuzzy. SetLite drops post-AA for low-tier.
+            data.antialiasing = AntialiasingMode.SubpixelMorphologicalAntiAliasing;
+            data.antialiasingQuality = AntialiasingQuality.High;
 
             // a single runtime global Volume (not an asset) holding all overrides
             var volGo = new GameObject("CinematicVolume");
