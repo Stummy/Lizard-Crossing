@@ -166,8 +166,12 @@ namespace LizardCrossing
             // v2: cut bloom back (v1's 0.20/1.25 contributed to the overblown wash, esp. on the bright
             // sky strip up the avenue). A gentle kiss on only the genuine hotspots, near-neutral tint
             // so the glow doesn't paint the sky yellow.
-            _bloom.intensity.value = 0.11f;        // KEEP: a real sun-kiss, not a wash
-            _bloom.threshold.value = 1.60f;        // KEEP: even a front-lit ped sits below bloom (no halo)
+            _bloom.intensity.value = 0.0f;         // RT-LIE FIX: bloom OFF. On the real MP4 render the
+                                                   // bright distance (avenue end / sun-side peds) bloomed
+                                                   // into blown-WHITE BLOBS that read as "night w/ lights"
+                                                   // and buried the city. The 0.11 looked fine on the
+                                                   // brighter RT capture but blew on the real render.
+            _bloom.threshold.value = 2.20f;        // and only true HDR hotspots if ever re-enabled
             _bloom.scatter.value = 0.60f;          // KEEP
             _bloom.highQualityFiltering.value = false; // KEEP: half-res, the mobile-friendly path
             _bloom.tint.value = Color.white;       // OWNER OVERRIDE: 1,0.96,0.90 (warm) -> white (neutral glow, no golden tint)

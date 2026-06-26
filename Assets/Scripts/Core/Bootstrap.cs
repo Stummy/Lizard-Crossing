@@ -81,7 +81,8 @@ namespace LizardCrossing
             // key gets enough wrap light to read as a shaded shape instead of going to "pure black"
             // (Gemini's under-exposed end of the flicker). Still well below the key, so lit planes
             // keep their warm-vs-cool contrast.
-            fill.intensity = 0.38f;
+            fill.intensity = 0.52f; // 0.38->0.52 (RT-lie fix): lift the shadow side of the occluded
+                                    // mid-run so it isn't muddy-dark on the real render
             fill.shadows = LightShadows.None;
             fillGo.transform.rotation = Quaternion.Euler(40f, SunYaw + 180f, 0f); // opposite the key (keeps the 180° relationship)
 
@@ -99,7 +100,7 @@ namespace LizardCrossing
                 // when the open sky/sun fills frame it no longer blows to white; this squeezes the
                 // bright frames toward the shadowed ones for an EVEN exposure across the run. A soft
                 // cyan tint keeps the "soft cyan sky" read without a saturated electric blue.
-                if (skybox.HasProperty("_Exposure")) skybox.SetFloat("_Exposure", 0.88f); // 0.85->0.88: a touch brighter sky so it reads day, not dusk
+                if (skybox.HasProperty("_Exposure")) skybox.SetFloat("_Exposure", 1.05f); // 0.88->1.05 (RT-lie fix): the real render read dusk/dark; brighter sky reads true daytime (safe now bloom is off, so a brighter sky no longer blows to blobs)
                 // OWNER COLOR OVERRIDE 2026-06-26: clean daylight sky. The cyan-leaning tint is pulled
                 // toward a near-neutral pale blue-grey so the sky reads as true daytime, not a pushed
                 // cyan that would lean the whole ambient blue. Still slightly blue (a real sky is), but
@@ -120,7 +121,11 @@ namespace LizardCrossing
                 // that lifts shadows + breaks the warm-monochrome, but low enough that a lit surface
                 // no longer sums past 1.0. Fill light still keeps the hero off pure-black under
                 // occlusion. Net: peds/hero read as solid SHADED colour, not blown white.
-                RenderSettings.ambientIntensity = 0.85f;
+                RenderSettings.ambientIntensity = 1.25f; // 0.85->1.25 (RT-LIE FIX 2026-06-26): the 0.85
+                // was tuned against the brighter-than-real RT capture; on the REAL ACES-tonemapped render
+                // (the MP4 Gemini sees) the between-buildings mid-run went too DARK while the open start
+                // stayed bright. Ambient is the even-out lever (lifts the occluded shadow, less effect on
+                // the sky-lit start). The 0.38 ped-albedo cap keeps the figures from re-glowing white.
                 DynamicGI.UpdateEnvironment(); // compute SH ambient from the skybox once
             }
             else
