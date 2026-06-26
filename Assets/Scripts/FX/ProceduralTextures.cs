@@ -11,6 +11,7 @@ namespace LizardCrossing
     public static class ProceduralTextures
     {
         private static Texture2D _stoneTiles;
+        private static Texture2D _facade;
         private static Texture2D _radial;
         private static Texture2D _ring;
         private static Texture2D _circle;
@@ -436,6 +437,70 @@ namespace LizardCrossing
         private static Sprite MakeSprite(Texture2D t)
         {
             return Sprite.Create(t, new Rect(0, 0, t.width, t.height), new Vector2(0.5f, 0.5f), 100f);
+        }
+
+        /// <summary>Tiled concrete-and-glass building facade for the corridor's right wall —
+        /// a neutral cool concrete grid of windows (most cool glass, some sky-reflecting, a few
+        /// warm-lit for golden hour) so the run wall reads as an NYC building base, not brick.</summary>
+        public static Texture2D BuildingFacade
+        {
+            get
+            {
+                if (_facade != null) return _facade;
+
+                const int s = 256;
+                const int cols = 6, rows = 6;
+                const int cw = s / cols, ch = s / rows;
+                const int margin = 7;                       // concrete frame around each pane
+                var concrete = new Color(0.50f, 0.51f, 0.535f);
+                var pier = new Color(0.56f, 0.565f, 0.585f);
+                var glass = new Color(0.26f, 0.30f, 0.36f);
+                var rng = new System.Random(4242);
+
+                _facade = NewTex(s);
+                _facade.wrapMode = TextureWrapMode.Repeat;
+                var px = new Color[s * s];
+
+                // per-window tint: mostly cool glass, some sky reflection, a few warm-lit rooms
+                var winTint = new Color[cols * rows];
+                for (int i = 0; i < winTint.Length; i++)
+                {
+                    double r = rng.NextDouble();
+                    Color w = r < 0.12 ? new Color(0.86f, 0.70f, 0.44f)       // warm-lit room (golden hour)
+                            : r < 0.34 ? new Color(0.50f, 0.58f, 0.66f)       // sky reflection
+                                       : glass;
+                    float j = ((float)rng.NextDouble() * 2f - 1f) * 0.04f;
+                    winTint[i] = new Color(w.r + j, w.g + j, w.b + j);
+                }
+
+                for (int y = 0; y < s; y++)
+                for (int x = 0; x < s; x++)
+                {
+                    int cx = x / cw, cy = y / ch;
+                    int lx = x % cw, ly = y % ch;
+                    float n = ((float)rng.NextDouble() * 2f - 1f) * 0.02f;
+
+                    bool inWindow = lx >= margin && lx < cw - margin && ly >= margin && ly < ch - margin;
+                    Color c;
+                    if (inWindow)
+                    {
+                        c = winTint[cy * cols + cx];
+                        float u = (lx - margin) / (float)(cw - 2 * margin);
+                        float sheen = 0.92f + 0.16f * Mathf.Sin(u * Mathf.PI); // soft glass highlight
+                        c = new Color(c.r * sheen, c.g * sheen, c.b * sheen);
+                        if (ly < margin + 2) c *= 1.1f;                        // window sill glint
+                    }
+                    else
+                    {
+                        c = (lx < margin) ? pier : concrete;                   // vertical piers a touch lighter
+                        if (ly >= ch - 3) c = pier * 1.06f;                    // floor-slab band
+                    }
+                    px[y * s + x] = new Color(c.r + n, c.g + n, c.b + n, 1f);
+                }
+                _facade.SetPixels(px);
+                _facade.Apply();
+                return _facade;
+            }
         }
 
         private static Texture2D NewTex(int size)

@@ -34,6 +34,21 @@ namespace LizardCrossing
         public const float CurbJogStartZ = 95f;        // z where the left curb starts jogging inward
         public const float CurbJogRampZ = 25f;         // distance over which the left edge tightens
 
+        // --- Authored straight corridor (World section, 2026-06-26) ---
+        // The imported NYC street is one continuous, collider-less mesh whose sidewalk STEPS right
+        // at the end intersection, so a straight run band drifts off it (the "sidewalk shifts /
+        // through the wall" bug). Instead of fighting the crooked GLB we lay our OWN straight
+        // sidewalk strip + REAL collider walls down the run band (LevelBuilder.BuildStraightCorridor)
+        // and let the GLB be backdrop. These define that corridor; the right wall sits just outside
+        // the lizard's clamp so it physically backstops the run, the left fence keeps it off the road.
+        public const float CorridorStripCenterX = 8f;   // centre of the authored sidewalk strip
+        public const float CorridorStripHalfWidth = 4.6f; // strip covers x[3.4 .. 12.6] (curb buffer + band)
+        public const float CorridorStripY = 0.12f;      // strip surface (== StreetGround.SidewalkY, just above the GLB)
+        public const float CorridorWallRightX = 11.4f;  // solid building-facade wall (lizard grazes it at its x≈11 max)
+        public const float CorridorFenceLeftX = 5.8f;   // solid left railing/curb (lizard stops ~6.1, never reaches the road)
+        public const float CorridorWallHeight = 4f;     // tall enough to occlude the drifting GLB buildings behind it
+        public const float CorridorFenceHeight = 0.7f;  // low railing/curb on the road side
+
         // Lizard — speeds scaled to the realistic ~0.15u lizard (2026-06-16).
         // Kept snappier than a true 1/12 scale so the run still feels arcade-fast.
         public const float LizardMoveSpeed = 3.6f;   // brisk scurry — a real lizard is quick

@@ -54,6 +54,7 @@ namespace LizardCrossing
             {
                 BuildInvisibleGround(root, level.Length);
                 CityReskin.Apply(GameObject.Find("NYCity")); // re-skin the GLB's baked surfaces with Megascans scans
+                BuildStraightCorridor(root, level);          // our OWN straight, walled run surface over the crooked GLB
             }
             else
             {
@@ -93,6 +94,71 @@ namespace LizardCrossing
             col.center = new Vector3(0f, -0.1f, length * 0.5f); // top face at y=0 (road level)
             col.size = new Vector3(40f, 0.2f, length + 80f);
             go.layer = StreetGround.GroundLayer; // flat road-level fallback where the city mesh doesn't reach
+        }
+
+        // ---------- authored straight corridor (World section, 2026-06-26) ----------
+        /// <summary>
+        /// The imported NYC street is ONE continuous, collider-less mesh whose sidewalk STEPS right
+        /// at the end intersection, so the lizard's straight run band drifts off it (the "sidewalk
+        /// shifts / lizard walks through the wall / no floor at the end" cluster). Rather than fight
+        /// the crooked GLB, we lay our OWN straight sidewalk strip + REAL collider walls down the run
+        /// band and let the GLB be the backdrop behind them. This is the single source of truth for
+        /// the run surface; the Foundation-invariant validator asserts the lizard can't leave it.
+        /// </summary>
+        private static void BuildStraightCorridor(Transform root, LevelDefinition level)
+        {
+            var corr = new GameObject("StraightCorridor").transform;
+            corr.SetParent(root, false);
+
+            float z0 = -6f;
+            float z1 = level.Length + 8f;        // run the strip past the goal so the safe-zone approach has floor
+            float zc = (z0 + z1) * 0.5f;
+            float zlen = z1 - z0;
+            float cx = GameConst.CorridorStripCenterX;
+            float halfW = GameConst.CorridorStripHalfWidth;
+
+            // 1) STRAIGHT sidewalk surface: a textured plane just above the GLB sidewalk, covering the
+            //    band the whole way (it bridges the cross-streets so the run never loses its floor).
+            //    No collider — the lizard rides the analytic StreetGround height, which is flat here.
+            var strip = GameObject.CreatePrimitive(PrimitiveType.Plane);
+            strip.name = "CorridorSidewalk";
+            strip.transform.SetParent(corr, false);
+            Object.Destroy(strip.GetComponent<Collider>());
+            strip.transform.localPosition = new Vector3(cx, GameConst.CorridorStripY, zc);
+            strip.transform.localScale = new Vector3((halfW * 2f) / 10f, 1f, zlen / 10f); // Unity plane = 10u at scale 1
+            const float stoneTile = 26f;
+            strip.GetComponent<Renderer>().sharedMaterial = MaterialCache.GetTexturedNormal(
+                TextureLibrary.Pavement, TextureLibrary.PavementNormal, new Color(0.93f, 0.91f, 0.87f),
+                0.12f, (halfW * 2f) / stoneTile, zlen / stoneTile);
+
+            // 2) RIGHT building-facade wall — a SOLID collider the CharacterController lizard physically
+            //    can't pass, opaque + tall so it frames the run and occludes the drifting GLB buildings.
+            //    Skinned with the procedural concrete/glass facade (owner: neutral building base, not brick).
+            BuildCorridorWall(corr, GameConst.CorridorWallRightX, z0, z1,
+                GameConst.CorridorWallHeight, 0.5f,
+                ProceduralTextures.BuildingFacade, null, new Color(0.95f, 0.95f, 0.96f), "CorridorWallRight");
+
+            // 3) LEFT railing/curb — a lower SOLID collider so the lizard never drifts onto the road.
+            BuildCorridorWall(corr, GameConst.CorridorFenceLeftX, z0, z1,
+                GameConst.CorridorFenceHeight, 0.3f,
+                null, null, new Color(0.55f, 0.55f, 0.52f), "CorridorCurbLeft");
+        }
+
+        /// <summary>One long solid wall/curb box along the run (kept collider → blocks the lizard).
+        /// Optional texture tiles down its length; null tex = flat lit colour.</summary>
+        private static void BuildCorridorWall(Transform parent, float x, float z0, float z1,
+            float height, float thick, Texture2D tex, Texture2D normal, Color color, string name)
+        {
+            float zc = (z0 + z1) * 0.5f;
+            float zlen = z1 - z0;
+            var w = Box(parent, new Vector3(x, height * 0.5f, zc), new Vector3(thick, height, zlen), color, name);
+            if (tex != null)
+            {
+                // ~8m of facade per texture tile along the run, one tile up the wall height, so the
+                // window grid reads at building scale (windows ~1.3m wide, ~0.7m tall). Slight sheen.
+                w.GetComponent<Renderer>().sharedMaterial = MaterialCache.GetTexturedNormal(
+                    tex, normal, color, 0.18f, zlen / 8f, Mathf.Max(1f, height / 4f));
+            }
         }
 
         private static void BuildGround(Transform root, float length)
