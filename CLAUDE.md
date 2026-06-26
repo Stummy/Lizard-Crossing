@@ -140,6 +140,18 @@ reason worth the cost. We work the SAME way now — this is how we stop re-break
   explicitly. This is why finished foundation work kept silently regressing.
 
 ## Agent usage rules (owner, 2026-06-25)
+- **The corresponding specialist has a SAY in every change to their domain (owner rule, 2026-06-26).**
+  No solo changes in a specialist's area. Before a change is committed, the section-owner agent for
+  the domain it touches (see the routing table in `docs/STUDIO_BOARD.md` "THE TEAM" + PROJECT_PLAN §0)
+  must EITHER do the change (delegated to them) OR review + sign off on it — **at minimum the
+  corresponding one(s).** Routing: lighting/post/exposure → `lighting-post-artist`; HUD/camera/feel/
+  juice/menus → `camera-ui-juice`; surfaces/props/set-dressing/pedestrian-art/themes →
+  `environment-artist`; sourcing/generating assets → `asset-scout`; mechanics + perf regression gate →
+  `gameplay-guardian`; visual correctness vs the concept → `art-director` (with the Gemini "video guy"
+  `Tools/gemini_review.py` as the standing automated QA on every visual change). Reviews are read-only/
+  off-engine so they parallelize; the live editor stays single-threaded for whoever does the in-engine
+  work. The main session is the lead/integrator — it may make a change, but routes it past the owner
+  before it's "done." A change touching several domains gets a say from each corresponding owner.
 - **Every AI-GENERATED asset gets a design-review before it's accepted/committed.** Concept
   frames, textures, models, sprites — all are CANDIDATES, not final. Before committing, the
   `art-director` (or the main session acting as it) must check the asset depicts the intended

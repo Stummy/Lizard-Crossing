@@ -33,10 +33,14 @@ Hazards 🟦 (crowd ✅, cars/traffic ⬜) · Lighting 🟦 · HUD+juice 🟦 (D
 | regression + perf **gate** before a section/stage is "done" | **gameplay-guardian** | in-engine (serialize) |
 | sequencing the board / what-ships-next | **studio-producer** | off-engine (planning) |
 | the QA "video guy" — record→watch→file bugs+concept-gap | `Tools/gemini_review.py` | off-engine (CLI) |
+**Specialist sign-off gate (owner rule, 2026-06-26):** the corresponding owner above has a SAY in
+every change to their domain — they either DO it (delegated) or REVIEW + bless it before commit; no
+solo changes in their area (CLAUDE.md "Agent usage rules"). Multi-domain changes get a say from each
+owner. Reviews are read-only/off-engine so they don't fight the editor.
 The **main session (me)** is the build lead + integrator: I hold the live editor, do the in-engine
-work + verify-and-ship, and dispatch agents for off-engine work (so it parallelizes) or for a
-fresh-context judgment call. Proven this session: scout ran in the background and diagnosed the
-ped problem while I fixed the HUD in-engine — no editor conflict.
+work + verify-and-ship, and route every change past its owner (and the Gemini video guy) before it's
+"done." Proven this session: scout diagnosed the ped fix in the background while I worked in-engine;
+the lighting gap is owned + executed by `lighting-post-artist`.
 
 ## Gap-to-target (one line)
 **~78% to target (art-director re-grade, WO-6 DONE 2026-06-25).** Sprint 1 "Cinematic NYC" closed
