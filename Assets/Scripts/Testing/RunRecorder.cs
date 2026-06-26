@@ -65,11 +65,16 @@ namespace LizardCrossing.Testing
 
             InputProvider.StartOverride = true;
 
-            // derive an even-dimensioned portrait size from the first rendered frame (H.264 needs even w/h)
+            // size from the first rendered frame, preserving the Game-view aspect but scaling the
+            // LONGER side to ~1280 so the H.264 encode has room to stay crisp (a tiny source res
+            // makes the encoder produce blocky "static"); force even dims (H.264 needs even w/h).
             yield return new WaitForEndOfFrame();
             var probe = ScreenCapture.CaptureScreenshotAsTexture();
-            int W = 540;
-            int H = Mathf.Clamp(Mathf.RoundToInt(W * (float)probe.height / Mathf.Max(1, probe.width)), 320, 1280);
+            float aspect = (float)probe.width / Mathf.Max(1, probe.height);
+            int W, H;
+            if (aspect >= 1f) { W = 1280; H = Mathf.RoundToInt(1280f / aspect); }
+            else { H = 1280; W = Mathf.RoundToInt(1280f * aspect); }
+            W = Mathf.Clamp(W, 320, 1920); H = Mathf.Clamp(H, 320, 1920);
             if ((W & 1) == 1) W++;
             if ((H & 1) == 1) H++;
             Object.DestroyImmediate(probe);
@@ -79,7 +84,8 @@ namespace LizardCrossing.Testing
                 frameRate = new UnityEditor.Media.MediaRational(VideoFps),
                 width = (uint)W,
                 height = (uint)H,
-                includeAlpha = false
+                includeAlpha = false,
+                bitRateMode = UnityEditor.VideoBitrateMode.High // crisp encode, no compression static
             };
 
             int frames = 0;
