@@ -863,45 +863,49 @@ namespace LizardCrossing
             // rather than off to the left. All children below are authored relative to this root.
             garden.localPosition = new Vector3(GameConst.CorridorCenterX, 0f, 0f);
 
-            // grass apron the lizard escapes onto
-            Box(garden, new Vector3(0f, 0.025f, length + 9f), new Vector3(30f, 0.05f, 20f), GrassGreen, "Grass");
+            // --- CENTRAL PARK arrival (Stage 5): a big grass expanse the lizard escapes ONTO,
+            //     planted with real CC0 (Kenney) trees + bushes so it reads as a lush park the
+            //     run bursts into — replacing the old primitive flower-arch. The central path
+            //     corridor (|x|<~4) stays clear so the glowing goal reads dead-ahead. ---
+            Box(garden, new Vector3(0f, 0.025f, length + 22f), new Vector3(64f, 0.05f, 54f), GrassGreen, "ParkGrass");
 
-            // grass tufts
+            // a pale dirt path leading straight in through the gate (the "enter here" lane)
+            FlatQuad(garden, new Vector3(0f, 0.052f, length + 16f), new Vector3(6f, 30f, 1f), 0f,
+                new Color(0.62f, 0.54f, 0.40f, 1f), "ParkPath");
+
+            // a parkland: a back tree-line for depth + clumps flanking the path, varied species/size.
+            string[] parkTrees = { "tree_oak", "tree_default", "tree_detailed", "tree_fat", "tree_oak", "tree_pineRoundA" };
             for (int i = 0; i < 26; i++)
             {
-                float x = -12f + (float)rng.NextDouble() * 24f;
-                float z = length + 1.5f + (float)rng.NextDouble() * 16f;
-                Sphere(garden, new Vector3(x, 0.3f, z),
-                    new Vector3(0.5f, 0.55f + (float)rng.NextDouble() * 0.5f, 0.5f),
-                    LeafGreens[rng.Next(LeafGreens.Length)], "GrassTuft");
+                float x = -30f + (float)rng.NextDouble() * 60f;
+                float z = length + 6f + (float)rng.NextDouble() * 40f;
+                if (Mathf.Abs(x) < 4.5f && z < length + 13f) continue; // keep the gate mouth clear
+                float h = 4.5f + (float)rng.NextDouble() * 4.5f;
+                PlaceNature(garden, parkTrees[rng.Next(parkTrees.Length)],
+                    new Vector3(x, 0.05f, z), h, (float)rng.NextDouble() * 360f);
             }
+            // two statement trees framing the entrance corners
+            PlaceNature(garden, "tree_oak", new Vector3(-7.5f, 0.05f, length + 4f), 7.5f, 40f);
+            PlaceNature(garden, "tree_default", new Vector3(7.5f, 0.05f, length + 4f), 7f, 205f);
 
-            // foliage arch framing the goal — the readable "go here"
-            for (int side = -1; side <= 1; side += 2)
+            // bushes as undergrowth along the front edge + under the trees
+            string[] parkBushes = { "plant_bushLarge", "plant_bushDetailed" };
+            for (int i = 0; i < 18; i++)
             {
-                float x = side * 5.5f;
-                for (float h = 0.8f; h <= 7.5f; h += 1.1f)
-                {
-                    float bulge = 1.5f + Mathf.Sin(h / 7.5f * Mathf.PI) * 0.7f;
-                    Sphere(garden, new Vector3(x + side * 0.3f * Mathf.Sin(h), h, length + 2f),
-                        new Vector3(bulge, 1.3f, bulge),
-                        LeafGreens[(int)(h * 3f) % LeafGreens.Length], "ArchFoliage");
-                }
+                float x = -28f + (float)rng.NextDouble() * 56f;
+                float z = length + 4f + (float)rng.NextDouble() * 40f;
+                if (Mathf.Abs(x) < 3.5f && z < length + 13f) continue;
+                PlaceNature(garden, parkBushes[rng.Next(parkBushes.Length)],
+                    new Vector3(x, 0.05f, z), 0.6f + (float)rng.NextDouble() * 0.7f, (float)rng.NextDouble() * 360f);
             }
-            for (float x = -4.5f; x <= 4.5f; x += 1.4f)
+            // a few flowers dotted in the grass for colour at ground level
+            for (int i = 0; i < 14; i++)
             {
-                float y = 7.8f + Mathf.Cos(x / 5.5f * Mathf.PI * 0.5f) * 1.1f;
-                Sphere(garden, new Vector3(x, y, length + 2f),
-                    new Vector3(1.8f, 1.4f, 1.8f), LeafGreens[Mathf.Abs((int)(x * 2f)) % LeafGreens.Length], "ArchFoliage");
-            }
-            // flowers dotted on the arch
-            for (int i = 0; i < 10; i++)
-            {
-                float x = -5.5f + (float)rng.NextDouble() * 11f;
-                float y = 1f + (float)rng.NextDouble() * 7.5f;
-                if (Mathf.Abs(x) < 4f && y < 7f) continue; // keep the opening clear
-                Sphere(garden, new Vector3(x, y, length + 1.6f), Vector3.one * 0.4f,
-                    FlowerColors[rng.Next(FlowerColors.Length)], "ArchFlower");
+                float x = -22f + (float)rng.NextDouble() * 44f;
+                float z = length + 5f + (float)rng.NextDouble() * 34f;
+                if (Mathf.Abs(x) < 3.5f) continue;
+                Sphere(garden, new Vector3(x, 0.18f, z), Vector3.one * 0.22f,
+                    FlowerColors[rng.Next(FlowerColors.Length)], "ParkFlower");
             }
 
             // welcoming glow on the ground through the arch — warm amber/gold so the gate reads as
@@ -931,6 +935,34 @@ namespace LizardCrossing
             // ground finish line — so the goal reads as a bright beacon from far down the run
             // (S2-2; the old single dark sign at y7.4 sat off the top of frame and didn't read).
             BuildGoalGate(garden, length);
+        }
+
+        /// <summary>Instantiate a CC0 Kenney nature GLB (Resources/Models/Nature/&lt;model&gt;),
+        /// uniformly scaled so its height ≈ <paramref name="targetHeight"/> metres, sat on the
+        /// ground at <paramref name="pos"/>, yawed, colliders stripped. No-op (null) if missing.</summary>
+        private static GameObject PlaceNature(Transform parent, string model, Vector3 pos, float targetHeight, float yawDeg)
+        {
+            var src = Resources.Load<GameObject>("Models/Nature/" + model);
+            if (src == null) return null;
+            var go = Object.Instantiate(src, parent, false);
+            go.transform.localPosition = pos;
+            go.transform.localRotation = Quaternion.Euler(0f, yawDeg, 0f);
+            go.transform.localScale = Vector3.one;
+
+            var rends = go.GetComponentsInChildren<Renderer>();
+            if (rends.Length > 0)
+            {
+                Bounds b = rends[0].bounds;
+                for (int i = 1; i < rends.Length; i++) b.Encapsulate(rends[i].bounds);
+                float s = targetHeight / Mathf.Max(0.01f, b.size.y);
+                go.transform.localScale = Vector3.one * s;
+                // re-measure after scaling and sit the base on the ground (Kenney pivots vary)
+                b = rends[0].bounds;
+                for (int i = 1; i < rends.Length; i++) b.Encapsulate(rends[i].bounds);
+                go.transform.localPosition += new Vector3(0f, pos.y - b.min.y, 0f);
+            }
+            foreach (var col in go.GetComponentsInChildren<Collider>()) Object.Destroy(col);
+            return go;
         }
 
         /// <summary>
