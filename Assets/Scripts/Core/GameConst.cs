@@ -29,8 +29,12 @@ namespace LizardCrossing
         // the road near the end (owner's ask). The right edge hugs the building line throughout.
         // See PlayerController.CorridorBand. Supersedes the old fixed x[7,11] clamp.
         public const float CorridorRightX = 11f;       // sidewalk right edge (building line) — safe the whole way
-        public const float CorridorLeftWideX = 4.5f;   // left edge on the open early/mid blocks (generous room)
-        public const float CorridorLeftTightX = 6f;    // left edge past the curb jog (never drops onto the road at the end)
+        public const float CorridorLeftWideX = 6.0f;   // OWNER FIX 2026-06-26: was 4.5 — the clamp let the lizard
+                                                       // slip LEFT of the curb (5.8) onto the road on wide blocks
+                                                       // ("going down the curb"). Pin the band's left edge to the
+                                                       // curb line (constant 6.0, == tight) so the lizard is always
+                                                       // confined to the sidewalk and can never step onto the road.
+        public const float CorridorLeftTightX = 6f;    // left edge past the curb jog (band is now constant 6.0 the whole way)
         public const float CurbJogStartZ = 95f;        // z where the left curb starts jogging inward
         public const float CurbJogRampZ = 25f;         // distance over which the left edge tightens
 
@@ -48,7 +52,9 @@ namespace LizardCrossing
         public const float CorridorFenceLeftX = 5.8f;   // solid left railing/curb (lizard stops ~6.1, never reaches the road)
         public const float CorridorWallHeight = 2.5f;   // a building BASE, not a canyon wall — the GLB skyline shows
                                                         // above it so the avenue reads open + deep like the run concept
-        public const float CorridorFenceHeight = 0.7f;  // low railing/curb on the road side
+        public const float CorridorFenceHeight = 0.4f;  // OWNER: a low CURB (not a "fence"/railing) on the road
+                                                        // side — reads as a concrete curb edge, still solid so the
+                                                        // lizard can't step off the sidewalk onto the road.
 
         // Lizard — speeds scaled to the realistic ~0.15u lizard (2026-06-16).
         // Kept snappier than a true 1/12 scale so the run still feels arcade-fast.

@@ -37,9 +37,12 @@ namespace LizardCrossing.Testing
             gm.StartRun();
             yield return null;
 
-            // tolerance: the lizard's body half-width past a wall's centre line is acceptable contact
-            float rightLimit = GameConst.CorridorWallRightX + 0.4f;
-            float leftLimit = GameConst.CorridorFenceLeftX - 0.4f;
+            // Tightened to the actual clamp band (owner fix 2026-06-26): the lizard CENTRE must stay
+            // within the sidewalk — never past the right clamp (11.0, +0.2 slop) and never left of the
+            // curb line (5.8). We now ram at DASH speed too, so this also catches collider TUNNELING
+            // ("built another wall inside the wall and still went through").
+            float rightLimit = GameConst.CorridorRightX + 0.2f;     // 11.2
+            float leftLimit = GameConst.CorridorFenceLeftX;         // 5.8 (curb centre — never reach the road)
             var sb = new StringBuilder();
             bool pass = true;
 
@@ -48,6 +51,7 @@ namespace LizardCrossing.Testing
             for (float t = 0f; t < 3f && gm.State == GameState.Playing; t += Time.deltaTime)
             {
                 InputProvider.MoveOverride = new Vector2(1f, 1f);
+                InputProvider.PressDash();  // ram at DASH speed to catch tunneling through the wall
                 maxX = Mathf.Max(maxX, player.KillCheckPosition.x);
                 yield return null;
             }
@@ -61,6 +65,7 @@ namespace LizardCrossing.Testing
             for (float t = 0f; t < 3f && gm.State == GameState.Playing; t += Time.deltaTime)
             {
                 InputProvider.MoveOverride = new Vector2(-1f, 1f);
+                InputProvider.PressDash();  // ram the curb at DASH speed too (tunneling check)
                 minX = Mathf.Min(minX, player.KillCheckPosition.x);
                 yield return null;
             }
