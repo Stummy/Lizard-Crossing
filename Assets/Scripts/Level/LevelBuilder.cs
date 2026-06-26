@@ -815,9 +815,10 @@ namespace LizardCrossing
                     FlowerColors[rng.Next(FlowerColors.Length)], "ArchFlower");
             }
 
-            // welcoming glow on the ground through the arch
+            // welcoming glow on the ground through the arch — warm amber/gold so the gate reads as
+            // the glowing GOLD beacon of the run concept (the green is the park foliage above).
             var glow = FlatQuad(garden, new Vector3(0f, 0.03f, length + 2f),
-                new Vector3(9f, 6f, 1f), 0f, new Color(0.6f, 1f, 0.5f, 0.35f), "SafeGlow");
+                new Vector3(9f, 6f, 1f), 0f, new Color(1f, 0.82f, 0.46f, 0.42f), "SafeGlow");
             glow.GetComponent<Renderer>().material.mainTexture = ProceduralTextures.RadialGradient;
 
             // fireflies drifting in the goal mouth
@@ -853,7 +854,7 @@ namespace LizardCrossing
         {
             float z = length + 1.8f;
             Color amber = new Color(1f, 0.84f, 0.5f);     // warm glowing gate metal
-            Color signGreen = new Color(0.45f, 1f, 0.55f); // safe-green glow halo
+            Color signGlow = new Color(1f, 0.8f, 0.42f);  // warm gold halo (was green) — match the run concept's amber beacon
 
             // glowing gate posts flanking the corridor, with brighter lamp caps
             for (int side = -1; side <= 1; side += 2)
@@ -870,8 +871,8 @@ namespace LizardCrossing
             // behind a dark board so the bright text reads with contrast (board itself is NOT emissive).
             Vector3 signPos = new Vector3(0f, 4.7f, z);
             EmissiveBox(parent, signPos + new Vector3(0f, 0f, 0.06f), new Vector3(9.2f, 2.7f, 0.2f),
-                signGreen, 2.2f, "SignGlow");
-            var board = Box(parent, signPos, new Vector3(8.5f, 2.1f, 0.3f), new Color(0.09f, 0.28f, 0.14f), "SafeSignBoard");
+                signGlow, 2.2f, "SignGlow");
+            var board = Box(parent, signPos, new Vector3(8.5f, 2.1f, 0.3f), new Color(0.12f, 0.11f, 0.13f), "SafeSignBoard");
             Object.Destroy(board.GetComponent<Collider>());
             BuildSignText(parent, signPos + new Vector3(0f, 0f, -0.2f), "SAFE ZONE");
 
