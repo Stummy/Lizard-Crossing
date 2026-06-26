@@ -116,8 +116,13 @@ namespace LizardCrossing
             // Raised the threshold so ONLY true highlights (sky, chrome, sun glints) bloom, and
             // dropped the intensity so the glow is a sun-kiss, not a haze. Mid surfaces stay solid.
             _bloom = profile.Add<Bloom>(true);
-            _bloom.intensity.value = 0.20f;        // gentler glow; 0.30->0.20 to stop the sun smear
-            _bloom.threshold.value = 1.55f;        // only the VERY brightest highlights glow; 1.30->1.55 so the sun/sky stops blooming into a white wash
+            // Readability pass (owner + Gemini video review): the backlit golden-hour rim on the
+            // pedestrians was blooming into a glowing HALO that obscured their form ("glowing
+            // effects around them"). Pulled intensity down and the threshold up so only true
+            // highlights (sun/sky/chrome) glow — the pedestrian rim no longer halos, so the
+            // figures read as solid. Pairs with GiantPedestrian.CalmMaterial (albedo cap).
+            _bloom.intensity.value = 0.13f;        // 0.20->0.13: rim no longer halos the peds
+            _bloom.threshold.value = 1.75f;        // 1.55->1.75: only the brightest highlights bloom
             _bloom.scatter.value = 0.60f;
             _bloom.highQualityFiltering.value = false; // half-res, the mobile-friendly path
             _bloom.tint.value = new Color(1f, 0.96f, 0.88f); // warm glow

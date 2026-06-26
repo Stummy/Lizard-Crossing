@@ -11,6 +11,21 @@ Awaiting first human playtest.
 2026-06-12 — Initial implementation; 5 smoke tests passing.
 
 ## Bugs found
+- FIXED + OPEN (2026-06-25, owner + Gemini video review "pedestrians = glowing blobs"):
+  the #1 readability issue. The modular-character textures have near-WHITE skin/clothing
+  bases; under the golden-hour sun + grade exposure they clipped toward white and bloomed,
+  so peds rendered as blown-out glowing masses (unreadable hazards → unfair hits).
+  - **FIXED — readability:** `GiantPedestrian.CalmMaterial` caps each ped material's albedo
+    (brightest channel ≤ 0.66) + forces matte (no sun specular hotspot); CinematicPost bloom
+    pulled to intensity 0.13 / threshold 1.75 so the backlit rim no longer halos them.
+    Verified in-engine: peds now read as solid dark FIGURES (not blobs); Gemini's re-review
+    shifted from "can't see them" to critiquing the actual models. Scene not over-darkened.
+  - **STILL OPEN (deeper, asset-level):** with the blow-out gone, the pedestrian MODELS are
+    exposed as low-poly/blocky (esp. feet) — they read as grey-box vs the detailed ground/
+    lizard. This is an ASSET-FIDELITY issue (better character models / a closer-detail LOD),
+    not a lighting fix → Stage 3 (asset-scout). Also: the footfall WarningMarker telegraph
+    (dark shadow + red ring) isn't reading clearly in footage — strengthen/earlier so "where
+    the foot lands" is obvious. Logged in the plan ledger.
 - PARTIAL (2026-06-25, owner playtest "the red/orange fences"): the red panels flanking
   the run are a GLB material `Street_Assets` baked PURE RED (1,0,0) on two map-spanning
   street-furniture meshes (`Object_15` center≈(28,5,80) size≈228×10×180; `Object_16`

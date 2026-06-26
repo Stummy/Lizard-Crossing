@@ -196,7 +196,10 @@ namespace LizardCrossing
             {
                 var mats = r.sharedMaterials;
                 for (int i = 0; i < mats.Length; i++)
+                {
                     mats[i] = MaterialCache.GetUrpEquivalent(mats[i]);
+                    CalmMaterial(mats[i]);
+                }
                 r.sharedMaterials = mats;
             }
 
@@ -239,6 +242,32 @@ namespace LizardCrossing
             _animator.Play(state, 0, Random.value); // desync the crowd
 
             return true;
+        }
+
+        // The modular-character textures have near-WHITE skin/clothing bases. Under the
+        // bright golden-hour sun + the grade's exposure they clip toward white and tip over
+        // the bloom threshold, so the pedestrians render as blown-out GLOWING BLOBS with no
+        // readable form (owner playtest + Gemini video review both flagged this as the #1
+        // issue — unreadable hazards = unfair hits). Pull each material's albedo below the
+        // clip/bloom point and force it matte so the sun can't punch a specular hotspot: the
+        // figures then read as solid, shaded people. Pedestrian-scoped — the global grade the
+        // owner approved is untouched. Idempotent (shared materials are cached/reused).
+        static void CalmMaterial(Material m)
+        {
+            if (m == null) return;
+            Color c = m.HasProperty("_BaseColor") ? m.GetColor("_BaseColor")
+                    : m.HasProperty("_Color") ? m.color : Color.white;
+            float mx = Mathf.Max(c.r, Mathf.Max(c.g, c.b));
+            if (mx > 0.66f)
+            {
+                float k = 0.66f / mx;                 // cap the brightest channel, keep the hue
+                c = new Color(c.r * k, c.g * k, c.b * k, c.a);
+                if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", c);
+                if (m.HasProperty("_Color")) m.color = c;
+            }
+            if (m.HasProperty("_Smoothness")) m.SetFloat("_Smoothness", 0.08f); // matte: no sun hotspot
+            if (m.HasProperty("_Glossiness")) m.SetFloat("_Glossiness", 0.08f);
+            if (m.HasProperty("_Metallic")) m.SetFloat("_Metallic", 0f);
         }
 
         void PlaceAtStart()

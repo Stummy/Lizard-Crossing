@@ -82,6 +82,9 @@ advances and the concept frame it moves toward. **`▶` = next up.**
 | ✅ | S2-5 juice (tail-drop, near-miss, hit-stop) + damage flash | 2 | squished/faceplant/nearmiss | done |
 | ✅ | Sun-washout + hero-prominence + contact shadow | 2 | run | done |
 | ✅ | Yellow-pedestrians grade fix | 2 | run | warmth pulled back |
+| ✅ | Pedestrian readability — kill the blown-out "glowing blob" look (albedo cap + matte + bloom down) | 2 | run | owner + Gemini #1; peds now read as solid figures |
+| ⬜ | Pedestrian model fidelity — blocky/low-poly models exposed once readable (better assets / LOD) | 3 | run | asset-scout; deeper than lighting |
+| ⬜ | Footfall telegraph clarity — make the WarningMarker (where the foot lands) read earlier/stronger | 2 | run | Gemini repeatedly asked for a clear ground impact cue |
 | ✅ | UI pass — premium hearts + steer arrows (Unity AI) | 2/4 | all (HUD) | `ui_heart`/`ui_arrow` wired |
 | ✅ | Fences **recolor** — kill the flat-red `Street_Assets` placeholder (→ asphalt via CityReskin) | 2 | run | red (1,0,0) eyesore gone, verified in Play |
 | ▶ | Fences **solid + close left gap** — register the panels as obstacles (lizard X-clamp / ObstacleField) so lizard + peds go around; close the open left section | 3 | run | spatial — co-design w/ owner on screen (ties into traffic/crossing flow) |
