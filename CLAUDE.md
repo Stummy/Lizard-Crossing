@@ -95,6 +95,27 @@ Done and verified in-engine (0 console errors, mechanics intact):
   quality and matching the concept*. Record the game, watch it, and fix/optimize against the
   frames continuously. The owner judges *feel*; the plan + verify loop keep *correctness*.
 
+## Section locking & change control (owner, 2026-06-26) — STOP THE LOOP
+The game is divided into **sections** (see `docs/PROJECT_PLAN.md` §0 "Sections & lock status"),
+each owned by ONE agent. Real teams finish a section, lock it, and don't reopen it without a
+reason worth the cost. We work the SAME way now — this is how we stop re-breaking finished work.
+- **Locked = frozen.** Do NOT edit a Locked section's files without explicit owner OK. Currently
+  Locked: **Lizard** (model/rig/animation) and **Controls + camera** (auto-run/dash/low POV).
+- **Before any change**, name which section it belongs to. If it would reach into a Locked
+  section, STOP and weigh it against the concept deck: not clearly worth it → don't; worth it →
+  ask the owner first. Never silently touch a locked section.
+- **After any change**, run that section's checks + the Foundation-invariant regression gate
+  (see below). If it regressed a Locked section, REVERT — verified work is never silently broken.
+- **One Active section at a time.** Finish it → owner signs off → it Locks → move to the next.
+  No jumping sections / adding unrelated "new" work mid-section. The current Active section is
+  named in PROJECT_PLAN §0; right now it's **World + corridor**.
+- **Foundation invariants are machine-checked, not hoped.** The verify loop must assert (and a
+  regression validator must hard-fail on): lizard physically cannot leave the sidewalk band
+  (real wall/fence colliders, not a math clamp); the run band is straight end-to-end; fences are
+  solid to BOTH lizard and pedestrians; cars actually cross. A green "bot reached the safe zone"
+  is NOT enough — the bot never tries to walk through a wall, so spatial invariants must be tested
+  explicitly. This is why finished foundation work kept silently regressing.
+
 ## Agent usage rules (owner, 2026-06-25)
 - **Every AI-GENERATED asset gets a design-review before it's accepted/committed.** Concept
   frames, textures, models, sprites — all are CANDIDATES, not final. Before committing, the

@@ -12,6 +12,31 @@ This is the living delivery plan. Companion docs: [`PROJECT_OVERVIEW.md`](PROJEC
 [`VISUAL_TARGET_SHEET.md`](VISUAL_TARGET_SHEET.md) (per-state concept targets),
 [`STUDIO_BOARD.md`](STUDIO_BOARD.md) (sprint board).
 
+## 0. Sections & lock status (owner-ratified 2026-06-26) — THE WORKING AGREEMENT
+The game is split into **sections**, each owned by ONE agent. We finish a section, the owner
+signs off, it **Locks**, and we don't reopen it without a reason worth the cost (see CLAUDE.md
+"Section locking & change control"). **One Active section at a time.** This is how we stop
+re-breaking finished work.
+
+| Section | Owner agent | Status | Scope |
+|---------|-------------|--------|-------|
+| **Lizard** | asset-scout | 🔒 Locked | model · rig · run cycle |
+| **Controls + camera** | camera-ui-juice | 🔒 Locked | auto-run · steer · dash · low POV |
+| **World + corridor** | environment-artist | 🟧 **ACTIVE** | straight walled run · real wall/fence colliders · safe zone |
+| **Hazards** | environment-artist | 🟦 Open | crowd ✅ · cars/cross-traffic ⬜ · alley/debris ⬜ |
+| **Lighting + grade** | lighting-post-artist | 🟦 Open | golden-hour · readability (near sign-off) |
+| **HUD + juice** | camera-ui-juice | 🟦 Open | hearts · dash btn · shake · hit-stop (near sign-off) |
+| **Screens + flow** | camera-ui-juice | 🟦 Open | start / death / win panels |
+| **Audio** | asset-scout | ⬜ Backlog | sfx · ambience · music |
+| **Meta + ship** | studio-producer | ⬜ Backlog | title · settings · perf · store |
+
+**Lock = frozen:** no edits to a Locked section's files without owner OK. Before any change, name
+its section; if it reaches into a Locked one, weigh vs. the concept deck and ask first. After any
+change, run the section checks + the Foundation-invariant gate; if a Locked section regressed,
+revert. **Current Active focus: World + corridor** — authored straight, walled corridor + the
+Foundation-invariant regression validator, finishing the "lizard leaves the sidewalk / through
+walls / fences passable / no cars" cluster, before anything else.
+
 ## 1. What "done" means
 A polished, shippable portrait-mobile arcade runner: a tiny lizard auto-runs a
 realistic-scale NYC street from a speck's-eye POV, dodging giant pedestrians, cars,
