@@ -78,18 +78,44 @@ def main() -> None:
 
     client = genai.Client(api_key=read_key())
 
-    print(f"Uploading {clip.name} ({clip.stat().st_size // 1024} KB) ...")
-    f = client.files.upload(file=str(clip))
+    from google.genai import types
+    size = clip.stat().st_size
 
-    # video files need server-side processing before they can be used
-    while f.state.name == "PROCESSING":
-        time.sleep(2)
-        f = client.files.get(name=f.name)
-    if f.state.name == "FAILED":
-        sys.exit("Gemini failed to process the video.")
+    def ask(contents):
+        last = None
+        for attempt in range(1, 5):
+            try:
+                return client.models.generate_content(model=args.model, contents=contents)
+            except Exception as e:
+                last = e
+                print(f"  attempt {attempt} failed ({type(e).__name__}); retrying ...")
+                time.sleep(3 * attempt)
+        sys.exit(f"Request failed after 4 tries: {last}")
 
-    print(f"Asking {args.model} for a critique ...\n")
-    resp = client.models.generate_content(model=args.model, contents=[f, PROMPT])
+    if size < 18 * 1024 * 1024:
+        # short clips: send the video INLINE in the request — skips the separate Files
+        # upload endpoint (which was dropping mid-transfer / "server disconnected") and is
+        # the most reliable path for our ~few-MB gameplay clips.
+        print(f"Sending {clip.name} ({size // 1024} KB) inline to {args.model} ...\n")
+        resp = ask([types.Part.from_bytes(data=clip.read_bytes(), mime_type="video/mp4"), PROMPT])
+    else:
+        # large clips: resumable upload via the Files API (with retry), then generate
+        print(f"Uploading {clip.name} ({size // 1024} KB) via Files API ...")
+        f = None
+        for attempt in range(1, 5):
+            try:
+                f = client.files.upload(file=str(clip)); break
+            except Exception as e:
+                if attempt == 4: sys.exit(f"Upload failed after {attempt} tries: {e}")
+                print(f"  upload attempt {attempt} failed ({type(e).__name__}); retrying ...")
+                time.sleep(3 * attempt)
+        while f.state.name == "PROCESSING":
+            time.sleep(2); f = client.files.get(name=f.name)
+        if f.state.name == "FAILED":
+            sys.exit("Gemini failed to process the video.")
+        print(f"Asking {args.model} for a critique ...\n")
+        resp = ask([f, PROMPT])
+
     text = resp.text or "(no text returned)"
 
     print("=" * 70)
