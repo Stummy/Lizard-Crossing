@@ -38,11 +38,24 @@ namespace LizardCrossing
             var sunGo = new GameObject("Sun");
             var sun = sunGo.AddComponent<Light>();
             sun.type = LightType.Directional;
-            sun.color = new Color(1f, 0.95f, 0.84f);   // warm midday key
-            sun.intensity = 1.18f;                       // bright but the HDRI ambient does a lot of the lift
+            // GOLDEN-HOUR pass (Gemini #1 gap: the run read cold/dark "night/evening", peds glowed
+            // white, hero green didn't pop — when the concept demands warm golden-hour sun). The
+            // prior key was a near-neutral midday white (1,0.95,0.84) at a high 48° elevation, which
+            // with the cool fill + cool HDRI ambient netted a COLD grey frame. Warm the key toward a
+            // low golden sun and DROP its elevation so it rakes long and reads as late-afternoon gold.
+            // v2 (Gemini re-review): the v1 sun (1,0.83,0.58) was too ORANGE — as the dominant light
+            // it painted the whole avenue monochrome yellow. Golden, but pulled back toward a
+            // late-afternoon gold so lit stone reads warm-grey, not orange.
+            sun.color = new Color(1f, 0.89f, 0.70f);   // golden-hour sun, less orange (was 1,0.83,0.58)
+            // EXPOSURE FIX (real game-view ScreenCapture truth, not the brighter cam.Render() RT):
+            // at 1.28 the key drove even a capped 0.46-albedo pedestrian (0.46 x ~2.2 light) PAST 1.0,
+            // so the peds + the lizard's light dorsal clipped to glowing WHITE in the actual frame
+            // (Gemini's persistent "white blob / not emerald" read — which the RT captures hid). Pull
+            // the key to 1.0 so lit mid-tones land below clip; the warm grade keeps the golden look.
+            sun.intensity = 1.1f;                        // 1.0->1.1: restore avenue brightness (the skybox tame removed the blow-risk)
             sun.shadows = LightShadows.Soft;
-            sun.shadowStrength = 0.62f;                  // soft, not crushed-black contact shadows
-            sunGo.transform.rotation = Quaternion.Euler(48f, SunYaw, 0f); // high sun, raked off the run axis
+            sun.shadowStrength = 0.55f;                  // soft, warm-ish (the warm grade tints the shadow too)
+            sunGo.transform.rotation = Quaternion.Euler(34f, SunYaw, 0f); // LOW golden-hour rake (was 48° = high/flat)
 
             // Cool fill from the opposite side keeps the shadow side from going muddy and
             // reads the lizard's form. WO-7 (anti-silhouette): raised 0.22→0.36 so when a
@@ -53,8 +66,17 @@ namespace LizardCrossing
             var fillGo = new GameObject("Fill");
             var fill = fillGo.AddComponent<Light>();
             fill.type = LightType.Directional;
-            fill.color = new Color(0.66f, 0.76f, 0.95f);
-            fill.intensity = 0.36f;
+            // GOLDEN-HOUR pass: the old deep-blue fill (0.66,0.76,0.95) was the main culprit in the
+            // COLD cast — it dumped saturated blue onto the shadow side AND the broad ground plane, so
+            // the whole frame read evening/cold. Soften it to a gentle sky-cyan (less blue, lifted
+            // toward white) so it still keeps the shadow side off pure black + reads the hero's form,
+            // but no longer fights the warm golden key. Slightly lower so the sun clearly owns the look.
+            fill.color = new Color(0.62f, 0.72f, 0.86f); // softer cyan fill (was a deep saturated blue)
+            // EXPOSURE-EVENNESS FIX: nudged 0.30->0.38 so a giant ped/building that occludes the warm
+            // key gets enough wrap light to read as a shaded shape instead of going to "pure black"
+            // (Gemini's under-exposed end of the flicker). Still well below the key, so lit planes
+            // keep their warm-vs-cool contrast.
+            fill.intensity = 0.38f;
             fill.shadows = LightShadows.None;
             fillGo.transform.rotation = Quaternion.Euler(40f, SunYaw + 180f, 0f); // opposite the key (keeps the 180° relationship)
 
@@ -67,13 +89,32 @@ namespace LizardCrossing
                 // instance the material so spinning the HDRI at runtime never dirties the shared asset
                 var skybox = new Material(skyboxAsset);
                 skybox.SetFloat("_Rotation", SkyRotation); // swing the baked sun disc off the +Z forward view
+                // EXPOSURE-EVENNESS FIX (Gemini: the clip "flashes between blown-out white and pure
+                // black" — the bright HDRI sky/sun is the hot end). Pull the skybox exposure down so
+                // when the open sky/sun fills frame it no longer blows to white; this squeezes the
+                // bright frames toward the shadowed ones for an EVEN exposure across the run. A soft
+                // cyan tint keeps the "soft cyan sky" read without a saturated electric blue.
+                if (skybox.HasProperty("_Exposure")) skybox.SetFloat("_Exposure", 0.88f); // 0.85->0.88: a touch brighter sky so it reads day, not dusk
+                // Soft CYAN sky (concept), not a deep blue: lift the green channel toward the blue and
+                // raise both so the sky reads as a pale daytime cyan rather than the saturated dark
+                // blue the reviewer kept calling "night". R lifted a hair too so it's airy, not steely.
+                if (skybox.HasProperty("_Tint")) skybox.SetColor("_Tint", new Color(0.66f, 0.78f, 0.82f)); // pale soft cyan
                 RenderSettings.skybox = skybox;
                 RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Skybox;
-                // WO-7 (anti-silhouette): nudged 1.0→1.12 so the sky-derived SH ambient gives
-                // the hero a slightly higher light floor under heavy occlusion (giant leg blocks
-                // the key) without washing out the grade. Small, deliberate — the fill light does
-                // the directional work; this just keeps the darkest shaded surfaces off pure black.
-                RenderSettings.ambientIntensity = 1.12f;
+                // GOLDEN-HOUR pass: the 1.12 sky-derived ambient was over-lighting the pedestrians'
+                // near-white albedo (the #1 "glowing white blob" read — flat sky-fill blows them out
+                // before any sun/shadow can model them) AND pouring cool HDRI blue into the frame.
+                // Pull it to 0.85 so the figures get MODELLED by the warm directional key instead of
+                // washed flat by ambient, and the cool cast drops. The grade's postExposure lift +
+                // the brighter warm key keep the avenue from going dark — net result is even, warm,
+                // and the peds read as solid shaded people, not light blobs. Fill light keeps the
+                // hero off pure-black under heavy occlusion, so lowering ambient is safe.
+                // EXPOSURE FIX: ambient stacks ON TOP of the key, so a bright ambient was the other
+                // half of the ped/hero white-clip. Pull to 0.78 — still keeps the cool cyan sky-light
+                // that lifts shadows + breaks the warm-monochrome, but low enough that a lit surface
+                // no longer sums past 1.0. Fill light still keeps the hero off pure-black under
+                // occlusion. Net: peds/hero read as solid SHADED colour, not blown white.
+                RenderSettings.ambientIntensity = 0.85f;
                 DynamicGI.UpdateEnvironment(); // compute SH ambient from the skybox once
             }
             else

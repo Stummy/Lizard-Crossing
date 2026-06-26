@@ -271,9 +271,15 @@ namespace LizardCrossing
             Color c = m.HasProperty("_BaseColor") ? m.GetColor("_BaseColor")
                     : m.HasProperty("_Color") ? m.color : Color.white;
             float mx = Mathf.Max(c.r, Mathf.Max(c.g, c.b));
-            if (mx > 0.66f)
+            if (mx > 0.38f)
             {
-                float k = 0.66f / mx;                 // cap the brightest channel, keep the hue
+                // GOLDEN-HOUR pass v3 (real ScreenCapture truth): the peds STILL washed to pale
+                // "mannequins" at 0.46 — under the warm key (~1.1) + ambient (~0.85) a 0.46 lit front
+                // sums to ~0.9 = near-white. The concept peds are DARK silhouettes (legs/shoes mostly
+                // in shadow), so cap to 0.38: even a sun-front-lit ped now lands ~0.7 (a solid shaded
+                // figure), and a shadow-side / blurred giant leg reads as a dark trouser column — the
+                // "towering blurred legs" look — instead of a glowing blob. Hue preserved.
+                float k = 0.38f / mx;                 // cap the brightest channel, keep the hue
                 c = new Color(c.r * k, c.g * k, c.b * k, c.a);
                 if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", c);
                 if (m.HasProperty("_Color")) m.color = c;

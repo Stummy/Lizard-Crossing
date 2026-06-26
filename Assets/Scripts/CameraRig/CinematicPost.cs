@@ -85,33 +85,56 @@ namespace LizardCrossing
 
             // --- Color Adjustments: warm, sunny, bright-but-not-blown grade ---
             var color = profile.Add<ColorAdjustments>(true);
-            // WO-7 (overexposure fix): +0.35 was blowing mid/bright surfaces — the sunlit
-            // pavement read hazy and near-white. Pulled to +0.15 so the asphalt and mid-tones
-            // stay grounded; the scene is still warm/sunny from the grade + HDRI ambient, just
-            // no longer washed out.
-            color.postExposure.value = 0.06f;                    // gentle lift; pulled 0.15->0.06 to stop the sun-facing washout
-            color.contrast.value = 12f;                          // gentle punch
-            color.saturation.value = 18f;                        // slightly saturated (hero pops)
-            // Off-axis-sun warmth restore (owner: keep the golden hour): with the sun raked off the
-            // run axis the forward view now faces the COOL side of the sky, so the frame read blue-grey.
-            // Warm the grade back toward golden — but only to 0.94 blue (not the old 0.92 that yellowed
-            // jeans), and the warmth now lands on darker/side-lit peds (less yellow risk than backlit).
-            color.colorFilter.value = new Color(1.05f, 1.0f, 0.94f); // warmer golden wash, restrained on blue
+            // GOLDEN-HOUR pass (Gemini #1 gap: the run read DARK + cold "night/evening"). The prior
+            // anti-glare passes had crushed postExposure to +0.06 which, with the cool fill/ambient,
+            // left the avenue dark and flat. The real fix for the bright-peds wasn't to crush the
+            // whole frame's exposure (which killed the golden hour) — it's a sane bloom threshold +
+            // a harder ped-albedo cap (GiantPedestrian.CalmMaterial). So LIFT exposure back up to pull
+            // the run out of the dark, and let the grade carry the warmth. With ambient lowered to
+            // 0.85 the brights no longer clip, so this lift evens the start-vs-avenue exposure instead
+            // of blowing the start.
+            // GOLDEN-HOUR pass v2 (Gemini re-review: v1 over-shot into an "intense desaturated
+            // yellow/orange monochrome wash" — the cyan sky + asphalt grey vanished and peds glowed
+            // yellow). The fix: keep the warm key/grade but RESTORE the blue channel so the frame is
+            // warm-AND-cohesive (warm lit planes vs a living cyan sky), not a uniform yellow tint, and
+            // pull exposure back so nothing overblows. Warmth comes from the WARM SUN now, not a heavy
+            // global filter — the grade just nudges.
+            // EXPOSURE FIX (real ScreenCapture truth): the sun/ambient drop above tames the white
+            // clip, so postExposure goes to 0 — any positive lift here re-blew the peds/hero. Push
+            // SATURATION harder so the now-unclipped mid-tones read as vivid golden + a clearly
+            // EMERALD hero (the wash had desaturated both toward white).
+            color.postExposure.value = 0.0f;                     // 0.14->0.0: no extra lift; the lights set the level
+            color.contrast.value = 16f;                          // a touch more punch to separate warm planes from cool sky/shadow
+            color.saturation.value = 30f;                        // 22->30: vivid golden tones + emerald hero pops (was washing white)
+            // Gentle warm filter — blue restored so the cyan sky and grey asphalt survive (the v1
+            // 0.86 blue crushed both into yellow). Warmth is a nudge on top of the warm sun, not a wash.
+            color.colorFilter.value = new Color(1.05f, 1.005f, 0.93f); // gentle warm nudge, blue kept alive
 
-            // push white balance toward warm sunlight — but only gently. 14 was casting
-            // everything (esp. pedestrians' clothing) YELLOW; pulled to 7 so it reads warm
-            // golden-hour without turning blue jeans tan or skin sallow (owner playtest).
+            // White balance: warm but moderate. v1's 20 stacked with the warm filter/LGG into the
+            // monochrome yellow; pulled to 11 so the SUN owns the warmth and the sky stays cyan.
             var wb = profile.Add<WhiteBalance>(true);
-            wb.temperature.value = 12f;                          // 7->12: re-warm the now-cool forward view (sun is off-axis)
-            wb.tint.value = 2f;                                  // a hair of magenta kills the green cast
+            wb.temperature.value = 11f;                          // 20->11: warm, but the cyan sky lives
+            wb.tint.value = 2f;                                  // a hair of magenta kills the green cast on skin
 
             // --- Lift / Gamma / Gain: the cohesive cinematic grade toward the §3 palette
             //     (warm sun in highlights, neutral-warm mids, faintly cool shadows so the
             //     cyan sky and shaded stone read cool against the warm lit planes). ---
+            // GOLDEN-HOUR pass: the old lift pushed shadows COOL/blue (1.04 blue), which — stacked on
+            // the cool fill + cool ambient — was a big part of the "cold evening" read. Warm the
+            // shadows to near-neutral (just a whisper of cool kept in the deepest shadow so the cyan
+            // SKY still reads cool by contrast) and push the mids/highlights firmly warm so the lit
+            // pavement and the sun-kissed building tops glow golden like the concept.
+            // v2: softened the LGG warmth (v1 pushed highlights blue down to 0.90 which, stacked with
+            // the warm filter + WB, monochromed the bright sky into orange). Keep warm mids for the
+            // golden pavement, but let the highlights stay near-neutral so the bright sky reads cyan,
+            // and keep a faint cool whisper in the deepest shadow for warm/cool separation.
+            // EXPOSURE-EVENNESS FIX: lift the shadows a touch more (the global lift .01->.04) so the
+            // occluded "pure black" giant-ped/building moments come up off black — squeezing the dark
+            // end up to meet the (now-tamed) bright end for an even read across the run.
             var lgg = profile.Add<LiftGammaGain>(true);
-            lgg.lift.value = new Vector4(0.98f, 0.99f, 1.04f, 0.0f);   // cool, lifted shadows (not crushed)
-            lgg.gamma.value = new Vector4(1.02f, 1.0f, 0.97f, 0.0f);   // warm mids
-            lgg.gain.value = new Vector4(1.04f, 1.01f, 0.95f, 0.0f);   // warm, sun-kissed highlights
+            lgg.lift.value = new Vector4(0.995f, 0.997f, 1.005f, 0.02f); // warm-neutral shadows, gentle lift (0.04 washed the hero's shadows)
+            lgg.gamma.value = new Vector4(1.03f, 1.0f, 0.96f, 0.0f);     // warm mids (golden pavement), gentler
+            lgg.gain.value = new Vector4(1.03f, 1.01f, 0.97f, 0.0f);     // lightly warm highlights, sky stays cyan
 
             // --- Bloom: gentle sun-kissed glow on the brightest highlights (sky, lit
             //     stone, chrome). Half-res (HQ filtering OFF) to stay cheap on mobile. ---
@@ -130,11 +153,21 @@ namespace LizardCrossing
             // ahead into "blinding blobs of light" with no contrast). Cut the bloom hard so the bright
             // sky stops bleeding OVER the pedestrian silhouettes — the figures regain defined edges
             // against the background. Only a whisper of glow remains on the literal sun/chrome.
-            _bloom.intensity.value = 0.06f;        // 0.13->0.06: stop the sky bleeding over subjects
-            _bloom.threshold.value = 2.2f;         // 1.75->2.2: only the genuine sun disc / hotspots bloom
+            // GOLDEN-HOUR pass: bloom had been crushed to ~off (0.06/2.2) to fight the glowing-white
+            // peds — but that also killed the warm sun-kiss the golden hour needs, and was a wrong
+            // tool: the peds glow because of their bright albedo + high ambient, not a low threshold.
+            // Now that ambient is 0.85 and CalmMaterial caps the ped albedo harder, restore a tasteful
+            // sun-kiss: a moderate threshold so ONLY genuine highlights (sky strip, sun, chrome, the
+            // golden building tops) bloom, at a gentle intensity. Peds sit below the threshold so they
+            // no longer halo. Warm golden tint on the glow.
+            // v2: cut bloom back (v1's 0.20/1.25 contributed to the overblown wash, esp. on the bright
+            // sky strip up the avenue). A gentle kiss on only the genuine hotspots, near-neutral tint
+            // so the glow doesn't paint the sky yellow.
+            _bloom.intensity.value = 0.11f;        // 0.20->0.11: a real sun-kiss, not a wash
+            _bloom.threshold.value = 1.60f;        // 1.45->1.60: guarantee even a sun-front-lit ped sits below bloom (no halo)
             _bloom.scatter.value = 0.60f;
             _bloom.highQualityFiltering.value = false; // half-res, the mobile-friendly path
-            _bloom.tint.value = new Color(1f, 0.96f, 0.88f); // warm glow
+            _bloom.tint.value = new Color(1f, 0.96f, 0.90f); // faintly warm glow (near-neutral, no yellow paint)
 
             // --- Vignette: subtle edge darkening to frame the hero at bottom-center ---
             // S2-1: 0.26/0.45 was crushing the TOP of frame (the skyline) to near-black, so the
