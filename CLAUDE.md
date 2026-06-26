@@ -4,6 +4,29 @@
 Read `Lizard_Crossing_Claude_Work_Packet/00_READ_ME_FIRST/CLAUDE_INSTRUCTIONS.md`
 before doing any work.** Do not ask the owner to re-explain the game idea.
 
+## ⭐ SESSION BOOT PROTOCOL (owner rule, 2026-06-26) — RUN THIS EVERY TIME I'm told to work
+Don't wing it. Before touching code each session, ORIENT against the three sources of truth —
+the GOAL, the CONCEPT, and the TESTER — then work the loop. Be the agent that learns as we go:
+update this file + memory whenever we learn a rule, fix, or gotcha.
+1. **GOAL** — read `docs/PROJECT_PLAN.md` §0 (section board + the ONE **Active** section) and §5
+   ledger, this file's rules, and `MEMORY.md`. Work ONLY the Active section; never edit a **Locked**
+   one without owner OK (see "Section locking & change control").
+2. **CONCEPT** — open the concept frame(s) for the state(s) I'm about to touch in
+   `Assets/Art/Concept/` (`run`/`win`/`gameover`/`nearmiss`/`squished`/`faceplant`/`title`) +
+   `docs/VISUAL_TARGET_SHEET.md`. That deck is the spec — every change must move the live game
+   toward it; if it moves toward neither the plan nor the concept, it's scope creep.
+3. **TESTER ("the video guy")** — the Gemini reviewer is our QA game tester, kept IN SYNC: it is
+   fed the concept frames + spec and reports BUGS + CONCEPT-GAP + a punch-list. Read the latest
+   `Temp/Recording/run.review.md` if fresh; otherwise, when the build runs, record a clip
+   (menu **Lizard Crossing → Bot → Record MP4 (10s)**, Game view set to 9:16 portrait) and run
+   `python Tools/gemini_review.py` (use `--state <name>` to compare a specific concept frame).
+   **Log its findings into the §5 ledger** so nothing is lost.
+4. **WORK THE LOOP** — pull the top ledger item for the Active section → change → `verify-and-ship`
+   (compile clean → bot playthrough reaches the safe zone → **Bot → Invariant Check** PASS → 0
+   console errors → proof frame) → commit+push → tick the ledger → **re-run the tester to confirm
+   the gap closed** → checkpoint the owner with before/after vs the concept frame. Remind the owner
+   to run `/code-review ultra` at each section/stage gate.
+
 ## CURRENT DESIGN DIRECTION (updated 2026-06-16, owner) — REALISTIC-SCALE CITY
 
 The game evolved from "giant shoes in a garden alley" to a **realistic-scale city
