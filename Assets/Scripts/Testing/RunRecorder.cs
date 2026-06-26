@@ -235,6 +235,24 @@ namespace LizardCrossing.Testing
                 Vector3 d = ped.transform.position - lp;
                 if (d.z > 0.2f && d.z < 4f && Mathf.Abs(d.x) < 1.6f && d.z < bestZ) { bestZ = d.z; steer = d.x > 0f ? -1f : 1f; }
             }
+
+            // Also dodge cross-traffic so the bot survives the crosswalk crossings (otherwise it
+            // dies at the first one and the clip never shows them to the Gemini tester). Edge away
+            // from the nearest car sweeping across the lane just ahead, and DASH to punch through
+            // when one is bearing down right at the crossing line.
+            bool dash = false;
+            foreach (var car in Object.FindObjectsByType<Car>(FindObjectsSortMode.None))
+            {
+                if (car == null || !car.gameObject.activeInHierarchy) continue;
+                Vector3 d = car.transform.position - lp;
+                if (d.z > -1.5f && d.z < 5f && Mathf.Abs(d.x) < 7f)
+                {
+                    if (Mathf.Approximately(steer, 0f)) steer = d.x > 0f ? -1f : 1f;   // slide to the side it isn't on
+                    if (Mathf.Abs(d.x) < 2.4f && d.z > -0.5f && d.z < 2.6f) dash = true; // imminent → blast past
+                }
+            }
+            if (dash) InputProvider.PressDash();
+
             if (Mathf.Approximately(steer, 0f)) steer = Mathf.Clamp((GameConst.CorridorCenterX - lp.x) * 0.5f, -0.6f, 0.6f);
             InputProvider.MoveOverride = new Vector2(Mathf.Clamp(steer, -1f, 1f), 0f);
         }

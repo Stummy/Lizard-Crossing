@@ -77,11 +77,13 @@ namespace LizardCrossing.EditorTools
 
         // Records a real MP4 of a bot run to Temp/Recording/run.mp4 (HUD included) for
         // uploading to a video model (e.g. Gemini) to critique motion/feel. Play mode first.
-        [MenuItem(Root + "Record MP4 (10s)")]
+        [MenuItem(Root + "Record MP4 (14s)")]
         private static void RecordMp4()
         {
             if (!Application.isPlaying) { Debug.LogWarning("[RunRecorder] Enter Play mode first."); return; }
-            LizardCrossing.Testing.RunRecorder.LaunchVideo(10f, 30);
+            // 14s so the auto-running lizard (3.6 u/s) reaches the first crosswalk crossing (z=40)
+            // and the tester can actually judge the crossing + traffic, not just the opening run.
+            LizardCrossing.Testing.RunRecorder.LaunchVideo(14f, 30);
         }
     }
 }
