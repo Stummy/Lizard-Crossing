@@ -92,13 +92,17 @@ namespace LizardCrossing
             color.postExposure.value = 0.06f;                    // gentle lift; pulled 0.15->0.06 to stop the sun-facing washout
             color.contrast.value = 12f;                          // gentle punch
             color.saturation.value = 18f;                        // slightly saturated (hero pops)
-            color.colorFilter.value = new Color(1.03f, 1.0f, 0.97f); // faint warm wash; eased blue 0.92->0.97 so people/jeans aren't tinted yellow
+            // Off-axis-sun warmth restore (owner: keep the golden hour): with the sun raked off the
+            // run axis the forward view now faces the COOL side of the sky, so the frame read blue-grey.
+            // Warm the grade back toward golden — but only to 0.94 blue (not the old 0.92 that yellowed
+            // jeans), and the warmth now lands on darker/side-lit peds (less yellow risk than backlit).
+            color.colorFilter.value = new Color(1.05f, 1.0f, 0.94f); // warmer golden wash, restrained on blue
 
             // push white balance toward warm sunlight — but only gently. 14 was casting
             // everything (esp. pedestrians' clothing) YELLOW; pulled to 7 so it reads warm
             // golden-hour without turning blue jeans tan or skin sallow (owner playtest).
             var wb = profile.Add<WhiteBalance>(true);
-            wb.temperature.value = 7f;
+            wb.temperature.value = 12f;                          // 7->12: re-warm the now-cool forward view (sun is off-axis)
             wb.tint.value = 2f;                                  // a hair of magenta kills the green cast
 
             // --- Lift / Gamma / Gain: the cohesive cinematic grade toward the §3 palette
@@ -121,8 +125,13 @@ namespace LizardCrossing
             // effects around them"). Pulled intensity down and the threshold up so only true
             // highlights (sun/sky/chrome) glow — the pedestrian rim no longer halos, so the
             // figures read as solid. Pairs with GiantPedestrian.CalmMaterial (albedo cap).
-            _bloom.intensity.value = 0.13f;        // 0.20->0.13: rim no longer halos the peds
-            _bloom.threshold.value = 1.75f;        // 1.55->1.75: only the brightest highlights bloom
+            // Forward-glare pass (Gemini re-review + eyes-on frame: the lizard auto-runs INTO a low
+            // golden-hour sun, so the bright HDRI sky at the horizon + bloom bleed merged pedestrians
+            // ahead into "blinding blobs of light" with no contrast). Cut the bloom hard so the bright
+            // sky stops bleeding OVER the pedestrian silhouettes — the figures regain defined edges
+            // against the background. Only a whisper of glow remains on the literal sun/chrome.
+            _bloom.intensity.value = 0.06f;        // 0.13->0.06: stop the sky bleeding over subjects
+            _bloom.threshold.value = 2.2f;         // 1.75->2.2: only the genuine sun disc / hotspots bloom
             _bloom.scatter.value = 0.60f;
             _bloom.highQualityFiltering.value = false; // half-res, the mobile-friendly path
             _bloom.tint.value = new Color(1f, 0.96f, 0.88f); // warm glow

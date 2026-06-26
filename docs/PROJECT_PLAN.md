@@ -83,8 +83,10 @@ advances and the concept frame it moves toward. **`▶` = next up.**
 | ✅ | Sun-washout + hero-prominence + contact shadow | 2 | run | done |
 | ✅ | Yellow-pedestrians grade fix | 2 | run | warmth pulled back |
 | ✅ | Pedestrian readability — kill the blown-out "glowing blob" look (albedo cap + matte + bloom down) | 2 | run | owner + Gemini #1; peds now read as solid figures |
-| ⬜ | Pedestrian model fidelity — blocky/low-poly models exposed once readable (better assets / LOD) | 3 | run | asset-scout; deeper than lighting |
-| ⬜ | Footfall telegraph clarity — make the WarningMarker (where the foot lands) read earlier/stronger | 2 | run | Gemini repeatedly asked for a clear ground impact cue |
+| ⬜ | Pedestrian model fidelity — blocky/low-poly models exposed once readable (better assets / LOD) | 3 | run | asset-scout; all 3 Gemini reviews still call peds "placeholder"; deeper than lighting |
+| ✅ | Footfall telegraph clarity — widen window (0.22→0.6, whole descent) + floor brightness + bolder ring | 2 | run | Gemini asked 3×; 8/8 cautious-bot wins prove it reads (commit 1c10629) |
+| ✅ | Forward-glare washout — lizard auto-ran INTO the low sun (glare wall + ped blobs); raked the sun OFF-axis + spun the HDRI to match + cut bloom hard + re-warmed grade | 2 | run | owner picked off-axis; spawn view now reads peds as PEOPLE, lizard pops, ground textured |
+| ⬜ | Collision / hit JUICE — Gemini reads hits as "clips under the foot then OUCH" w/ weak feedback; add recoil + shake + heart-loss anim + SFX | 4 | squished/faceplant | Gemini's new #2; some juice exists, needs punch |
 | ✅ | UI pass — premium hearts + steer arrows (Unity AI) | 2/4 | all (HUD) | `ui_heart`/`ui_arrow` wired |
 | ✅ | Fences **recolor** — kill the flat-red `Street_Assets` placeholder (→ asphalt via CityReskin) | 2 | run | red (1,0,0) eyesore gone, verified in Play |
 | ▶ | Fences **solid + close left gap** — register the panels as obstacles (lizard X-clamp / ObstacleField) so lizard + peds go around; close the open left section | 3 | run | spatial — co-design w/ owner on screen (ties into traffic/crossing flow) |
