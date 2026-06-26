@@ -63,13 +63,18 @@ namespace LizardCrossing
                         CarCrossLane(parent, lane.Z, lane.Dir);
         }
 
-        // A wave of cars crossing the avenue (±X) at one cross-street Z. The wave comes in a
-        // burst and then a shared rest, so there's a readable GAP between waves — the safe
-        // window the auto-running lizard threads. Mostly one-way (the lane's Dir) with one car
-        // the other way so the crossing reads as two-way cross-traffic. Cars run fast so each
-        // clears the lizard's lane quickly; the rest (RespawnDelay) is the crossing window.
+        // A controlled crossing at one cross-street Z: a traffic light cycles cars-go ↔ safe,
+        // and the crossing cars (±X) are GATED to it so they sweep the crosswalk during cars-go
+        // and hold off-screen during the safe window — a recurring, telegraphed gap the
+        // auto-running lizard threads. Mostly one-way (the lane's Dir) with one car the other way
+        // so it reads as two-way cross-traffic. A car hit costs a heart (Car.KillCheck).
         static void CarCrossLane(Transform parent, float z, int laneDir)
         {
+            // Per-crossing signal; the phase offset (∝ z) staggers the lights down the avenue
+            // so the crossings don't all flip together. ~5.3s of traffic, ~3.2s safe gap.
+            var light = TrafficLight.Create(parent, z, 8.5f, 3.2f, z * 0.13f);
+            System.Func<bool> gate = () => light.CarsMayGo;
+
             float margin = GameConst.CorridorHalfWidth + 12f;
             int primary = laneDir >= 0 ? 1 : -1;
             float[] delays = { 0.0f, 1.3f, 2.4f };
@@ -80,7 +85,8 @@ namespace LizardCrossing
                 int dir = dirs[i];
                 Vector3 start = new Vector3(dir > 0 ? -margin : margin, GameConst.GroundY, z);
                 Vector3 end = new Vector3(-start.x, GameConst.GroundY, z);
-                Car.SpawnTrack(parent, start, end, speeds[i], delays[i], 3.4f);
+                // short rest (1.2s) so cars cycle briskly during cars-go; the GATE creates the gap.
+                Car.SpawnTrack(parent, start, end, speeds[i], delays[i], 1.2f, 0f, gate);
             }
         }
 

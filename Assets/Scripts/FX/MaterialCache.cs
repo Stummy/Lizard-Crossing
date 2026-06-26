@@ -18,6 +18,7 @@ namespace LizardCrossing
     public static class MaterialCache
     {
         private static readonly Dictionary<Color, Material> Lit = new Dictionary<Color, Material>();
+        private static readonly Dictionary<Color, Material> Emissive = new Dictionary<Color, Material>();
         private static readonly Dictionary<Material, Material> Remap = new Dictionary<Material, Material>();
         private static Material _shadowBlob;
         private static Material _warningRing;
@@ -72,6 +73,23 @@ namespace LizardCrossing
             m.color = color;
             SetPbr(m, 0.12f, 0f);
             Lit[color] = m;
+            return m;
+        }
+
+        /// <summary>Lit material that self-illuminates in <paramref name="color"/> — used for
+        /// traffic-light lamps so they read "on" even in shadow. Emission is HDR-boosted.
+        /// Cached per color (a handful of lamp states), so toggling lamps is allocation-free.</summary>
+        public static Material GetEmissive(Color color)
+        {
+            Material m;
+            if (Emissive.TryGetValue(color, out m) && m != null) return m;
+            m = new Material(LitShaderAsset);
+            m.color = color;
+            SetPbr(m, 0.2f, 0f);
+            m.EnableKeyword("_EMISSION");
+            m.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
+            m.SetColor("_EmissionColor", color * 2.2f);
+            Emissive[color] = m;
             return m;
         }
 

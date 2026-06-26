@@ -22,6 +22,7 @@ namespace LizardCrossing
         float _respawnDelay, _restTimer;
         bool _resting, _rumbled, _nearMissed;
         Transform _holder;
+        System.Func<bool> _goGate;   // optional: car holds at the start line until this returns true (traffic light)
 
         // Real Kenney "Car Kit" GLBs (CC0, ~2k tris, shared palette atlas) replacing the old
         // procedural box-car. Biased toward the yellow taxi for the NYC read; the rest add body
@@ -45,9 +46,12 @@ namespace LizardCrossing
             return SpawnTrack(parent, start, end, speed, lane.StartDelay, lane.RespawnDelay);
         }
 
-        /// <summary>Drive from start to end along any direction (e.g. down the road, ±Z).</summary>
+        /// <summary>Drive from start to end along any direction (e.g. down the road, ±Z).
+        /// <paramref name="goGate"/> (optional) holds the car at its start line until it returns
+        /// true — used by a crossing's traffic light so cars only enter on its "cars-go" phase.</summary>
         public static Car SpawnTrack(Transform parent, Vector3 start, Vector3 end,
-            float speed, float startDelay, float respawnDelay, float startProgress = 0f)
+            float speed, float startDelay, float respawnDelay, float startProgress = 0f,
+            System.Func<bool> goGate = null)
         {
             var go = new GameObject("Car");
             go.transform.SetParent(parent, false);
@@ -59,6 +63,7 @@ namespace LizardCrossing
             c._respawnDelay = respawnDelay;
             c._restTimer = startDelay;
             c._resting = true;
+            c._goGate = goGate;
 
             int variant = (Mathf.Abs(Mathf.RoundToInt(start.x + start.z * 1.7f))) % VehBag.Length;
             c.BuildCar(VehBag[variant]);
@@ -168,7 +173,10 @@ namespace LizardCrossing
             if (_resting)
             {
                 _restTimer -= Time.deltaTime;
-                if (_restTimer <= 0f) { _resting = false; if (_holder != null) _holder.gameObject.SetActive(true); }
+                // Wait out the rest timer AND (if gated) the traffic light's cars-go phase, so
+                // gated crossing cars hold off-screen during the lizard's safe window.
+                bool ready = _restTimer <= 0f && (_goGate == null || _goGate());
+                if (ready) { _resting = false; if (_holder != null) _holder.gameObject.SetActive(true); }
                 else return;
             }
 
