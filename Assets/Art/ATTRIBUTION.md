@@ -11,7 +11,15 @@ CC0 requires no attribution, but every source is documented here per project pol
 | Clay Plaster (diff/normal, 2K) — corridor walls | Poly Haven | CC0 | `Assets/Resources/GeneratedArt/wall_*.jpg` |
 
 ## Models
-_(pending — free CC0 / free-tier generated hero assets)_
+
+| Asset | Source | License | Path |
+|---|---|---|---|
+| Car Kit (taxi/sedan/suv/van/truck) | Kenney | CC0 | `Assets/Resources/Models/CityKit/Vehicles/` |
+| Nature Kit (trees/bushes — Central Park) | Kenney | CC0 | `Assets/Resources/Models/Nature/` |
+| City Builder Bits (furniture) | KayKit (Kay Lousberg) | CC0 | `Assets/Resources/Models/Furniture/` |
+| Generated hero/props (lizard, rubble, Meshy props) | Tripo / Meshy (free-tier gen) | owned/generated | `Assets/Resources/Models/` |
+
+_(Kenney CC0 packs are re-downloadable; only the curated, runtime-loaded subset lives in `Resources/`.)_
 
 ## Audio
 _(procedurally synthesized in-engine; see `GameAudio.cs`)_

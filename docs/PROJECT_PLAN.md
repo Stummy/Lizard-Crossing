@@ -136,7 +136,8 @@ advances and the concept frame it moves toward. **`▶` = next up.**
 ### Stage 3 — Content completeness (the big build)
 > **Approved 5-stage plan (`~/.claude/plans/mighty-prancing-pie.md`, owner-locked 2026-06-26):**
 > S1 polish/fixes ✅ · S2 realistic city dressing ✅ · **S3 crosswalk traffic ✅ (this session)** ·
-> S4 realistic hero models (lizard/tail/bug/car) ⬜ · S5 Central Park finale ⬜.
+> S4 realistic hero models (lizard/tail/bug/car) ⬜ (locked Lizard — needs owner OK) ·
+> **S5 Central Park finale ✅ (this session — real CC0 trees, commit a926434)**.
 
 | ✓ | Item | Stage | Concept target | Notes |
 |---|------|-------|----------------|-------|
@@ -146,6 +147,7 @@ advances and the concept frame it moves toward. **`▶` = next up.**
 | ⬜ | Lane TYPES in LevelDefinition/LaneSpec (sidewalk/road/alley) | 3 | run | prerequisite for alley |
 | ⬜ | Alley zone + falling/scattered debris hazard | 3 | faceplant | needs lane types first |
 | ⬜ | Cars as a distinct hazard beat (side impact ≠ ped stomp) | 3 | nearmiss | per VISUAL_TARGET_SHEET §4 |
+| ✅ | **Central Park finale (Stage 5)** — real CC0 trees/bushes (Kenney Nature Kit) + grass + path replace the primitive flower-arch safe zone; the run bursts into a green park. `PlaceNature()` + `Resources/Models/Nature`. | 5 | win | commit a926434. Invariant PASS, trees render (not magenta), capture-verified vs win concept. Follow-ups: denser/lusher pass; a record-from-goal clip so the Gemini gate can judge it; next-level-starts-in-park hook |
 | ⬜ | Polished death/win SCREENS (panel + stats + RETRY / SAFE! banner) | 3/4 | gameover/win | in-engine UI, match concept |
 
 #### Gemini findings — 2026-06-26 crossing clip (logged, routed; not Stage-3 regressions)
