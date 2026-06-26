@@ -72,7 +72,7 @@ namespace LizardCrossing
             // steers around them (registered in ObstacleField) — so nothing is walked through.
             BuildSidewalkProps(root, level);
             BuildEdgeFurniture(root, level);
-            BuildStreetProps(root, level);   // generated NYC dressing (hydrant/mailbox/cone/...)
+            BuildStreetProps(root, level);   // occasional in-band CityKit solids (cone/hydrant/trash)
             BuildPlants(root, level);
             BuildSafeZoneGarden(root, level.Length, rng);
             if (!nyc) BuildBackdrop(root, level.Length);
@@ -290,57 +290,119 @@ namespace LizardCrossing
         }
 
         const string FurnFolder = "Models/Furniture/";
+        const string KitFurnFolder = "Models/CityKit/Furniture/";
+        static readonly Dictionary<string, GameObject> _kitCache = new Dictionary<string, GameObject>();
+
+        static GameObject LoadKit(string name)
+        {
+            if (_kitCache.TryGetValue(name, out var g)) return g;
+            g = Resources.Load<GameObject>(KitFurnFolder + name);
+            _kitCache[name] = g;
+            return g;
+        }
 
         /// <summary>
-        /// Real street furniture (imported prefabs) framing the corridor as giant POV landmarks:
-        /// street lamps line the curb (left edge), a bus stop / phone booth / bench sit against
-        /// the building (right edge). All placed OUTSIDE the lizard's reachable X-band, so they
-        /// are scenery — colliders stripped (the lizard can never reach them) — but registered in
-        /// <see cref="ObstacleField"/> so the sidewalk crowd flows around the building-side ones.
-        /// Each is sat on the ground via its own bounds and the bench (an un-normalized OBJ) is
-        /// scaled to a real ~0.85 m height.
+        /// Dense, cohesive NYC street furniture from the CC0 KayKit "City Builder Bits" set (one
+        /// shared atlas, 18–636 tris each) lining BOTH sidewalk edges so the block reads BUSY and
+        /// believable — street lamps, traffic lights, hydrants, trash cans, dumpsters, benches,
+        /// bushes. The visible OPEN sidewalk is the CURB side (left of the low curb at x=5.8): the
+        /// camera looks down the run and sees that foreground, so the dense dressing lives there
+        /// (x≈4.0–5.3). The RIGHT side is the tall opaque facade wall (x=11.4); we sit only LOW
+        /// items (hydrant/trash/bench) tight against its base (x≈11.3) so they read in front of
+        /// the wall without poking over it.
+        ///
+        /// All edge furniture is OUTSIDE the lizard's run band (x∈[6,11]) → colliders stripped
+        /// (pure scenery) but registered in <see cref="ObstacleField"/> so the sidewalk crowd
+        /// routes around the building-side ones. Each is normalized to a real-world height via
+        /// combined bounds, its baked Z-up→Y-up orientation preserved (yaw composed), sat on the
+        /// ground, and skinned with the road/city palette so nothing renders flat-white. Road
+        /// bands are skipped so nothing spawns mid-crossing.
         /// </summary>
         private static void BuildEdgeFurniture(Transform parent, LevelDefinition level)
         {
             var holder = new GameObject("EdgeFurniture").transform;
             holder.SetParent(parent, false);
             float L = level.Length;
+            var rng = new System.Random(4242);
 
-            var lamp = Resources.Load<GameObject>(FurnFolder + "streetlamp");
-            for (float z = 18f; z < L - 6f; z += 22f)               // lamps line the curb
-                PlaceFurniture(holder, lamp, new Vector3(4.0f, 0f, z), 0f, 4.5f);
+            var roads = new List<float>();
+            foreach (var lane in level.Lanes)
+                if (lane.Type == LaneType.Road) roads.Add(lane.Z);
+            bool NearRoad(float z) { foreach (float rz in roads) if (Mathf.Abs(z - rz) < 6f) return true; return false; }
 
-            var bus = Resources.Load<GameObject>(FurnFolder + "busstop");
-            var booth = Resources.Load<GameObject>(FurnFolder + "phonebooth");
-            var bench = Resources.Load<GameObject>(FurnFolder + "bench/bench");
-            const float bx = 11.4f;                                  // building side, just past the band
-            PlaceFurniture(holder, bus,   new Vector3(bx, 0f, 38f),  -90f, 2.4f);
-            PlaceFurniture(holder, bench, new Vector3(bx, 0f, 70f),  -90f, 0.85f);
-            PlaceFurniture(holder, booth, new Vector3(bx, 0f, 100f), -90f, 2.2f);
-            if (L > 130f) PlaceFurniture(holder, bench, new Vector3(bx, 0f, 128f), -90f, 0.85f);
-            if (L > 150f) PlaceFurniture(holder, bus,   new Vector3(bx, 0f, 158f), -90f, 2.4f);
+            // CURB (left) side — the open visible foreground. A repeating, varied rhythm so the
+            // sidewalk reads continuously furnished without two identical props side by side.
+            // Tall poles (lamp/light) hug the curb at x≈3.4 (thin footprint, fine near the band);
+            // wide ground items (bench/dumpster/trash) sit further left at x≈3.0 so their FULL
+            // footprint stays clear of the run-band left edge (x=6) and the curb collider (5.8).
+            // (kind, targetHeightMetres, baseX) — baseX tuned per footprint width.
+            (string kind, float h, float x)[] curbCycle =
+            {
+                ("streetlight",    4.6f, 3.6f),
+                ("firehydrant",    0.62f, 4.4f),
+                ("trash_A",        0.95f, 3.4f),
+                ("bench",          0.85f, 2.9f),
+                ("trafficlight_A", 3.2f, 3.6f),
+                ("bush",           0.7f, 4.4f),
+                ("dumpster",       1.35f, 2.6f),
+                ("trash_B",        0.8f, 4.6f),
+            };
+            int ci = 0;
+            for (float z = 12f; z < L - 6f; z += 6.5f + (float)rng.NextDouble() * 3.5f)
+            {
+                if (NearRoad(z)) continue;
+                var item = curbCycle[ci % curbCycle.Length];
+                ci++;
+                float x = item.x + (float)(rng.NextDouble() * 0.5f - 0.25f); // small jitter
+                float yaw = 90f + (float)(rng.NextDouble() * 30f - 15f);      // roughly facing the run (+X)
+                PlaceCityKit(holder, LoadKit(item.kind), new Vector3(x, 0f, z), yaw, item.h, true);
+            }
+
+            // BUILDING (right) side — only NARROW items (hydrant / small trash), set BEHIND the
+            // facade-wall line (x≈11.9) so their footprint stays out of the run band (right edge
+            // x=11). The wall is opaque, so these are subtle accents glimpsed at gaps; sparse.
+            (string kind, float h)[] wallCycle = { ("firehydrant", 0.62f), ("trash_B", 0.8f), ("firehydrant", 0.62f), ("bush", 0.7f) };
+            int wi = 0;
+            for (float z = 26f; z < L - 8f; z += 20f + (float)rng.NextDouble() * 10f)
+            {
+                if (NearRoad(z)) continue;
+                var item = wallCycle[wi % wallCycle.Length];
+                wi++;
+                float yaw = -90f + (float)(rng.NextDouble() * 20f - 10f);  // facing the run (−X)
+                PlaceCityKit(holder, LoadKit(item.kind), new Vector3(11.9f, 0f, z), yaw, item.h, true);
+            }
         }
 
-        private static void PlaceFurniture(Transform parent, GameObject src, Vector3 at, float yaw, float targetHeight)
+        /// <summary>
+        /// Instantiates one CityKit GLB prop as EDGE scenery: skins it with the cohesive palette
+        /// atlas (so it isn't flat-white), strips colliders, re-normalizes to <paramref name="targetHeight"/>
+        /// via combined bounds, composes <paramref name="yaw"/> onto the importer's baked Z-up→Y-up
+        /// rotation (never overwrites it), sits it on the ground, and (when <paramref name="register"/>)
+        /// registers a footprint in <see cref="ObstacleField"/> so the crowd routes around it. Pure
+        /// scenery — no <see cref="PropObstacle"/> — because it lives outside the lizard's run band.
+        /// </summary>
+        private static void PlaceCityKit(Transform parent, GameObject src, Vector3 at, float yaw,
+            float targetHeight, bool register)
         {
             if (src == null) return;
+            // NOTE: KayKit furniture already imports WITH its citybits atlas bound (verified
+            // in-editor) — do NOT re-skin it. Only the Kenney cars/signage need atlas binding.
             var inst = Object.Instantiate(src, parent);
-            // compose a Y-yaw with the prefab's baked orientation (don't clobber the
-            // importer's Z-up→Y-up correction, which tips the model on its side)
+            inst.name = src.name;
             inst.transform.rotation = Quaternion.AngleAxis(yaw, Vector3.up) * inst.transform.rotation;
-            foreach (var col in inst.GetComponentsInChildren<Collider>()) Object.Destroy(col); // scenery
+            foreach (var col in inst.GetComponentsInChildren<Collider>()) Object.Destroy(col);
 
             var rends = inst.GetComponentsInChildren<Renderer>();
             if (rends.Length == 0) { inst.transform.position = at; return; }
             Bounds b = CombinedBounds(rends);
-            if (targetHeight > 0f && b.size.y > 0.001f)             // normalize to a real-world height
+            if (targetHeight > 0f && b.size.y > 0.001f)
             {
                 inst.transform.localScale *= targetHeight / b.size.y;
                 b = CombinedBounds(inst.GetComponentsInChildren<Renderer>());
             }
             float ground = StreetGround.HeightAt(at.x, at.z);
             inst.transform.position += new Vector3(at.x - b.center.x, ground - b.min.y, at.z - b.center.z);
-            ObstacleField.Add(new Vector3(at.x, 0f, at.z), 0.6f);
+            if (register) ObstacleField.Add(new Vector3(at.x, 0f, at.z), 0.5f);
         }
 
         private static Bounds CombinedBounds(Renderer[] rends)
@@ -350,33 +412,14 @@ namespace LizardCrossing
             return b;
         }
 
-        // ---------- generated NYC street dressing (Meshy props) ----------
-
-        const string GenFolder = "Models/Generated/";
-        static readonly Dictionary<string, GameObject> _genCache = new Dictionary<string, GameObject>();
-
-        static GameObject LoadGen(string name)
-        {
-            if (_genCache.TryGetValue(name, out var g)) return g;
-            g = Resources.Load<GameObject>(GenFolder + name);
-            _genCache[name] = g;
-            return g;
-        }
+        // ---------- in-band solid CityKit props (faceplant obstacles) ----------
 
         /// <summary>
-        /// Scatters the generated NYC props (hydrant, mailbox, newspaper box, traffic cone,
-        /// trash bags, A-frame sign, police barricade, cardboard boxes) along the run as set
-        /// dressing. SPARSE + tasteful so the playable lane stays fair and oncoming hazards
-        /// stay readable:
-        ///   • Small SOLID props (hydrant / cone / trash bags) sit OCCASIONALLY just inside the
-        ///     run band — the lizard faceplants them (<see cref="PropObstacle"/>) and the crowd
-        ///     steers around them (<see cref="ObstacleField"/>), exactly like the rubble piles.
-        ///   • Larger props (mailbox / newspaper box / A-frame / barricade / boxes) are pure
-        ///     EDGE dressing at the curb (x≈4) or building line (x≈11.4), OUTSIDE the band, with
-        ///     colliders STRIPPED (scenery the lizard can never reach) but registered in
-        ///     ObstacleField so the sidewalk crowd flows around the building-side ones.
-        /// Each is re-normalized to a real-world height via combined bounds and its baked
-        /// Z-up→Y-up orientation is preserved (yaw composed, never overwritten). Road bands are
+        /// Occasional SOLID in-band CityKit props (orange traffic cone / hydrant / trash can) just
+        /// inside the run band: the lizard faceplants them (<see cref="PropObstacle"/>) and the
+        /// crowd steers around them (<see cref="ObstacleField"/>), exactly like the rubble piles.
+        /// Rare + near the band centre so the lane stays fair and oncoming hazards stay readable.
+        /// The dense EDGE dressing lives in <see cref="BuildEdgeFurniture"/>. Road bands are
         /// avoided so nothing spawns mid-crossing.
         /// </summary>
         private static void BuildStreetProps(Transform parent, LevelDefinition level)
@@ -391,60 +434,55 @@ namespace LizardCrossing
                 if (lane.Type == LaneType.Road) roads.Add(lane.Z);
             bool NearRoad(float z) { foreach (float rz in roads) if (Mathf.Abs(z - rz) < 6f) return true; return false; }
 
-            // --- SOLID in-band props (small, occasional). Real-world heights per WO. ---
-            // band is the prop-placement band around the centre (kept clear of the curb jog).
+            // --- SOLID in-band props (small, occasional). Cohesive CC0 CityKit pieces: an orange
+            // Kenney traffic cone (skinned with the road atlas) and a KayKit hydrant/trash. They
+            // sit OCCASIONALLY just inside the run band — the lizard faceplants them
+            // (<see cref="PropObstacle"/>) and the crowd steers around them (<see cref="ObstacleField"/>),
+            // exactly like the rubble piles. Kept rare + near the band centre so the lane stays fair.
             float cx = GameConst.CorridorCenterX;
             float band = GameConst.SidewalkHalfWidth - 0.7f; // ±1.3u around x=9 -> well inside [6,11]
-            string[] solidKinds = { "hydrant", "traffic_cone", "trash_bags" };
-            float[] solidHeights = { 0.6f, 0.7f, 0.7f };
-            float[] solidRadius = { 0.30f, 0.22f, 0.34f }; // contact radius (real-world metres)
-            // start at z=20, large stride so they're rare; skip the rubble cadence by phase offset
-            for (float z = 20f; z < L - 8f; z += 30f + (float)rng.NextDouble() * 16f)
+            // Narrow footprints only, so an in-band prop is a dodgeable obstacle, not a wall that
+            // chokes the lane: an orange cone, a fire hydrant, and the SMALL trash can (trash_B).
+            // (loader, name, height, contactRadius)
+            (System.Func<string, GameObject> load, string name, float h, float r)[] solids =
+            {
+                (LoadKitSig, "traffic_cone", 0.55f, 0.22f),
+                (LoadKit,    "firehydrant",  0.6f,  0.26f),
+                (LoadKit,    "trash_B",      0.7f,  0.24f),
+            };
+            for (float z = 24f; z < L - 8f; z += 30f + (float)rng.NextDouble() * 16f)
             {
                 if (NearRoad(z)) continue;
-                int k = rng.Next(solidKinds.Length);
+                var s = solids[rng.Next(solids.Length)];
                 float x = cx + ((float)rng.NextDouble() * 2f - 1f) * band;
                 float yaw = (float)rng.NextDouble() * 360f;
-                PlaceGeneratedProp(holder, LoadGen(solidKinds[k]), new Vector3(x, 0f, z), yaw,
-                    solidHeights[k], solidRadius[k], true);
+                PlaceKitSolid(holder, s.load(s.name), s.name == "traffic_cone",
+                    new Vector3(x, 0f, z), yaw, s.h, s.r);
             }
-
-            // --- EDGE dressing (larger props, outside the band, colliders stripped). ---
-            // The building facade juts toward the run at ground level and SWALLOWS short props on
-            // that side, so ground-level edge dressing lives on the CURB side (x≈4.0), where there
-            // is open visible sidewalk before the road. They sit clear of the band's left edge
-            // (which is x≥4.5 early, tightening to x≥6 past the curb jog) and face the run (+X).
-            const float cxr = 4.0f;  // curb side (lamp side) — open sidewalk
-            PlaceGeneratedProp(holder, LoadGen("usps_mailbox"),     new Vector3(cxr, 0f, 30f),  90f, 1.2f, 0.6f, false);
-            PlaceGeneratedProp(holder, LoadGen("police_barricade"), new Vector3(cxr, 0f, 44f),  90f, 1.0f, 0.7f, false);
-            PlaceGeneratedProp(holder, LoadGen("newspaper_box"),    new Vector3(cxr, 0f, 64f),  90f, 1.2f, 0.6f, false);
-            PlaceGeneratedProp(holder, LoadGen("aframe_sign"),      new Vector3(cxr, 0f, 84f),  90f, 0.9f, 0.5f, false);
-            PlaceGeneratedProp(holder, LoadGen("cardboard_boxes"),  new Vector3(cxr, 0f, 108f), 90f, 0.8f, 0.7f, false);
-            // a couple past the curb jog (z>95): the curb shifts to x≈5, so nudge to x≈4.6 to stay
-            // on the narrowed sidewalk edge, still clear of the tightened band (x≥6).
-            PlaceGeneratedProp(holder, LoadGen("usps_mailbox"),     new Vector3(4.6f, 0f, 124f), 90f, 1.2f, 0.6f, false);
-            if (L > 134f)
-                PlaceGeneratedProp(holder, LoadGen("newspaper_box"), new Vector3(4.6f, 0f, 138f), 90f, 1.2f, 0.6f, false);
         }
 
-        static readonly Dictionary<GameObject, Material> _genMatCache = new Dictionary<GameObject, Material>();
+        static GameObject LoadKitSig(string name)
+        {
+            if (_kitCache.TryGetValue("sig/" + name, out var g)) return g;
+            g = Resources.Load<GameObject>("Models/CityKit/Signage/" + name);
+            _kitCache["sig/" + name] = g;
+            return g;
+        }
 
         /// <summary>
-        /// Instantiates one generated GLB prop: keeps the GLB's own baked glTF materials (the
-        /// shader-agnostic glTF-pbrMetallicRoughness, NOT a raw Standard), re-normalizes to
-        /// <paramref name="targetHeight"/> via combined bounds, composes <paramref name="yaw"/>
-        /// onto the importer's baked Z-up→Y-up rotation (never overwrites it), and sits it on the
-        /// ground. <paramref name="solid"/> props get a <see cref="PropObstacle"/>; edge props
-        /// have colliders stripped. Both register in <see cref="ObstacleField"/> so the crowd
-        /// routes around them.
+        /// Instantiates one CityKit GLB as a SOLID in-band prop: skins Kenney signage with the
+        /// road atlas (KayKit furniture is already textured), normalizes to <paramref name="targetHeight"/>,
+        /// composes <paramref name="yaw"/> onto the baked rotation, sits it on the ground, gives it
+        /// a <see cref="PropObstacle"/> hit at the footprint centre, and registers it in
+        /// <see cref="ObstacleField"/> so the crowd routes around it.
         /// </summary>
-        private static void PlaceGeneratedProp(Transform parent, GameObject src, Vector3 at, float yaw,
-            float targetHeight, float radius, bool solid)
+        private static void PlaceKitSolid(Transform parent, GameObject src, bool isSignage, Vector3 at,
+            float yaw, float targetHeight, float radius)
         {
             if (src == null) return;
+            if (isSignage) CityKitSkin.SkinSignage(src); // cone reads orange
             var inst = Object.Instantiate(src, parent);
             inst.name = src.name;
-            // compose yaw with the baked orientation (don't clobber the Z-up→Y-up correction)
             inst.transform.rotation = Quaternion.AngleAxis(yaw, Vector3.up) * inst.transform.rotation;
             foreach (var col in inst.GetComponentsInChildren<Collider>()) Object.Destroy(col);
 
@@ -459,18 +497,13 @@ namespace LizardCrossing
             float ground = StreetGround.HeightAt(at.x, at.z);
             inst.transform.position += new Vector3(at.x - b.center.x, ground - b.min.y, at.z - b.center.z);
 
-            if (solid)
-            {
-                // PropObstacle tests against ITS transform.position, but the GLB root pivot is
-                // offset from the visual centre (we centred the bounds, not the pivot). Carry the
-                // hit test on a child placed exactly at the footprint centre so the faceplant
-                // lines up with the visible prop.
-                var hit = new GameObject("PropHit");
-                hit.transform.SetParent(inst.transform, false);
-                hit.transform.position = new Vector3(at.x, ground, at.z);
-                var prop = hit.AddComponent<PropObstacle>();
-                prop.Radius = radius;
-            }
+            // carry the hit test on a child placed exactly at the footprint centre (the GLB root
+            // pivot is offset from the centred visual), matching the generated-prop pattern.
+            var hit = new GameObject("PropHit");
+            hit.transform.SetParent(inst.transform, false);
+            hit.transform.position = new Vector3(at.x, ground, at.z);
+            var prop = hit.AddComponent<PropObstacle>();
+            prop.Radius = radius;
             ObstacleField.Add(new Vector3(at.x, 0f, at.z), radius);
         }
 
