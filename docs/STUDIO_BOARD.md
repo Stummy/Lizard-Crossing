@@ -2,7 +2,41 @@
 
 > Living plan for the push to the visual target (`docs/VISUAL_TARGET.md`). Maintained by
 > the **studio-producer** role. Status keys: TODO · IN PROGRESS · IN REVIEW · DONE.
-> **Last updated: 2026-06-25.**
+> **Last updated: 2026-06-26.**
+
+## ▶ WHERE WE ARE RIGHT NOW (read this first on login)
+**Active section:** World + corridor — the loop-bug ("lizard through walls / sidewalk shifts /
+no floor / peds through fences / no cars") is **structurally fixed and machine-locked**: an
+authored straight walled corridor (real colliders) replaced the crooked GLB, and the
+**Invariant Check PASSES** (lizard can't leave the band, run is straight). Verify done; only the
+owner's sign-off to **Lock** the section remains.
+**Just shipped (2026-06-26):** DASH button moved off the hero (was dead-center on the lizard);
+pedestrians corrected to real human scale (2.5u→1.8u — the scout's fix for the #1 "placeholder
+ped" complaint), squish verified intact.
+**The ONE next thing:** record a sustained dodging clip and run the **concept-aware Gemini tester**
+(`python Tools/gemini_review.py --state run`) — it adjudicates the three open visual reads
+(start-spot washout/ped-bloom, the 1.8u ped fidelity, the DASH reposition) against `run_target.png`
+so we stop eyeballing single frames. Then work its punch-list.
+**Quick status by section:** Lizard 🔒 · Controls+camera 🔒 · World+corridor ✅ (sign-off pending) ·
+Hazards 🟦 (crowd ✅, cars/traffic ⬜) · Lighting 🟦 · HUD+juice 🟦 (DASH ✅) · Screens 🟦
+(start/death panels exist, win polish ⬜) · Audio ⬜ · Meta/ship ⬜.
+
+## 🧑‍🤝‍🧑 THE TEAM — who I delegate what to (the lead routes; the Unity editor is single-threaded, so
+**one** in-engine job at a time — off-engine jobs run in parallel via background agents)
+| When the work is… | I route it to | Runs where |
+|---|---|---|
+| "why doesn't it look like the reference?" — grade frames, punch-list | **art-director** | off-engine (reads frames) |
+| sourcing/generating assets (models, textures, HDRI, peds, props) | **asset-scout** | off-engine (files/Meshy/CC0) |
+| lighting · post · DoF · exposure/washout calls | **lighting-post-artist** | in-engine (serialize) |
+| surfaces · materials · props · set-dressing · alley/theme | **environment-artist** | in-engine (serialize) |
+| camera feel · HUD · juice · menus/screens | **camera-ui-juice** | in-engine (serialize) |
+| regression + perf **gate** before a section/stage is "done" | **gameplay-guardian** | in-engine (serialize) |
+| sequencing the board / what-ships-next | **studio-producer** | off-engine (planning) |
+| the QA "video guy" — record→watch→file bugs+concept-gap | `Tools/gemini_review.py` | off-engine (CLI) |
+The **main session (me)** is the build lead + integrator: I hold the live editor, do the in-engine
+work + verify-and-ship, and dispatch agents for off-engine work (so it parallelizes) or for a
+fresh-context judgment call. Proven this session: scout ran in the background and diagnosed the
+ped problem while I fixed the HUD in-engine — no editor conflict.
 
 ## Gap-to-target (one line)
 **~78% to target (art-director re-grade, WO-6 DONE 2026-06-25).** Sprint 1 "Cinematic NYC" closed
