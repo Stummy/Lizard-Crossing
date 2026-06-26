@@ -46,7 +46,8 @@ namespace LizardCrossing
         public const float CorridorStripY = 0.12f;      // strip surface (== StreetGround.SidewalkY, just above the GLB)
         public const float CorridorWallRightX = 11.4f;  // solid building-facade wall (lizard grazes it at its x≈11 max)
         public const float CorridorFenceLeftX = 5.8f;   // solid left railing/curb (lizard stops ~6.1, never reaches the road)
-        public const float CorridorWallHeight = 4f;     // tall enough to occlude the drifting GLB buildings behind it
+        public const float CorridorWallHeight = 2.5f;   // a building BASE, not a canyon wall — the GLB skyline shows
+                                                        // above it so the avenue reads open + deep like the run concept
         public const float CorridorFenceHeight = 0.7f;  // low railing/curb on the road side
 
         // Lizard — speeds scaled to the realistic ~0.15u lizard (2026-06-16).

@@ -127,9 +127,11 @@ namespace LizardCrossing
             strip.transform.localPosition = new Vector3(cx, GameConst.CorridorStripY, zc);
             strip.transform.localScale = new Vector3((halfW * 2f) / 10f, 1f, zlen / 10f); // Unity plane = 10u at scale 1
             const float stoneTile = 26f;
+            // mid-grey concrete tint (NOT near-white) so the sunlit sidewalk doesn't blow out to a
+            // white highlight under the golden-hour sun — keep it readable like the concept pavement.
             strip.GetComponent<Renderer>().sharedMaterial = MaterialCache.GetTexturedNormal(
-                TextureLibrary.Pavement, TextureLibrary.PavementNormal, new Color(0.93f, 0.91f, 0.87f),
-                0.12f, (halfW * 2f) / stoneTile, zlen / stoneTile);
+                TextureLibrary.Pavement, TextureLibrary.PavementNormal, new Color(0.70f, 0.68f, 0.64f),
+                0.08f, (halfW * 2f) / stoneTile, zlen / stoneTile);
 
             // 2) RIGHT building-facade wall — a SOLID collider the CharacterController lizard physically
             //    can't pass, opaque + tall so it frames the run and occludes the drifting GLB buildings.
