@@ -32,8 +32,10 @@ namespace LizardCrossing
             // core matches the true footprint
             m._shadow = MakeQuad(go.transform, MaterialCache.ShadowBlob,
                 new Vector3(footprintWidth * 1.5f, footprintLength * 1.4f, 1f), 0.03f);
+            // ring sits a touch higher than the shadow so the two ground decals never z-fight/flicker
+            // (the flicker read as noise on the low POV); it's the alarm signal, so it rides on top.
             m._ring = MakeQuad(go.transform, MaterialCache.WarningRing,
-                new Vector3(footprintWidth * 2.1f, footprintLength * 1.9f, 1f), 0.04f);
+                new Vector3(footprintWidth * 2.1f, footprintLength * 1.9f, 1f), 0.06f);
 
             m.SetIntensity(0f);
             return m;
@@ -59,18 +61,22 @@ namespace LizardCrossing
             _intensity = Mathf.Clamp01(t);
 
             Color sc = _shadow.material.color;
-            sc.a = Mathf.Lerp(0f, 0.62f, _intensity);
+            sc.a = Mathf.Lerp(0f, 0.66f, _intensity);
             _shadow.material.color = new Color(0f, 0f, 0f, sc.a);
             _shadow.transform.localScale = Vector3.Lerp(
                 new Vector3(_baseW * 0.7f, _baseL * 0.65f, 1f),
                 new Vector3(_baseW * 1.5f, _baseL * 1.4f, 1f), _intensity);
 
-            // ring pulses faster as danger approaches
-            float pulse = 0.7f + 0.3f * Mathf.Sin(Time.time * Mathf.Lerp(6f, 18f, _intensity));
-            _ring.material.color = new Color(1f, 0.18f, 0.1f, Mathf.Lerp(0f, 0.85f, _intensity) * pulse);
+            // Ring = the alarm signal; make it POP from the low POV. A more saturated, brighter red
+            // and a higher peak alpha so the foreshortened ground decal still reads; the pulse floor
+            // is lifted (0.78..1.0 vs 0.7..1.0) so even between pulses it stays clearly visible, and
+            // it speeds up as the foot nears the ground. Base sizes nudged up so it isn't a thin
+            // sliver when the camera is near grazing-angle.
+            float pulse = 0.78f + 0.22f * Mathf.Sin(Time.time * Mathf.Lerp(7f, 20f, _intensity));
+            _ring.material.color = new Color(1f, 0.13f, 0.07f, Mathf.Lerp(0f, 0.95f, _intensity) * pulse);
             _ring.transform.localScale = Vector3.Lerp(
-                new Vector3(_baseW * 2.6f, _baseL * 2.3f, 1f),
-                new Vector3(_baseW * 1.9f, _baseL * 1.7f, 1f), _intensity); // ring tightens inward
+                new Vector3(_baseW * 2.9f, _baseL * 2.6f, 1f),
+                new Vector3(_baseW * 2.1f, _baseL * 1.9f, 1f), _intensity); // ring tightens inward as it closes
         }
 
         public void SetWorldPosition(Vector3 groundPos)

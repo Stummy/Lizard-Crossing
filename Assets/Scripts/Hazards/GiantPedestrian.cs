@@ -33,8 +33,15 @@ namespace LizardCrossing
         const float MarginOutside = 16f;  // how far off-corridor the walk starts/ends
 
         // foot-lift heights (scaled by height) that bound the telegraph/strike window
-        const float TelegraphLift = 0.22f; // a descending foot this close to the ground telegraphs
-        const float StrikeLift = 0.06f;    // ...and resolves the stomp once it plants this low
+        // TELEGRAPH READABILITY (owner + Gemini video review, asked 3x for a clear "where will the
+        // foot land" cue): 0.22 only lit the marker in the last ~16cm of descent — by then the foot
+        // is already landing, so there was effectively NO lead time and Gemini read it as "impossible
+        // to tell where a foot will land." Raised to 0.6 so the marker appears the moment the foot
+        // peaks and starts descending and tracks it ALL the way down — a real, readable run-up of
+        // warning. Only the telegraph WINDOW widened; StrikeLift (when damage actually resolves) is
+        // unchanged, so the hazard is more readable WITHOUT becoming easier/unfair.
+        const float TelegraphLift = 0.6f;  // a descending foot below this height telegraphs its landing
+        const float StrikeLift = 0.06f;    // ...and resolves the stomp once it plants this low (unchanged)
 
         // ---- motion state ----
         bool _running;
@@ -401,7 +408,13 @@ namespace LizardCrossing
             if (descending && lift < teleLift && inCorridor)
             {
                 marker.SetWorldPosition(plant);
-                marker.SetIntensity(Mathf.Clamp01(1f - lift / teleLift));
+                // Floor the intensity: with the wide telegraph window the raw (1 - lift/teleLift)
+                // ramp starts at ~0 and stays nearly invisible for most of the descent, which is
+                // exactly the unreadable case Gemini flagged. Start at a clearly-visible 0.45 the
+                // moment the foot begins descending and drive to a full-alarm 1.0 at the plant, so
+                // the landing spot reads from the low POV the whole way down.
+                float frac = Mathf.Clamp01(1f - lift / teleLift); // 0 at apex of window, 1 at the ground
+                marker.SetIntensity(0.45f + 0.55f * frac);
                 t.struck = false;
             }
             else if (t.init && t.wasDescending && !descending && lift < strikeLift)
