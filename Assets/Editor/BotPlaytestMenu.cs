@@ -65,6 +65,16 @@ namespace LizardCrossing.EditorTools
             LizardCrossing.Testing.AutoPlaytest.Launch(8);
         }
 
+        // Foundation-invariant regression check (World+corridor): drives the lizard into the
+        // walls and asserts it can't leave the band + the band stays straight. Play mode first.
+        // Writes PASS/FAIL to Temp/Playtest/invariant.txt.
+        [MenuItem(Root + "Invariant Check")]
+        private static void InvariantCheck()
+        {
+            if (!Application.isPlaying) { Debug.LogWarning("[InvariantCheck] Enter Play mode first."); return; }
+            LizardCrossing.Testing.InvariantCheck.Launch();
+        }
+
         // Records a real MP4 of a bot run to Temp/Recording/run.mp4 (HUD included) for
         // uploading to a video model (e.g. Gemini) to critique motion/feel. Play mode first.
         [MenuItem(Root + "Record MP4 (10s)")]
