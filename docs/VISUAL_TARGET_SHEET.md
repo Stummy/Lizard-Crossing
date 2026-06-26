@@ -10,6 +10,12 @@ ours is a realistic NYC street).
 > spec these prompts encode. Stylized inline mockups (composition/HUD guides) were
 > produced alongside this sheet in chat.
 
+> **⚠️ OWNER COLOR OVERRIDE (2026-06-26):** the owner REJECTED the golden-hour / warm grade — the
+> live game must read as **NEUTRAL natural DAYLIGHT** (clean, true-to-life, NO orange/sunset tint;
+> the emerald lizard pops on its own). Keep the concept frames' COMPOSITION (very low POV, tiny
+> bottom-center hero, giant blurred pedestrians, deep open avenue) but NOT their warm color cast.
+> **The Gemini tester's "golden hour" note is SUPERSEDED — do NOT push the grade warm.**
+
 > **DESIGN CORRECTIONS (owner review, 2026-06-25)** — the v1 deck looked great in *style/
 > quality* but several frames were design-WRONG. Fixes (the spec going forward):
 > - **Squished:** the lizard must be COMICALLY PANCAKE-FLATTENED (paper-thin, 2D, tongue out,
