@@ -49,16 +49,21 @@ namespace LizardCrossing
             // OWNER COLOR OVERRIDE 2026-06-26: golden-hour sun REJECTED → clean NEUTRAL DAYLIGHT key.
             // The warm sun was the dominant source painting the avenue golden; make it near-white so the
             // frame reads as true-to-life daytime and the emerald lizard pops on its own colour.
-            sun.color = new Color(1f, 0.98f, 0.95f);   // 1,0.89,0.70 (golden) -> near-white daylight key
-            // EXPOSURE FIX (real game-view ScreenCapture truth, not the brighter cam.Render() RT):
-            // at 1.28 the key drove even a capped 0.46-albedo pedestrian (0.46 x ~2.2 light) PAST 1.0,
-            // so the peds + the lizard's light dorsal clipped to glowing WHITE in the actual frame
-            // (Gemini's persistent "white blob / not emerald" read — which the RT captures hid). Pull
-            // the key to 1.0 so lit mid-tones land below clip; the warm grade keeps the golden look.
-            sun.intensity = 1.1f;                        // 1.0->1.1: restore avenue brightness (the skybox tame removed the blow-risk)
+            // REALISM PASS 2026-06-26: a hair cool-white (not the warm 0.98,0.95) so the daylight reads
+            // clean midday, never yellow. The cool whisper offsets any residual warm cast from textures.
+            sun.color = new Color(1f, 1f, 0.99f);        // near-pure white, faintly cool — kills the "yellow"
+            // REALISM PASS — KEY/AMBIENT REBALANCE (the #1 grounding + realism lever): the prior stack
+            // (sun 1.1 + FLAT ambient 1.25) had ambient doing most of the lighting, which floods every
+            // crevice, flattens form and makes grounded contact shadows impossible (nothing reads as
+            // sitting ON the ground). We invert that: DROP flat ambient to 0.55 and let the DIRECTIONAL
+            // sun carry the lit surfaces (1.1->1.45). Strong key + low ambient = real directional
+            // modelling, real shadows, real depth. The skybox-exposure pull below + ACES keep the lit
+            // 0.4-0.5-albedo surfaces (incl. the capped peds + the emerald hero) just under clip so
+            // nothing blows to the white blobs the real MP4 showed.
+            sun.intensity = 1.45f;                       // 1.1->1.45: sun now dominates (ambient dropped to 0.55)
             sun.shadows = LightShadows.Soft;
-            sun.shadowStrength = 0.55f;                  // soft, warm-ish (the warm grade tints the shadow too)
-            sunGo.transform.rotation = Quaternion.Euler(34f, SunYaw, 0f); // LOW golden-hour rake (was 48° = high/flat)
+            sun.shadowStrength = 0.82f;                  // 0.55->0.82: real, readable contact shadows that GROUND everything
+            sunGo.transform.rotation = Quaternion.Euler(38f, SunYaw, 0f); // 34->38: a touch higher so shadows aren't kilometre-long at the low POV
 
             // Cool fill from the opposite side keeps the shadow side from going muddy and
             // reads the lizard's form. WO-7 (anti-silhouette): raised 0.22→0.36 so when a
@@ -76,13 +81,14 @@ namespace LizardCrossing
             // but no longer fights the warm golden key. Slightly lower so the sun clearly owns the look.
             // OWNER COLOR OVERRIDE 2026-06-26: drop the cyan push toward a clean daylight balance. A faint
             // cool-neutral fill still reads the hero's shadow side without tinting the frame blue.
-            fill.color = new Color(0.82f, 0.86f, 0.92f); // 0.62,0.72,0.86 (cyan) -> near-neutral, faint cool
-            // EXPOSURE-EVENNESS FIX: nudged 0.30->0.38 so a giant ped/building that occludes the warm
-            // key gets enough wrap light to read as a shaded shape instead of going to "pure black"
-            // (Gemini's under-exposed end of the flicker). Still well below the key, so lit planes
-            // keep their warm-vs-cool contrast.
-            fill.intensity = 0.52f; // 0.38->0.52 (RT-lie fix): lift the shadow side of the occluded
-                                    // mid-run so it isn't muddy-dark on the real render
+            fill.color = new Color(0.74f, 0.80f, 0.92f); // cool sky-bounce: lifts the shadow side toward a
+                                                         // believable blue-sky fill (real shadows aren't grey)
+            // REALISM PASS: with flat ambient dropped hard (1.25->0.55) the shadow side relies on this
+            // DIRECTIONAL fill instead of flat flooding — directional fill models the form (gives the
+            // shadow side a gradient) instead of washing it flat. Kept modest so the sun clearly owns the
+            // lit side and the key-vs-fill contrast that reads as "sunny" survives.
+            fill.intensity = 0.50f; // shadow-side modelling; lifts the camera-facing shadow sides (and replaces
+                                    // the wrap the now-disabled streetlamp lights used to throw) without flooding
             fill.shadows = LightShadows.None;
             fillGo.transform.rotation = Quaternion.Euler(40f, SunYaw + 180f, 0f); // opposite the key (keeps the 180° relationship)
 
@@ -100,7 +106,12 @@ namespace LizardCrossing
                 // when the open sky/sun fills frame it no longer blows to white; this squeezes the
                 // bright frames toward the shadowed ones for an EVEN exposure across the run. A soft
                 // cyan tint keeps the "soft cyan sky" read without a saturated electric blue.
-                if (skybox.HasProperty("_Exposure")) skybox.SetFloat("_Exposure", 1.05f); // 0.88->1.05 (RT-lie fix): the real render read dusk/dark; brighter sky reads true daytime (safe now bloom is off, so a brighter sky no longer blows to blobs)
+                // REALISM PASS: the real MP4 showed the distant sky / between-building gaps blowing to
+                // pure-white BLOBS (the avenue-end explosion in before_4, the white pillar in before_140).
+                // The 1.05 HDRI sky is brighter than the lit ground, so ACES can't pull it back. Drop it
+                // so the sky reads as SKY (a bright surface) not a light source — the blobs go away and the
+                // city behind them becomes legible. Pairs with the stronger sun owning the foreground.
+                if (skybox.HasProperty("_Exposure")) skybox.SetFloat("_Exposure", 0.78f); // 1.05->0.78: kill the blown-white sky/gap blobs
                 // OWNER COLOR OVERRIDE 2026-06-26: clean daylight sky. The cyan-leaning tint is pulled
                 // toward a near-neutral pale blue-grey so the sky reads as true daytime, not a pushed
                 // cyan that would lean the whole ambient blue. Still slightly blue (a real sky is), but
@@ -121,11 +132,16 @@ namespace LizardCrossing
                 // that lifts shadows + breaks the warm-monochrome, but low enough that a lit surface
                 // no longer sums past 1.0. Fill light still keeps the hero off pure-black under
                 // occlusion. Net: peds/hero read as solid SHADED colour, not blown white.
-                RenderSettings.ambientIntensity = 1.25f; // 0.85->1.25 (RT-LIE FIX 2026-06-26): the 0.85
-                // was tuned against the brighter-than-real RT capture; on the REAL ACES-tonemapped render
-                // (the MP4 Gemini sees) the between-buildings mid-run went too DARK while the open start
-                // stayed bright. Ambient is the even-out lever (lifts the occluded shadow, less effect on
-                // the sky-lit start). The 0.38 ped-albedo cap keeps the figures from re-glowing white.
+                // REALISM PASS — the grounding lever: flat sky ambient at 1.25 was flooding every surface
+                // and crevice with even fill, which is exactly why the frame read FLAT/BLOCKY and nothing
+                // looked grounded (you can't have a real contact shadow when ambient relights it). Drop it
+                // hard so the directional sun + its shadows do the modelling. The stronger sun (1.45) and
+                // the directional cool fill (0.42) keep the occluded mid-run from going muddy, while the
+                // shadowed sides finally read as shadow. This is the single biggest "realistic" move here.
+                RenderSettings.ambientIntensity = 0.90f; // 1.25->0.90: trim the flat wash so the sun models form
+                                                          // and shadows read, but keep enough sky-fill that the
+                                                          // shadow-side surfaces the camera faces (building fronts,
+                                                          // the lizard) don't fall to muddy dark on the real render
                 DynamicGI.UpdateEnvironment(); // compute SH ambient from the skybox once
             }
             else
@@ -137,12 +153,32 @@ namespace LizardCrossing
                 RenderSettings.ambientEquatorColor = new Color(0.70f, 0.70f, 0.62f);
                 RenderSettings.ambientGroundColor = new Color(0.34f, 0.28f, 0.22f);
             }
-            QualitySettings.shadowDistance = 95f;
+            // REALISM PASS: pull the shadow distance in from 95m to 42m. At the ~3cm POV the contact
+            // shadows under the lizard/peds/props are what sell "grounded" — and a 2048 shadowmap spread
+            // over 95m wastes texels on the far skyline where shadows barely read. Concentrating it to 42m
+            // (with 4 cascades weighted near the camera) packs far more resolution into the near field, so
+            // the contact shadows go crisp instead of soft-mush. Far buildings lose their (faint) shadow,
+            // which is invisible at this scale. Mobile-friendly: same 2048 atlas, just denser where it counts.
+            QualitySettings.shadowDistance = 42f;
 
             // --- world (HazardLaneManager now spawns the giant pedestrians as the
             //     walking cross-traffic hazard, replacing the old static humans) ---
             var levelRoot = LevelBuilder.Build(gm.Level);
             HazardLaneManager.Build(levelRoot, gm.Level);
+
+            // REALISM PASS — kill the stray prop lights that wrecked the daytime render. The imported
+            // streetlamp furniture prefab bakes its own NIGHT lighting: a Point light at intensity 8000
+            // (range 10m) AND a duplicate Directional "FillSun" — six lamps line the curb, so the scene
+            // carried ~6 blown-white point hotspots (the white BLOBS the real MP4 showed down the avenue)
+            // PLUS 6 extra directional lights fighting our key/fill balance. We light the world from ONE
+            // sun + ONE fill; lamps are unlit during day. Disable every Light under the level root except
+            // ours, so the daytime scene is lit only by the intended rig. (Prefab untouched — a future
+            // night theme can re-enable these.)
+            foreach (var stray in levelRoot.GetComponentsInChildren<Light>(true))
+            {
+                if (stray == sun || stray == fill) continue;
+                stray.enabled = false;
+            }
 
             // --- player ---
             var playerGo = new GameObject("Lizard");

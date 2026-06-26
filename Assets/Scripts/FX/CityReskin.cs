@@ -35,12 +35,14 @@ namespace LizardCrossing
             // BUILDINGS: real CC0 facade textures WITH WINDOWS (ambientCG Facade018/019/020/006,
             // public domain) replacing the windowless brick/stone that read as featureless boxes.
             // A mix of brick / concrete / glass across the city materials for real variety.
-            // (Color only this pass — normals are the next polish step; null keeps the prior normal.)
-            { "CityGen_LR_Facades",  new Skin("facade_brick",    null) },   // brick mid-rise + window rows
-            { "Building_Facade.001", new Skin("facade_concrete", null) },   // grey concrete + window bands
-            { "CityGenyellow_stone", new Skin("facade_brick2",   null) },   // brown-brick tower (variety)
-            { "CityGensimple_concrete_1", new Skin("facade_concrete", null) }, // concrete facade w/ windows
-            { "CityGenconcrete.001",      new Skin("facade_concrete", null) },
+            // REALISM PASS 2026-06-26: NORMAL MAPS now wired (facade_*_normal, flagged NormalMap +
+            // linear). The flat-printed facades gain real surface relief — brick courses, window
+            // reveals and concrete grain catch the directional sun instead of reading as a decal.
+            { "CityGen_LR_Facades",  new Skin("facade_brick",    "facade_brick_normal") },   // brick mid-rise + window rows
+            { "Building_Facade.001", new Skin("facade_concrete", "facade_concrete_normal") }, // grey concrete + window bands
+            { "CityGenyellow_stone", new Skin("facade_brick2",   "facade_brick2_normal") },   // brown-brick tower (variety)
+            { "CityGensimple_concrete_1", new Skin("facade_concrete", "facade_concrete_normal") }, // concrete facade w/ windows
+            { "CityGenconcrete.001",      new Skin("facade_concrete", "facade_concrete_normal") },
 
             // --- WO-4: road-zone barrier walls + crosswalk (were flat grey / flat orange) ---
             // The grey concrete barrier curbs flanking the road read as flat un-skinned grey.
@@ -68,7 +70,7 @@ namespace LizardCrossing
             // pure primary placeholder colours — a magenta building face and green/blue/purple
             // "metal" structures — which dominated the mid-ground and shattered the palette (the
             // big "red wall" on approach was the magenta one read under the warm grade).
-            { "material_0",                          new Skin("facade_glass", null) },                        // magenta (1,0,.5) building face -> glass office tower
+            { "material_0",                          new Skin("facade_glass", "facade_glass_normal") },       // magenta (1,0,.5) building face -> glass office tower
             { "CityGenbasic_metal.001",              new Skin(null, null, new Color(0.24f, 0.25f, 0.26f)) },  // pure green -> dark weathered metal
             { "CityGenbasic_rough_metal_dark",       new Skin(null, null, new Color(0.20f, 0.21f, 0.23f)) },  // pure blue -> dark metal
             { "CityGenbasic_rough_metal_dark_.001",  new Skin(null, null, new Color(0.20f, 0.21f, 0.23f)) },  // pure purple -> dark metal

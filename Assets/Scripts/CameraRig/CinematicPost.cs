@@ -53,11 +53,16 @@ namespace LizardCrossing
         // the ~0.2-0.5u focus distance) stays tack-sharp. The very-close foreground hazard (giant
         // leg/wheel <0.2u from the lens, well inside the near-blur zone even at f14) still blurs
         // clearly — that's the win the close-up still keeps. Tune by eye via captures, not theory.
-        private const float DofFocalLength = 26f;   // mm; longer = shallower, stronger bg blur (was 38)
-        private const float DofAperture = 14f;       // f-stop; higher = deeper field, mid/far stays
-                                                     // legible. Close hazard still blurs (it's <0.2u,
-                                                     // far inside the near falloff). (was 9)
-        private const float DofFocusFallback = 1.2f; // m, used until the lizard is found
+        // REALISM PASS 2026-06-26: 26mm/f14 focused at the 0.2m hero distance smeared the WHOLE avenue
+        // (the real MP4 was a uniform blur wash that erased every surface). Deepen the field hard so only
+        // the very-near hazard + far skyline go soft and the mid-ground street/peds/facades read sharp:
+        // shorter focal length (26->18) and a much higher f-number (14->22) push both the near and far
+        // blur falloffs far out. Combined with FocusForwardBias (focus just past the hero), the lizard and
+        // the street around it sit inside the deep in-focus zone. Tuned by eye on the MP4, not by theory.
+        private const float DofFocalLength = 18f;   // mm; shorter = deeper field (was 26)
+        private const float DofAperture = 22f;       // f-stop; higher = deeper field, mid-ground stays sharp (was 14)
+        private const float FocusForwardBias = 0.7f; // m; focus this far PAST the hero so hero+near-street are sharp
+        private const float DofFocusFallback = 1.5f; // m, used until the lizard is found
 
         public void Setup(Camera cam, Transform focusTarget)
         {
@@ -103,18 +108,23 @@ namespace LizardCrossing
             // clip, so postExposure goes to 0 — any positive lift here re-blew the peds/hero. Push
             // SATURATION harder so the now-unclipped mid-tones read as vivid golden + a clearly
             // EMERALD hero (the wash had desaturated both toward white).
-            color.postExposure.value = 0.0f;                     // KEEP: no extra lift; the lights set the level (even exposure)
-            color.contrast.value = 16f;                          // KEEP: a touch of punch to separate planes from sky/shadow
-            color.saturation.value = 30f;                        // KEEP: vivid tones + emerald hero pops (owner wants the lizard to pop on its own)
-            // OWNER COLOR OVERRIDE 2026-06-26: golden/warm REJECTED → clean NEUTRAL DAYLIGHT. The warm
-            // color filter is removed (back to true white) so the grade no longer tints the frame orange.
-            color.colorFilter.value = Color.white;               // 1.05,1.005,0.93 (warm) -> 1,1,1 (neutral): no orange cast
+            // REALISM PASS: with flat ambient pulled way down, the frame got more contrast on its own, so
+            // ease the grade's added contrast (16->10) — the lighting now provides the punch, and lower
+            // grade-contrast keeps shadows from crushing to black at the low POV. Saturation eased 30->22:
+            // 30 was over-juicing the warm brick/asphalt toward the "yellow" the owner flagged; 22 keeps
+            // tones vivid while letting the emerald hero stay the MOST saturated thing (its albedo, not
+            // the grade, makes it pop).
+            color.postExposure.value = 0.0f;                     // KEEP: the lights set the level (the new key/ambient balance)
+            color.contrast.value = 10f;                          // 16->10: lighting now carries the punch; protect shadow detail
+            color.saturation.value = 22f;                        // 30->22: de-juice the warm surfaces (kills "yellow"); hero still pops
+            color.colorFilter.value = Color.white;               // neutral: no tint from the filter
 
-            // White balance: NEUTRAL daylight (owner override). The warm +11 temperature is zeroed so the
-            // SUN no longer paints the avenue golden. A hair of cool-neutral tint is fine; NOT orange.
+            // White balance: a HAIR cool to neutralise the residual warm cast the owner reads as "yellow"
+            // (warm brick/asphalt albedo + ACES warming the highlights). -6 nudges the whole frame toward a
+            // clean midday-daylight white without going blue. Tint stays neutral.
             var wb = profile.Add<WhiteBalance>(true);
-            wb.temperature.value = 0f;                           // 11->0: neutral white balance, no warm/golden push
-            wb.tint.value = 0f;                                  // 2->0: neutral (no magenta nudge needed without the warm stack)
+            wb.temperature.value = -6f;                          // 0->-6: faint cool to kill the yellow cast (NOT blue)
+            wb.tint.value = 0f;                                  // neutral
 
             // --- Lift / Gamma / Gain: the cohesive cinematic grade toward the §3 palette
             //     (warm sun in highlights, neutral-warm mids, faintly cool shadows so the
@@ -201,11 +211,18 @@ namespace LizardCrossing
         /// Low-end "lite" path: drop the two most expensive effects (DoF + bloom) for
         /// mid/low-tier phones while keeping the grade (which is nearly free). Wire this
         /// to a quality toggle when device-tier detection lands.
+        /// REALISM PASS: the lite path also pulls the (now soft, 4-cascade) shadows back to a
+        /// cheaper budget — shorter shadow distance trims the cascade work, which is the main
+        /// cost the realism pass added on the GPU. The directional sun shadow stays ON (it's the
+        /// grounding lever) but tighter, so even low tier keeps things sitting on the ground.
         /// </summary>
         public void SetLite(bool lite)
         {
             if (_dof != null) _dof.active = !lite;
             if (_bloom != null) _bloom.active = !lite;
+            // Cheaper shadows on low tier: pull the distance in (less cascade fill) without
+            // killing the contact shadow entirely. Full tier keeps the 42m realism distance.
+            QualitySettings.shadowDistance = lite ? 24f : 42f;
         }
 
         private void LateUpdate()
@@ -225,12 +242,18 @@ namespace LizardCrossing
                 return;
             }
 
-            // Third-person: keep the lizard tack-sharp. Target the exact camera->lizard distance
-            // so anything nearer (close foreground hazard) or farther (background) falls out of
-            // focus — but EASE toward it (SmoothDamp) so dash FOV kicks, near-miss slow-mo, shake
-            // and follow-lag can't make the hero pulse out of focus. Uses unscaled time so the
-            // focus keeps tracking cleanly even while near-miss slow-mo holds Time.timeScale low.
-            float target = Mathf.Max(0.1f, Vector3.Distance(_cam.transform.position, _focusTarget.position));
+            // Third-person REALISM PASS: the camera sits only ~0.2m behind the tiny lizard, so focusing
+            // EXACTLY on it gave a razor-thin in-focus slab — the entire avenue (pavement, facades, peds)
+            // smeared to a heavy wash on the real MP4, erasing all the surface detail (the new normal maps,
+            // the facade windows) and reading as flat/low-detail. The signature DoF should blur only the
+            // VERY-near foreground hazard (giant leg/wheel at the lens) and the FAR background — the
+            // mid-ground street the player reads should be reasonably sharp. So push the focus a bit BEYOND
+            // the lizard (FocusForwardBias) so both the hero AND the near street fall inside the acceptable
+            // -sharp zone; the deeper lens (set in Setup) then keeps the mid-ground legible while the far
+            // skyline and the close hazard still go soft. EASE toward it (SmoothDamp, unscaled) so dash FOV
+            // kicks / near-miss slow-mo / shake can't pulse the hero out of focus.
+            float dist = Mathf.Max(0.1f, Vector3.Distance(_cam.transform.position, _focusTarget.position));
+            float target = dist + FocusForwardBias;   // focus just past the hero, not on it
             float dt = Time.unscaledDeltaTime;
             _focusDist = Mathf.SmoothDamp(_focusDist, target, ref _focusVel, 0.10f, Mathf.Infinity, dt);
             _dof.focusDistance.value = _focusDist;
