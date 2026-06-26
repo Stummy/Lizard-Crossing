@@ -91,6 +91,20 @@ Done and verified in-engine (0 console errors, mechanics intact):
   `verify-and-ship` skill (`.claude/skills/verify-and-ship/`). NEVER mark work done with
   console errors or a failed playthrough. The owner judges *feel*; this loop checks
   *correctness* so "approved" is never "unchecked."
+- **ALWAYS run the Gemini video reader as a standing 2nd-brain QA gate (owner rule, 2026-06-26).**
+  It is not optional and not just for big art passes — on EVERY change that is visible in-game
+  (and at every stage gate), after the change verifies: record a portrait clip (menu `Lizard
+  Crossing/Bot/Set Game View 9:16` → `Bot/Record MP4 (10s)`) and run `python Tools/gemini_review.py
+  [--state run|win|...]` on it. Read its **BUGS / CONCEPT-GAP / punch-list**, LOG findings into the
+  §5 ledger, and fix the real ones before calling the unit done. It is the owner's second pair of
+  eyes that spots bugs + judges the look so nothing ships unseen. **Caveats baked in from hard
+  experience:** (1) the reviewer is sometimes unreliable on lighting (it has hallucinated
+  "streetlights/night" that don't exist) — weight its concrete BUG reports + measured frames over a
+  vague vibe label, and treat the OWNER's stated preference (e.g. neutral over golden) as
+  superseding the spec; (2) judge the look on the REAL MP4 / ScreenCapture, never the RT capture
+  (it renders brighter than the real game and has fooled passes — see commit 62ccfff). Every agent
+  brief that touches visuals must include this Gemini step (the agent runs it, or the main session
+  runs it on the agent's clip).
 - **Commit AND push after every completed unit of work** (owner rule, 2026-06-25):
   once a change is made and verified in-engine, commit it with a clear message and
   `git push` to the GitHub repo (`origin`, branch `feat/realistic-city-crossing`).
