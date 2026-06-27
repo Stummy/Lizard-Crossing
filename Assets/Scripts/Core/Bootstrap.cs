@@ -51,7 +51,7 @@ namespace LizardCrossing
             // frame reads as true-to-life daytime and the emerald lizard pops on its own colour.
             // REALISM PASS 2026-06-26: a hair cool-white (not the warm 0.98,0.95) so the daylight reads
             // clean midday, never yellow. The cool whisper offsets any residual warm cast from textures.
-            sun.color = new Color(1f, 1f, 0.99f);        // near-pure white, faintly cool — kills the "yellow"
+            sun.color = new Color(1f, 0.99f, 0.96f);     // 1,1,0.99 -> 1,0.99,0.96 (lighting-post 2026-06-27): a barely-warm WHITE key (NOT golden/R14) so lit planes read "sunny" not "overcast", while the cyan sky stays cool by contrast
             // REALISM PASS — KEY/AMBIENT REBALANCE (the #1 grounding + realism lever): the prior stack
             // (sun 1.1 + FLAT ambient 1.25) had ambient doing most of the lighting, which floods every
             // crevice, flattens form and makes grounded contact shadows impossible (nothing reads as
@@ -121,7 +121,7 @@ namespace LizardCrossing
                 // balanced — paired with the neutral key/grade this gives a clean true-to-life daylight.
                 // soft-cyan daylight sky (concept spec): same brightness band, tilted blue-over-red so it
                 // reads as a real daytime sky, not the flat desaturated grey of 0.80/0.82/0.84.
-                if (skybox.HasProperty("_Tint")) skybox.SetColor("_Tint", new Color(0.74f, 0.83f, 0.92f)); // -> soft cyan, still daylight-balanced
+                if (skybox.HasProperty("_Tint")) skybox.SetColor("_Tint", new Color(0.78f, 0.86f, 0.96f)); // 0.74,0.83,0.92 -> 0.78,0.86,0.96 (lighting-post 2026-06-27): brighter + a touch more cyan so the between-building sky reads soft cyan (R17), not dull grey-blue
                 RenderSettings.skybox = skybox;
                 RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Skybox;
                 // GOLDEN-HOUR pass: the 1.12 sky-derived ambient was over-lighting the pedestrians'

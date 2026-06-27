@@ -118,8 +118,8 @@ namespace LizardCrossing
             // 30 was over-juicing the warm brick/asphalt toward the "yellow" the owner flagged; 22 keeps
             // tones vivid while letting the emerald hero stay the MOST saturated thing (its albedo, not
             // the grade, makes it pop).
-            color.postExposure.value = 0.15f;                    // 0->0.15 (lighting-post 2026-06-26): gentle global lift out of the dim register
-            color.contrast.value = 10f;                          // 16->10: lighting now carries the punch; protect shadow detail
+            color.postExposure.value = 0.05f;                    // 0.15->0.05 (lighting-post 2026-06-27): +0.15 was clipping the road/sidewalk to white on the real MP4
+            color.contrast.value = 6f;                           // 10->6: compress the blown-road-vs-black-building range (R16) into a legible midtone
             color.saturation.value = 22f;                        // 30->22: de-juice the warm surfaces (kills "yellow"); hero still pops
             color.colorFilter.value = Color.white;               // neutral: no tint from the filter
 
@@ -127,7 +127,7 @@ namespace LizardCrossing
             // (warm brick/asphalt albedo + ACES warming the highlights). -6 nudges the whole frame toward a
             // clean midday-daylight white without going blue. Tint stays neutral.
             var wb = profile.Add<WhiteBalance>(true);
-            wb.temperature.value = -2f;                          // -6->-2 (lighting-post 2026-06-26): the warm cast is gone post-override; -6 now reads cold, so sit near-neutral
+            wb.temperature.value = 0f;                           // -2->0 (lighting-post 2026-06-27): -2 was nudging the already-cool/overcast frame cooler; sit neutral and let the sun key carry warmth
             wb.tint.value = 0f;                                  // neutral
 
             // --- Lift / Gamma / Gain: the cohesive cinematic grade toward the §3 palette

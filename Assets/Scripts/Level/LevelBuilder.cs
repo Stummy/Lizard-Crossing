@@ -145,7 +145,9 @@ namespace LizardCrossing
             //    Skinned with the procedural concrete/glass facade (owner: neutral building base, not brick).
             BuildCorridorWall(corr, GameConst.CorridorWallRightX, z0, z1,
                 GameConst.CorridorWallHeight, 0.5f,
-                ProceduralTextures.BuildingFacade, null, new Color(0.95f, 0.95f, 0.96f), "CorridorWallRight");
+                ProceduralTextures.BuildingFacade, null, new Color(0.60f, 0.58f, 0.54f), "CorridorWallRight");
+            // 0.95 near-white -> 0.60 warm-neutral STONE (env-artist + Gemini R19/R20: the near-white wall
+            // blew out + read generic-flat). Kept NEUTRAL stone, NOT brick (owner: "neutral building base").
 
             // 3) LEFT railing/curb — a lower SOLID collider so the lizard never drifts onto the road.
             // darker concrete curb (was 0.55 pale grey → read as a glowing "scaffolding" pole in the
