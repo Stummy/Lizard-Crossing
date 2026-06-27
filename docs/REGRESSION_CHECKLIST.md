@@ -53,6 +53,9 @@ Statuses below are the LAST KNOWN state; the Gemini run is the live re-check. Ma
 - **[R26]** On-screen popups (CLOSE CALL! / TAIL DROPPED! / OUCH!) too LARGE / unstyled / obstructing the lane.
 - **[R27]** Near-miss has no juice (no speed-lines / whoosh / blue-white "!" flash); a hit reads weakly ("clips then OUCH" / fade-to-black, not a distinct impact).
 
+## RENDER QUALITY
+- **[R31]** The live PLAY frame looks SOFTER / lower-quality than the stopped Scene view. *(2026-06-26 owner)* Ships-to-device causes: DoF softening the near foreground (now defaulted OFF) + stretched/low-res ground texture magnified at the 3 cm POV (see R19, tiling tightened). PARTLY an EDITOR illusion — the Game-view window renders at a smaller res than the Scene view; on a real phone it's full device res. Watch that Play stays as crisp as the stopped view.
+
 ## MECHANICS / SPATIAL  (⚙️ machine-gated — asserted by Invariant Check / bot / scan, not Gemini)
 - **[R28]** ⚙️ Lizard leaves the sidewalk / passes through a wall / the run band drifts or loses its floor. → `Bot/Invariant Check` must PASS.
 - **[R29]** ⚙️ A crosswalk crossing is impassable (no safe gap opens) OR a car hit does NOT cost a heart. → bot playthrough reaches the safe zone; car-hit→HitPlayer verified.

@@ -117,9 +117,11 @@ Done and verified in-engine (0 console errors, mechanics intact):
   2. The machine-gated items `[R28]/[R29]/[R30]` (lizard confinement, crossing fairness + car-hit,
      magenta) are asserted by the **Invariant Check + bot playthrough + magenta scan**, not Gemini —
      run those in the verify loop.
-  3. **Keep the list LIVE:** when the owner or a reviewer flags a NEW recurring issue, ADD an `[Rn]`
-     to `docs/REGRESSION_CHECKLIST.md` so it's watched on every run forever. Log notable
-     PRESENT→FIXED shifts into `docs/PROJECT_PLAN.md` §5.
+  3. **AUTO-ADD EVERY MISTAKE — the list only grows (owner rule, 2026-06-26).** The MOMENT any new
+     bug, mistake, or regression is found — by the owner, the Gemini bot, a specialist agent, or me —
+     **immediately add it as a new `[Rn]` to `docs/REGRESSION_CHECKLIST.md` before moving on.** No
+     exceptions, no "I'll remember it." Anything we have hit even ONCE becomes a permanent watch item
+     so it can never silently come back. Log notable PRESENT→FIXED shifts into `docs/PROJECT_PLAN.md` §5.
 - **Commit AND push after every completed unit of work** (owner rule, 2026-06-25):
   once a change is made and verified in-engine, commit it with a clear message and
   `git push` to the GitHub repo (`origin`, branch `feat/realistic-city-crossing`).
