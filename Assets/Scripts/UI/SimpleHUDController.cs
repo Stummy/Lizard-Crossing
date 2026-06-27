@@ -134,14 +134,9 @@ namespace LizardCrossing
                 new Vector2(-188f, -66f), new Vector2(220f, 70f));
             AddTextOutline(_bugText);
 
-            // ----- top-center: level title + rounded progress bar (gecko marker + goal flag) + "LEVEL n" -----
-            string levelTitle = LevelTitle();
-            var titleText = UIFactory.CreateText(safe, "LevelTitle", levelTitle, 46,
-                new Color(1f, 0.97f, 0.86f), TextAnchor.MiddleCenter);
-            UIFactory.SetRect(titleText, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f),
-                new Vector2(0f, -56f), new Vector2(560f, 60f));
-            AddTextOutline(titleText);
-
+            // ----- top-center: rounded progress bar (gecko marker + goal flag) + "LEVEL n" -----
+            // (the big "DOWNTOWN DASH" title banner was removed 2026-06-26 per concept review — the
+            //  concept's top edge is just hearts + bar + flag + LEVEL n, no title text over the lane.)
             const float barW = 560f, barH = 34f;
             var barBg = UIFactory.CreateImage(safe, "ProgressBg", UIFactory.RoundedSprite(),
                 new Color(0f, 0f, 0f, 0.45f));
@@ -257,6 +252,9 @@ namespace LizardCrossing
                 new Color(0.95f, 1f, 0.95f));
             UIFactory.SetRect(povLabel, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 Vector2.zero, new Vector2(140f, 50f));
+            // hidden from the shipping HUD (concept = clean overlay; it's a dev affordance). POV still
+            // toggles via the V key + the Bot/Toggle POV menu, so testing is unaffected. (2026-06-26)
+            povImg.gameObject.SetActive(false);
 
             // ----- predator danger meter (left edge): fills upward as the alley cat
             //       closes in from behind, reading Predator.Threat01 -----
@@ -288,9 +286,13 @@ namespace LizardCrossing
             _message = UIFactory.CreateText(root, "Message", "", 72, Color.white);
             UIFactory.SetRect(_message, new Vector2(0.5f, 0.62f), new Vector2(0.5f, 0.5f),
                 Vector2.zero, new Vector2(900f, 120f));
-            _popup = UIFactory.CreateText(root, "Popup", "", 64, new Color(1f, 0.55f, 0.2f));
-            UIFactory.SetRect(_popup, new Vector2(0.5f, 0.72f), new Vector2(0.5f, 0.5f),
-                Vector2.zero, new Vector2(900f, 100f));
+            // smaller + pinned to the TOP third (under the progress bar) + outlined, so transient
+            // popups (CLOSE CALL / TAIL DROPPED / OUCH) read as styled UI and never obstruct the lane
+            // or the hero (concept review 2026-06-26: was font 64, dead-centre, unstyled raw text).
+            _popup = UIFactory.CreateText(root, "Popup", "", 42, new Color(1f, 0.62f, 0.24f));
+            UIFactory.SetRect(_popup, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f),
+                new Vector2(0f, -210f), new Vector2(760f, 72f));
+            AddTextOutline(_popup);
             _popup.gameObject.SetActive(false);
 
             BuildStartPanel(root);
