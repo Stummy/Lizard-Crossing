@@ -1,0 +1,76 @@
+# CO-OP.md — the studio cooperation workflow (how the agents check each other)
+
+> **Owner ask (2026-06-27):** "Make a workflow that you can check in between the agents and commit
+> it, so you are always doing that." This is that workflow. The main session is the **lead /
+> integrator**; the specialist agents (`.claude/agents/`) are the **section owners + reviewers**;
+> the **Gemini video bot** (`Tools/gemini_review.py`) is the standing automated QA tester. Every
+> visible change runs this loop before it's called done. This file is the single source of truth
+> for *how we work together*; `docs/PROJECT_PLAN.md` is *what* we build; `Assets/Art/Concept/` +
+> `docs/VISUAL_TARGET_SHEET.md` is *how good it must look*.
+
+## The team (who owns / reviews what)
+| Domain (a change touching this…) | Section owner = does it OR signs off |
+|---|---|
+| Lighting / post / exposure / DoF / grade | `lighting-post-artist` |
+| HUD / camera framing / feel / juice / menus | `camera-ui-juice` |
+| Surfaces / props / set-dressing / pedestrians / themes / city reskin | `environment-artist` |
+| Sourcing or generating assets (CC0 / Meshy) | `asset-scout` |
+| Mechanics + performance + regression gate | `gameplay-guardian` |
+| Visual correctness vs the concept (lead reviewer) | `art-director` |
+| Sequencing the push / what ships next | `studio-producer` |
+| Automated QA on EVERY visual change (not an agent — a tool) | `Tools/gemini_review.py` |
+
+Reviews are **read-only and run in parallel** (they don't touch the editor). The **live editor is
+single-threaded** — only the main session (or one delegated specialist) makes the in-engine change.
+
+## The loop — run this for every visible change, in order
+1. **ORIENT** (session boot): read `docs/PROJECT_PLAN.md` §0 (the ONE Active section) + §5 ledger,
+   `CLAUDE.md`, `MEMORY.md`; open the concept frame(s) for the state(s) being touched. Name which
+   stage + ledger item + concept frame the change advances. No orphan work.
+2. **CHANGE**: make the smallest change that moves the live game toward the plan **and** the concept.
+   It belongs to exactly one section — if it reaches into a **Locked** section, stop and get owner OK.
+3. **SPECIALIST GATE (check BETWEEN agents)**: the corresponding section owner(s) from the table
+   above **do the change or review + sign off** on it — *at minimum the corresponding one(s)*. A
+   change spanning domains gets a say from each owner. The main session **synthesizes** every
+   agent's punch-list: dedupe, rank by severity-vs-concept, sequence, and **re-check after each fix**
+   so one agent's fix doesn't reopen another's finding. This synthesis step IS "checking between the
+   agents."
+4. **GEMINI QA GATE** (standing, non-optional): set portrait `Lizard Crossing/Bot/Set Game View
+   9:16` → `Bot/Record MP4 (14s)` → wait for "VIDEO DONE" / file-size-stable → `python
+   Tools/gemini_review.py --state <run|win|…>`. Read its **BUGS / CONCEPT-GAP / PUNCH-LIST** and the
+   **`## REGRESSION CHECKLIST`** section. **Any `[Rn]` PRESENT is a regression** — fix it, or
+   consciously accept a knowingly-open locked item and say so. **Log findings into `docs/PROJECT_PLAN.md`
+   §5** so nothing is lost. Caveats: Gemini is unreliable on lighting (it has hallucinated night /
+   streetlights) — weight concrete BUG reports over vibe; judge the look on the **real MP4**, never
+   the brighter-than-real RT capture; the **owner's stated preference supersedes the spec**.
+5. **MACHINE GATE (verify-and-ship)**: compile clean (0 console errors, 0 magenta) → bot playthrough
+   reaches the safe zone (`State==Won`) → `Bot/Invariant Check` PASS → capture a real proof frame.
+   The machine-gated regressions `[R28]/[R29]/[R30]` are asserted here, not by Gemini.
+6. **AUTO-ADD EVERY MISTAKE**: the moment any new bug/regression is found (owner, Gemini, an agent,
+   or me), add it as a new `[Rn]` to `docs/REGRESSION_CHECKLIST.md` before moving on. The list only
+   grows; anything hit even once becomes a permanent watch item.
+7. **COMMIT + PUSH**: narrowly-scoped commit, push to `origin feat/realistic-city-crossing` (never
+   `main`/merge without owner OK). Tick the §5 ledger.
+8. **CHECKPOINT / GATE**: at each section or stage gate, remind the owner to run `/code-review ultra`
+   (Claude can't launch it). Show before/after vs the concept frame.
+
+## When to spawn an agent vs. do it inline
+- Spawn the specialist when the owner asks for it, when the change is squarely in that domain and
+  needs that lens, or to parallelize independent read-only reviews. Brief it with the **objective**:
+  the concept reference + the generated target deck (`Assets/Art/Concept/`) + `docs/VISUAL_TARGET*.md`
+  + the specific purpose of the asset/state. An agent that doesn't know the objective can only judge
+  polish, not correctness.
+- Do it inline when it's a small, single-domain fix you can verify yourself — don't pay for a cold
+  spawn to re-derive context you already have.
+
+## The synthesis pass (the heart of "check between agents")
+After the parallel reviews come back, the lead (main session) produces ONE ranked punch-list:
+- **Dedupe** overlapping findings; keep the one with the most concrete failure/concept-gap.
+- **Rank** correctness/regression bugs above polish; rank concept-gaps by how far from the frame.
+- **Sequence** so fixes don't fight (e.g. lighting before grade-dependent judgments).
+- **Route** each item to its section owner (do or sign-off), fix, then **re-run the affected gate**
+  (Gemini for look, machine gate for mechanics) to confirm the item closed and nothing reopened.
+- **Log** the PRESENT→FIXED shifts into `docs/PROJECT_PLAN.md` §5.
+
+> Keep this file live. When we learn a better way to cooperate, update CO-OP.md — it's a living
+> contract, not a one-time artifact.

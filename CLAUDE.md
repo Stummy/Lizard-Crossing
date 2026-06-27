@@ -4,6 +4,9 @@
 Read `Lizard_Crossing_Claude_Work_Packet/00_READ_ME_FIRST/CLAUDE_INSTRUCTIONS.md`
 before doing any work.** Do not ask the owner to re-explain the game idea.
 
+**How the agents cooperate + the per-change QA loop is `CO-OP.md` (owner rule, 2026-06-27) — run
+that loop (specialist gate → Gemini gate → machine gate → commit) on every visible change.**
+
 ## ⭐ SESSION BOOT PROTOCOL (owner rule, 2026-06-26) — RUN THIS EVERY TIME I'm told to work
 Don't wing it. Before touching code each session, ORIENT against the three sources of truth —
 the GOAL, the CONCEPT, and the TESTER — then work the loop. Be the agent that learns as we go:
