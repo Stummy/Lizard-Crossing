@@ -89,6 +89,15 @@ namespace LizardCrossing.Testing
             sb.AppendLine("STRAIGHT band: sidewalk height holds z[0..140] -> "
                 + (straightOk ? "PASS" : "FAIL at z=" + worstZ.ToString("0")));
 
+            // FALSE-PASS GUARD (2026-06-26): if the run never entered Playing (e.g. launched right
+            // after a finished run), the ram loops never execute and maxX/minX keep their sentinel
+            // float.Min/MaxValue, which trivially satisfy the limit comparisons → a meaningless PASS.
+            // Require that the lizard actually MOVED (the loops sampled real positions) or it's a FAIL.
+            bool actuallyRan = maxX > -1e30f && minX < 1e30f;
+            pass &= actuallyRan;
+            sb.AppendLine("RUN SAMPLED: ram loops moved the lizard -> "
+                + (actuallyRan ? "PASS" : "FAIL (run never entered Playing — invariant did NOT test; re-run from a fresh Play)"));
+
             Report(pass, sb.ToString());
         }
 

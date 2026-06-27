@@ -79,14 +79,20 @@ namespace LizardCrossing
             {
                 _modelMode = true;
                 _root = model;
-                // The imported Meshy mesh arrives untextured — flat grey under URP. Skin
-                // every submesh in the species' lizard green (a proper URP/Lit material,
-                // never Standard → magenta) so it reads as a lizard, not a grey blob.
-                var skin = MaterialCache.GetLit(BodyGreen);
+                // If the imported model carries its OWN texture (a refined Meshy / CC0 gecko), KEEP it
+                // — convert each material to a URP/Lit equivalent (preserves albedo+normal, never
+                // renders magenta). Only flat-green-skin a genuinely UNTEXTURED mesh (the old Tripo
+                // gen) so it still reads as a lizard instead of a grey blob.
+                var flat = MaterialCache.GetLit(BodyGreen);
                 foreach (var r in model.GetComponentsInChildren<Renderer>())
                 {
                     var mats = r.sharedMaterials;
-                    for (int i = 0; i < mats.Length; i++) mats[i] = skin;
+                    for (int i = 0; i < mats.Length; i++)
+                    {
+                        var src = mats[i];
+                        bool textured = src != null && src.mainTexture != null;
+                        mats[i] = textured ? MaterialCache.GetUrpEquivalent(src) : flat;
+                    }
                     r.sharedMaterials = mats;
                     _renderers.Add(r);
                 }
@@ -410,13 +416,20 @@ namespace LizardCrossing
             float gait = Mathf.Max(s01, 0.08f);
             float step = t * rate;
 
-            float bob = Mathf.Abs(Mathf.Sin(step)) * 0.02f * gait;            // up on each step
-            float waddle = Mathf.Sin(step * 0.5f) * Mathf.Lerp(4f, 12f, s01); // hips sway L/R
-            float roll = Mathf.Sin(step) * 6f * s01;                          // roll into the step
+            // R3 fix (2026-06-26): the Meshy gecko is a STATIC mesh (no leg bones for AnimateModelLegs),
+            // so a pure forward glide read as "sliding/skating". Pump a springier vertical bob + a pitch
+            // "scuttle" each step so the body bounces like it's scurrying on its little legs.
+            float bob = Mathf.Abs(Mathf.Sin(step)) * 0.034f * gait;           // springier vertical pump (was 0.02)
+            float scuttle = Mathf.Abs(Mathf.Sin(step)) * Mathf.Lerp(0f, 4f, s01); // pitch pump per step (compensates for no leg swing)
+            // R1 fix (2026-06-26): the ±12° hip-yaw waddle swung the lizard's SIDE to the camera
+            // (must keep its back/tail to the viewer). Cut the yaw sway hard; keep a little roll/bob
+            // so the scurry still reads alive without turning the body off-axis.
+            float waddle = Mathf.Sin(step * 0.5f) * Mathf.Lerp(1.5f, 4f, s01);// hips sway L/R (was 4..12)
+            float roll = Mathf.Sin(step) * 4f * s01;                          // roll into the step (was 6)
             float lean = s01 * (dashing ? 14f : 8f);                          // pitch forward at speed
 
             _root.localPosition = new Vector3(0f, bob, 0f);
-            _root.localRotation = Quaternion.Euler(lean, ModelYaw + waddle, roll);
+            _root.localRotation = Quaternion.Euler(lean + scuttle, ModelYaw + waddle, roll);
 
             AnimateModelLegs(s01, dashing);
         }
