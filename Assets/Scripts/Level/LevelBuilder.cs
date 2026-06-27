@@ -130,8 +130,11 @@ namespace LizardCrossing
             const float stoneTile = 26f;
             // mid-grey concrete tint (NOT near-white) so the sunlit sidewalk doesn't blow out to a
             // white highlight under the golden-hour sun — keep it readable like the concept pavement.
+            // 2026-06-26 environment review: was cool grey (0.70,0.68,0.64) → read "generic grey".
+            // Warm toward stone/sandstone (concept "warm stone"), but restrained so the now-brighter
+            // neutral daylight doesn't push it to the "yellow" the owner dislikes.
             strip.GetComponent<Renderer>().sharedMaterial = MaterialCache.GetTexturedNormal(
-                TextureLibrary.Pavement, TextureLibrary.PavementNormal, new Color(0.70f, 0.68f, 0.64f),
+                TextureLibrary.Pavement, TextureLibrary.PavementNormal, new Color(0.80f, 0.73f, 0.62f),
                 0.08f, (halfW * 2f) / stoneTile, zlen / stoneTile);
 
             // 2) RIGHT building-facade wall — a SOLID collider the CharacterController lizard physically
@@ -142,9 +145,11 @@ namespace LizardCrossing
                 ProceduralTextures.BuildingFacade, null, new Color(0.95f, 0.95f, 0.96f), "CorridorWallRight");
 
             // 3) LEFT railing/curb — a lower SOLID collider so the lizard never drifts onto the road.
+            // darker concrete curb (was 0.55 pale grey → read as a glowing "scaffolding" pole in the
+            // crossing foreground); a darker curb recedes correctly.
             BuildCorridorWall(corr, GameConst.CorridorFenceLeftX, z0, z1,
                 GameConst.CorridorFenceHeight, 0.3f,
-                null, null, new Color(0.55f, 0.55f, 0.52f), "CorridorCurbLeft");
+                null, null, new Color(0.34f, 0.34f, 0.33f), "CorridorCurbLeft");
         }
 
         /// <summary>One long solid wall/curb box along the run (kept collider → blocks the lizard).
@@ -184,7 +189,7 @@ namespace LizardCrossing
             float y = GameConst.CorridorStripY + 0.004f;          // a hair above the sidewalk strip
             const float roadDepth = 6.5f;                         // z-depth of the cross-street band
 
-            var asphalt = new Color(0.16f, 0.16f, 0.17f);
+            var asphalt = new Color(0.20f, 0.19f, 0.18f); // warmer asphalt so the crossing reads warm-street vs warm-stone, not grey-on-grey
             var paint = new Color(0.92f, 0.92f, 0.88f);
 
             foreach (var lane in level.Lanes)
