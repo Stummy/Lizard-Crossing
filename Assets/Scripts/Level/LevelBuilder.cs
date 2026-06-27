@@ -867,7 +867,10 @@ namespace LizardCrossing
             //     planted with real CC0 (Kenney) trees + bushes so it reads as a lush park the
             //     run bursts into — replacing the old primitive flower-arch. The central path
             //     corridor (|x|<~4) stays clear so the glowing goal reads dead-ahead. ---
-            Box(garden, new Vector3(0f, 0.025f, length + 22f), new Vector3(64f, 0.05f, 54f), GrassGreen, "ParkGrass");
+            var parkGround = Box(garden, new Vector3(0f, 0.025f, length + 22f), new Vector3(64f, 0.05f, 54f), GrassGreen, "ParkGrass");
+            if (TextureLibrary.Grass != null) // real tiled turf, not a flat green plane (~4m tiles across the park)
+                parkGround.GetComponent<Renderer>().sharedMaterial = MaterialCache.GetTexturedNormal(
+                    TextureLibrary.Grass, null, new Color(0.80f, 0.86f, 0.72f), 0.05f, 16f, 13f);
 
             // a pale dirt path leading straight in through the gate (the "enter here" lane)
             FlatQuad(garden, new Vector3(0f, 0.052f, length + 16f), new Vector3(6f, 30f, 1f), 0f,
