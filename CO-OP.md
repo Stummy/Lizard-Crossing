@@ -16,6 +16,7 @@
 | Surfaces / props / set-dressing / pedestrians / themes / city reskin | `environment-artist` |
 | Sourcing or generating assets (CC0 / Meshy) | `asset-scout` |
 | Mechanics + performance + regression gate | `gameplay-guardian` |
+| Cloud / CI-CD / builds / backend / analytics / release (reads `cloud.md`) | `cloud-engineer` |
 | Visual correctness vs the concept (lead reviewer) | `art-director` |
 | Sequencing the push / what ships next | `studio-producer` |
 | Automated QA on EVERY visual change (not an agent — a tool) | `Tools/gemini_review.py` |
