@@ -69,3 +69,33 @@ The bot returns a `## REGRESSION CHECKLIST` section listing each `[Rn]` it can j
 accept it (e.g. R2/R3/R4 are knowingly open behind the locked Lizard section until Stage 4) and
 say so. Log notable shifts into `docs/PROJECT_PLAN.md` §5. Weight concrete PRESENT reports over
 vibe; remember Gemini is unreliable on lighting (R14–R17) — confirm those on the real MP4.
+
+---
+
+### 2026-06-27 — studio QA + research-driven polish pass (verified on real MP4 + Invariant PASS)
+Ran the full team (art-director + lighting + environment + camera/HUD/juice + gameplay-guardian)
++ Gemini, grounded in game-dev research (URP/Khronos tonemapping, URP DoF modes, endless-runner
+silhouette readability, Vlambeer game-feel). Verified status shifts:
+- **[R1] FIXED** — the hero kept showing its side at the 0.18 scale; shrinking to 0.13 keeps a small
+  clean silhouette back-to-camera (Gemini flipped R1 PRESENT→FIXED).
+- **[R12]/[R13] FIXED** — small hero stops sliding off-centre / no longer "too tight"; deep avenue reads.
+- **[R14] FIXED (held)** — grade stays NEUTRAL (no golden). Tonemap ACES→**Neutral** (ACES was washing
+  the emerald/cyan chroma); exposure/contrast/WB tamed the blown road+sky.
+- **[R18] addressed** — far-only **Gaussian** DoF added: hero + near/mid street stay tack-sharp
+  (respects R31), deep avenue/skyline recede. Mobile-correct (cheapest DoF mode).
+- **[R23] addressed** — tall amber **beacon shaft + halo** at the goal, visible down the lane (was
+  entirely absent). May want it readable from earlier in the run.
+- **[R26] FIXED** — popups now sit on a styled dark rounded **pill**, top third, font 42→36.
+- **[R19]/[R20] partial** — right corridor wall near-white→warm-neutral stone (kept neutral, NOT brick
+  per owner). Buildings still generic — owner-chosen neutral base limits how far R20 goes.
+- **[R2]/[R3]/[R4] STILL OPEN (hero mesh + walk).** The static gecko reads acceptably small at 0.13 but
+  is still low-detail ("frog"-ish) with no walk. The Meshy-rigged WALKING gecko (more detail + a real
+  gait) was tested live at 0.13 and **reverted**: it is frame-UNSTABLE at the locked low POV (its
+  sprawled, lower body slides out of frame on dodges). It needs a dedicated **grounding + framing pass**
+  (seat the ANIMATED pose on the ground, stabilise it in the lateral-lead frame) before it can ship.
+  Parked at `Assets/Art/Imported/Generated/gecko_walk.glb` (revive: move to Resources/Models + flip
+  `ModelLibrary.LizardKey`).
+- **Still owner-gated / queued:** ped proximity so they tower (R10/R11 — gameplay domain), hit/squish
+  juice (R5/R27), HUD bug-icon (R24), NYC identity props (R22). Gemini still vibe-flags R15/R17 cool —
+  treated as the neutral-vs-golden-concept mismatch + Gemini's lighting unreliability (measured frames
+  show the real improvement).
