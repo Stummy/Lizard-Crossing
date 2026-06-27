@@ -22,8 +22,10 @@ namespace LizardCrossing
         // "gecko_walk" = the Meshy-rigged quadruped WITH a baked Walking clip (LizardBody plays it via
         // Playables, Hips pinned to kill root-motion drift) — REAL skeletal walk, but at the tiny low
         // POV it currently reads too low/large and can slide out of frame; needs in-engine framing/scale
-        // tuning (blocked while the Unity MCP bridge is down). Kept dormant behind the static gecko until
-        // that's finished. Switch back to "gecko_walk" to resume the walk pass.
+        // tuning. Kept dormant behind the static gecko. TO RESUME the walk pass: move
+        // Assets/Art/Imported/Generated/gecko_walk.glb (+ .meta) BACK to Assets/Resources/Models/ AND flip
+        // this key to "gecko_walk". (Parked OUTSIDE Resources so the 7MB rigged asset doesn't bloat every
+        // build while dormant — gameplay-guardian 2026-06-27.)
         public const string LizardKey = "gecko";
         public const string CatKey = "cat";
         public const string SneakerKey = "sneaker";

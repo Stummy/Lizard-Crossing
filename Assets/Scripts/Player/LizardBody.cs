@@ -511,7 +511,10 @@ namespace LizardCrossing
                 var smr = model.GetComponentInChildren<SkinnedMeshRenderer>();
                 if (smr != null) _walkRootBone = smr.rootBone;
             }
-            if (_walkRootBone != null) _walkRootBindPos = _walkRootBone.localPosition;
+            // No pin target -> do NOT run an un-pinned clip (it would drift/balloon out of frame, per the
+            // root-motion bug). Bail so _riggedWalk stays false and the procedural scuttle stays in charge.
+            if (_walkRootBone == null) return;
+            _walkRootBindPos = _walkRootBone.localPosition;
             // The clip is a sub-asset of the GLB at Resources/Models/<key>.
             var clips = Resources.LoadAll<AnimationClip>("Models/" + ModelLibrary.LizardKey);
             AnimationClip walk = null;
