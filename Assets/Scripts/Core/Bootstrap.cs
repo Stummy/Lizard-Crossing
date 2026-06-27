@@ -111,12 +111,17 @@ namespace LizardCrossing
                 // The 1.05 HDRI sky is brighter than the lit ground, so ACES can't pull it back. Drop it
                 // so the sky reads as SKY (a bright surface) not a light source — the blobs go away and the
                 // city behind them becomes legible. Pairs with the stronger sun owning the foreground.
-                if (skybox.HasProperty("_Exposure")) skybox.SetFloat("_Exposure", 0.78f); // 1.05->0.78: kill the blown-white sky/gap blobs
+                // 2026-06-26 lighting-post-artist (concept review): 0.78 darkened the sky into a dull
+                // navy and let the deep/occluded run (qa_300/360) fall near-night. Lift to 0.95 for a
+                // true daytime sky (still below the 1.05 that blew white blobs). Neutral, not golden.
+                if (skybox.HasProperty("_Exposure")) skybox.SetFloat("_Exposure", 0.95f);
                 // OWNER COLOR OVERRIDE 2026-06-26: clean daylight sky. The cyan-leaning tint is pulled
                 // toward a near-neutral pale blue-grey so the sky reads as true daytime, not a pushed
                 // cyan that would lean the whole ambient blue. Still slightly blue (a real sky is), but
                 // balanced — paired with the neutral key/grade this gives a clean true-to-life daylight.
-                if (skybox.HasProperty("_Tint")) skybox.SetColor("_Tint", new Color(0.80f, 0.82f, 0.84f)); // 0.66,0.78,0.82 -> near-neutral pale sky
+                // soft-cyan daylight sky (concept spec): same brightness band, tilted blue-over-red so it
+                // reads as a real daytime sky, not the flat desaturated grey of 0.80/0.82/0.84.
+                if (skybox.HasProperty("_Tint")) skybox.SetColor("_Tint", new Color(0.74f, 0.83f, 0.92f)); // -> soft cyan, still daylight-balanced
                 RenderSettings.skybox = skybox;
                 RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Skybox;
                 // GOLDEN-HOUR pass: the 1.12 sky-derived ambient was over-lighting the pedestrians'
@@ -138,10 +143,10 @@ namespace LizardCrossing
                 // hard so the directional sun + its shadows do the modelling. The stronger sun (1.45) and
                 // the directional cool fill (0.42) keep the occluded mid-run from going muddy, while the
                 // shadowed sides finally read as shadow. This is the single biggest "realistic" move here.
-                RenderSettings.ambientIntensity = 0.90f; // 1.25->0.90: trim the flat wash so the sun models form
-                                                          // and shadows read, but keep enough sky-fill that the
-                                                          // shadow-side surfaces the camera faces (building fronts,
-                                                          // the lizard) don't fall to muddy dark on the real render
+                // 2026-06-26 lighting-post-artist: 0.90 let the occluded mid/deep run fall to near-black
+                // (the #1 art-director gap). 1.05 lifts the shaded sides back to clean daylight shadow
+                // without flooding (still well under the old flat 1.25 wash). Biggest fix for the dark-out.
+                RenderSettings.ambientIntensity = 1.05f; // 0.90->1.05: keep the deep/canyon run readable in daylight
                 DynamicGI.UpdateEnvironment(); // compute SH ambient from the skybox once
             }
             else
