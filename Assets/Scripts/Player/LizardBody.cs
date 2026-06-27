@@ -71,10 +71,12 @@ namespace LizardCrossing
             }
 
             // imported lizard model if present; otherwise the procedural gecko.
-            // Realistic scale (2026-06-16): a real ~15 cm lizard, dwarfed by the
-            // human-scale city (person ~1.8 u, building ~20 u). 1 unit ~= 1 metre.
-            // ~0.11 u total length: a small slender anole/garden lizard, not a chunky iguana.
-            var model = ModelLibrary.TryBuild(ModelLibrary.LizardKey, transform, 0.11f, ModelYaw);
+            // Realistic scale (2026-06-16): a real lizard, dwarfed by the human-scale city
+            // (person ~1.8 u, building ~20 u). 1 unit ~= 1 metre.
+            // HERO PROMINENCE (owner, 2026-06-27): bumped 0.11 -> 0.18 u so the gecko reads
+            // clearly as the hero from the locked low cam instead of a tiny speck — still a
+            // small ~18 cm lizard (a person at 1.8 u towers ~10x; the towering city ratio holds).
+            var model = ModelLibrary.TryBuild(ModelLibrary.LizardKey, transform, 0.18f, ModelYaw);
             if (model != null)
             {
                 _modelMode = true;
