@@ -888,6 +888,15 @@ namespace LizardCrossing
             PlaceNature(garden, "tree_oak", new Vector3(-7.5f, 0.05f, length + 4f), 7.5f, 40f);
             PlaceNature(garden, "tree_default", new Vector3(7.5f, 0.05f, length + 4f), 7f, 205f);
 
+            // a DENSE back tree-line so the park reads deep + lush and hides the GLB building edge
+            for (float x = -30f; x <= 30f; x += 3.0f)
+            {
+                float h = 6.5f + (float)rng.NextDouble() * 4f;
+                PlaceNature(garden, parkTrees[rng.Next(parkTrees.Length)],
+                    new Vector3(x + (float)(rng.NextDouble() * 1.8 - 0.9), 0.05f, length + 42f + (float)rng.NextDouble() * 4f),
+                    h, (float)rng.NextDouble() * 360f);
+            }
+
             // bushes as undergrowth along the front edge + under the trees
             string[] parkBushes = { "plant_bushLarge", "plant_bushDetailed" };
             for (int i = 0; i < 18; i++)
@@ -898,14 +907,25 @@ namespace LizardCrossing
                 PlaceNature(garden, parkBushes[rng.Next(parkBushes.Length)],
                     new Vector3(x, 0.05f, z), 0.6f + (float)rng.NextDouble() * 0.7f, (float)rng.NextDouble() * 360f);
             }
-            // a few flowers dotted in the grass for colour at ground level
-            for (int i = 0; i < 14; i++)
+            // real flower clusters (CC0 Kenney) for colour at ground level
+            string[] parkFlowers = { "flower_redA", "flower_yellowA", "flower_purpleA" };
+            for (int i = 0; i < 22; i++)
             {
-                float x = -22f + (float)rng.NextDouble() * 44f;
-                float z = length + 5f + (float)rng.NextDouble() * 34f;
-                if (Mathf.Abs(x) < 3.5f) continue;
-                Sphere(garden, new Vector3(x, 0.18f, z), Vector3.one * 0.22f,
-                    FlowerColors[rng.Next(FlowerColors.Length)], "ParkFlower");
+                float x = -26f + (float)rng.NextDouble() * 52f;
+                float z = length + 5f + (float)rng.NextDouble() * 38f;
+                if (Mathf.Abs(x) < 3f) continue;
+                PlaceNature(garden, parkFlowers[rng.Next(parkFlowers.Length)],
+                    new Vector3(x, 0.05f, z), 0.35f + (float)rng.NextDouble() * 0.25f, (float)rng.NextDouble() * 360f);
+            }
+            // tufts of real grass for lush ground cover
+            string[] parkGrass = { "grass", "grass_large" };
+            for (int i = 0; i < 30; i++)
+            {
+                float x = -28f + (float)rng.NextDouble() * 56f;
+                float z = length + 4f + (float)rng.NextDouble() * 40f;
+                if (Mathf.Abs(x) < 2.8f) continue;
+                PlaceNature(garden, parkGrass[rng.Next(parkGrass.Length)],
+                    new Vector3(x, 0.05f, z), 0.3f + (float)rng.NextDouble() * 0.3f, (float)rng.NextDouble() * 360f);
             }
 
             // welcoming glow on the ground through the arch — warm amber/gold so the gate reads as
