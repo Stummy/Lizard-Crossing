@@ -209,6 +209,13 @@ namespace LizardCrossing
             _dof.aperture.value = DofAperture;
             _dof.bladeCount.value = 5;             // fewer blades = cheaper bokeh
             _dof.focusDistance.value = DofFocusFallback;
+            // OWNER 2026-06-26 ("looks lower-quality when PLAYING vs stopped"): at the ~3cm POV the
+            // Bokeh DoF softens the near foreground (the closest pavement that fills the bottom of the
+            // portrait frame) yet — per Gemini R18 — never delivers creamy far bokeh, so it only
+            // SUBTRACTS sharpness from the live frame (the Scene view, which has no post, looks crisp =
+            // "better stopped"). Default it OFF for a crisp high-quality read; a proper far-only DoF can
+            // be re-introduced by lighting-post-artist later. Still toggled by SetLite.
+            _dof.active = false;
         }
 
         /// <summary>

@@ -127,7 +127,10 @@ namespace LizardCrossing
             Object.Destroy(strip.GetComponent<Collider>());
             strip.transform.localPosition = new Vector3(cx, GameConst.CorridorStripY, zc);
             strip.transform.localScale = new Vector3((halfW * 2f) / 10f, 1f, zlen / 10f); // Unity plane = 10u at scale 1
-            const float stoneTile = 26f;
+            // 2026-06-26 ("looks low-quality when playing"): was 26 → the texture tiled <1x ACROSS the
+            // strip width (stretched ~3x), so at the 3cm POV the near pavement read blurry/magnified.
+            // Tighten to ~6m tiles so the surface has fine detail up close (the texture is seamless).
+            const float stoneTile = 6f;
             // mid-grey concrete tint (NOT near-white) so the sunlit sidewalk doesn't blow out to a
             // white highlight under the golden-hour sun — keep it readable like the concept pavement.
             // 2026-06-26 environment review: was cool grey (0.70,0.68,0.64) → read "generic grey".
