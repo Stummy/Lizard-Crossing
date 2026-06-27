@@ -105,6 +105,21 @@ Done and verified in-engine (0 console errors, mechanics intact):
   (it renders brighter than the real game and has fooled passes — see commit 62ccfff). Every agent
   brief that touches visuals must include this Gemini step (the agent runs it, or the main session
   runs it on the agent's clip).
+- **REGRESSION CHECKLIST — stop old bugs from silently coming back (owner rule, 2026-06-26).**
+  Past issues kept re-appearing because nothing re-checked for them. The canonical list of every
+  recurring problem we've fought lives in **`docs/REGRESSION_CHECKLIST.md`** (items `[R1]…[Rn]`).
+  It is now wired into `Tools/gemini_review.py` (auto-injected), so EVERY Gemini run returns a
+  **`## REGRESSION CHECKLIST`** section marking each `[Rn]` PRESENT / FIXED. The loop:
+  1. On every in-game-visible change, after the Gemini run, READ that section. **Any `[Rn]` PRESENT
+     is a regression** — either FIX it before "done", or, if it's a knowingly-open locked item
+     (e.g. `[R2]/[R3]/[R4]` lizard model/anim until Stage 4), explicitly say "accepted, still open"
+     — never let it slide silently.
+  2. The machine-gated items `[R28]/[R29]/[R30]` (lizard confinement, crossing fairness + car-hit,
+     magenta) are asserted by the **Invariant Check + bot playthrough + magenta scan**, not Gemini —
+     run those in the verify loop.
+  3. **Keep the list LIVE:** when the owner or a reviewer flags a NEW recurring issue, ADD an `[Rn]`
+     to `docs/REGRESSION_CHECKLIST.md` so it's watched on every run forever. Log notable
+     PRESENT→FIXED shifts into `docs/PROJECT_PLAN.md` §5.
 - **Commit AND push after every completed unit of work** (owner rule, 2026-06-25):
   once a change is made and verified in-engine, commit it with a clear message and
   `git push` to the GitHub repo (`origin`, branch `feat/realistic-city-crossing`).

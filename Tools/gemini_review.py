@@ -39,6 +39,7 @@ REPO = pathlib.Path(__file__).resolve().parent.parent
 DEFAULT_CLIP = REPO / "Temp" / "Recording" / "run.mp4"
 CONCEPT_DIR = REPO / "Assets" / "Art" / "Concept"
 SPEC_FILE = REPO / "docs" / "VISUAL_TARGET_SHEET.md"
+CHECKLIST_FILE = REPO / "docs" / "REGRESSION_CHECKLIST.md"  # canonical list of recurring past issues
 KEY_FILE = pathlib.Path.home() / ".lizard_secrets" / "gemini_api_key"
 
 GOAL = """GAME: "Lizard Crossing" — a polished, cinematic Crossy-Road-style mobile arcade
@@ -59,9 +60,18 @@ blunt, specific, and reference timestamps.
 
 Return the report in EXACTLY these sections:
 
+## REGRESSION CHECKLIST
+This is the MOST IMPORTANT section. You have been given a REGRESSION WATCHLIST of issues we have
+fought before (each tagged [R1], [R2], ...). Go through it and, using the clip's motion, report
+for EACH item you can judge: `[Rn] PRESENT @<timestamp> — <what you see>` if the old problem is
+visible now, or `[Rn] FIXED/good` if it's clearly resolved. Skip items you genuinely can't tell
+(don't pad). List PRESENT ones FIRST — these are regressions. Do not invent issues not on the
+watchlist here (put novel ones under BUGS). Be strict: a PRESENT item means an old bug came back.
+
 ## BUGS / BROKEN
 Anything broken, janky, unfair, unreadable, placeholder-looking, clipping, popping,
-mis-timed, or just wrong. Each as a one-line item with a timestamp. (If none, say "none spotted".)
+mis-timed, or just wrong that is NOT already covered by an [Rn] above. Each as a one-line item
+with a timestamp. (If none, say "none spotted".)
 
 ## CONCEPT GAP
 How the clip DIFFERS from the concept target, point by point — framing, composition, the
@@ -126,6 +136,7 @@ def main() -> None:
     states = (args.concept.split(",") if args.concept else [args.state])
     frames = load_concept_frames(states)
     spec = SPEC_FILE.read_text(encoding="utf-8") if SPEC_FILE.exists() else ""
+    checklist = CHECKLIST_FILE.read_text(encoding="utf-8") if CHECKLIST_FILE.exists() else ""
 
     client = genai.Client(api_key=read_key())
     size = clip.stat().st_size
@@ -134,6 +145,9 @@ def main() -> None:
     parts = [GOAL]
     if spec:
         parts.append("DESIGN SPEC (per-state target):\n" + spec)
+    if checklist:
+        parts.append("REGRESSION WATCHLIST — known past issues to check EACH run (report status "
+                     "per the ## REGRESSION CHECKLIST instructions below):\n" + checklist)
     for name, data in frames:
         parts.append(f"CONCEPT TARGET FRAME — {name} (match this):")
         parts.append(types.Part.from_bytes(data=data, mime_type="image/png"))
