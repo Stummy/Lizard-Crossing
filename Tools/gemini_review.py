@@ -35,6 +35,15 @@ import time
 import pathlib
 import argparse
 
+# Windows consoles default to cp1252 and crash on the model's unicode (em-dashes, arrows,
+# curly quotes) when stdout is redirected to a file — that silently ate a whole review once.
+# Force UTF-8 so the report always prints + saves regardless of the host code page.
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+except Exception:
+    pass
+
 REPO = pathlib.Path(__file__).resolve().parent.parent
 DEFAULT_CLIP = REPO / "Temp" / "Recording" / "run.mp4"
 CONCEPT_DIR = REPO / "Assets" / "Art" / "Concept"
