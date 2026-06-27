@@ -31,38 +31,16 @@ namespace LizardCrossing
         private Camera _cam;
         private Transform _focusTarget;
 
-        // Smoothed focus distance (WO-3): the raw camera->lizard distance jitters frame-to-frame
-        // (follow-cam SmoothDamp lag, dash FOV kick, near-miss slow-mo, shake) which would let the
-        // hero pulse in/out of focus. We ease the focus toward the measured distance so the lizard
-        // stays continuously tack-sharp while the close foreground / far background stay soft.
-        private float _focusDist = DofFocusFallback;
-        private float _focusVel;
-
-        // --- DoF tuning (real-world scale: 1u = 1m; TP camera sits ~1.5-2u from the
-        //     lizard, the close foreground hazard ~0.3-0.8u, the background tens of u). ---
-        // WO-3: the tighter framing pulls the camera to ~0.4-0.5u from the hero, so the focus
-        // distance is now CLOSE — at that range a 45mm/f6.5 lens is too shallow and softens the
-        // hero's own front/back. Shorter focal length + wider aperture deepens the band around
-        // the hero so the WHOLE lizard stays tack-sharp.
-        // S2-1 (DoF discipline): 38mm/f9 was OVER-applied — the far falloff blurred the ENTIRE
-        // city + running lane into a soft wash, erasing the mid-ground / lane-to-goal read (the
-        // single gating issue per the art-director re-grade, WO-6). Pulled to 26mm/f14 to deepen
-        // the field a LOT: a shorter focal length (38→26) and a much higher f-number (9→14) push
-        // the far-blur falloff out by tens of metres, so the mid-distance city, lane and an
-        // upcoming safe-zone sign read as soft-but-LEGIBLE instead of a smear, while the hero (at
-        // the ~0.2-0.5u focus distance) stays tack-sharp. The very-close foreground hazard (giant
-        // leg/wheel <0.2u from the lens, well inside the near-blur zone even at f14) still blurs
-        // clearly — that's the win the close-up still keeps. Tune by eye via captures, not theory.
-        // REALISM PASS 2026-06-26: 26mm/f14 focused at the 0.2m hero distance smeared the WHOLE avenue
-        // (the real MP4 was a uniform blur wash that erased every surface). Deepen the field hard so only
-        // the very-near hazard + far skyline go soft and the mid-ground street/peds/facades read sharp:
-        // shorter focal length (26->18) and a much higher f-number (14->22) push both the near and far
-        // blur falloffs far out. Combined with FocusForwardBias (focus just past the hero), the lizard and
-        // the street around it sit inside the deep in-focus zone. Tuned by eye on the MP4, not by theory.
-        private const float DofFocalLength = 18f;   // mm; shorter = deeper field (was 26)
-        private const float DofAperture = 22f;       // f-stop; higher = deeper field, mid-ground stays sharp (was 14)
-        private const float FocusForwardBias = 0.7f; // m; focus this far PAST the hero so hero+near-street are sharp
-        private const float DofFocusFallback = 1.5f; // m, used until the lizard is found
+        // (Retired 2026-06-27: the Bokeh focus-distance fields + lens constants — _focusDist/_focusVel,
+        //  DofFocalLength/DofAperture/FocusForwardBias/DofFocusFallback — are gone. Far-only Gaussian DoF
+        //  below uses a fixed world-space blur band, so there is no per-frame focus distance to chase.)
+        //
+        // GAUSSIAN far-only DoF (2026-06-27, research-backed): Unity URP Gaussian mode blurs the FAR
+        // field ONLY — everything nearer than gaussianStart is fully sharp — so the hero + near/mid
+        // street (all < ~14m) stay tack-sharp (respects R31) while the deep avenue + skyline recede
+        // into soft focus (the concept's depth, R18). Cheapest DoF mode; no per-frame focus chase.
+        private const float DofGaussStart = 14f;     // m: sharp out to here (hero + readable mid-street)
+        private const float DofGaussEnd = 42f;       // m: full blur by here (deep avenue / skyline only)
 
         public void Setup(Camera cam, Transform focusTarget)
         {
@@ -86,11 +64,14 @@ namespace LizardCrossing
             var profile = ScriptableObject.CreateInstance<VolumeProfile>();
             vol.sharedProfile = profile;
 
-            // --- Tonemapping: ACES for a filmic highlight roll-off (sun, sky, bright
-            //     stone never clip to flat white). ACES desaturates a touch, so the grade
-            //     below adds saturation back to keep the hero lizard vivid. ---
+            // --- Tonemapping: NEUTRAL (2026-06-27, research-backed). ACES is destructive to
+            //     CHROMA — it desaturates/washes exactly the bright greens & cyans in our frame
+            //     (the EMERALD hero + the cyan sky), which read as the "desaturated/washed" look.
+            //     Unity's Neutral tonemapper does range-remapping with minimal hue/saturation loss
+            //     (Khronos/Unity guidance: the right base for a vivid hero on neutral daylight). With
+            //     postExposure already low (0.05) nothing clips, so we don't need ACES' hard roll-off. ---
             var tone = profile.Add<Tonemapping>(true);
-            tone.mode.value = TonemappingMode.ACES;
+            tone.mode.value = TonemappingMode.Neutral;
 
             // --- Color Adjustments: warm, sunny, bright-but-not-blown grade ---
             var color = profile.Add<ColorAdjustments>(true);
@@ -120,7 +101,7 @@ namespace LizardCrossing
             // the grade, makes it pop).
             color.postExposure.value = 0.05f;                    // 0.15->0.05 (lighting-post 2026-06-27): +0.15 was clipping the road/sidewalk to white on the real MP4
             color.contrast.value = 6f;                           // 10->6: compress the blown-road-vs-black-building range (R16) into a legible midtone
-            color.saturation.value = 22f;                        // 30->22: de-juice the warm surfaces (kills "yellow"); hero still pops
+            color.saturation.value = 10f;                        // 22->10 (2026-06-27): Neutral tonemap no longer desaturates, so the +22 (which compensated for ACES) would over-juice the surfaces toward "yellow"; the emerald hero now pops from its own albedo + Neutral preserving chroma
             color.colorFilter.value = Color.white;               // neutral: no tint from the filter
 
             // White balance: a HAIR cool to neutralise the residual warm cast the owner reads as "yellow"
@@ -199,23 +180,21 @@ namespace LizardCrossing
             vig.intensity.value = 0.16f;
             vig.smoothness.value = 0.30f;
 
-            // --- Depth Of Field (Bokeh): the signature cinematic effect. Hero sharp,
-            //     close foreground hazards blurred, far background soft. Focus distance is
-            //     driven per-frame in LateUpdate (fixed-ish for now; camera-ui-juice will
-            //     refine the exact focus point/easing). ---
+            // --- Depth Of Field (GAUSSIAN, far-only): the concept's creamy deep-avenue depth (R18)
+            //     WITHOUT the regression that got Bokeh disabled. Bokeh blurred the NEAR foreground
+            //     (the pavement filling the bottom of the portrait frame) and never delivered far
+            //     bokeh, so it only SUBTRACTED sharpness ("looks worse when playing", R31). Gaussian
+            //     mode blurs the FAR field ONLY: the hero + near/mid street (< gaussianStart) are
+            //     fully sharp, only the deep avenue/skyline (> gaussianStart, max at gaussianEnd)
+            //     softens. So depth is added with ZERO near-hero softening, and it's the cheapest DoF
+            //     mode (mobile-correct). No per-frame focus chase — the blur band is fixed in world m. ---
             _dof = profile.Add<DepthOfField>(true);
-            _dof.mode.value = DepthOfFieldMode.Bokeh;
-            _dof.focalLength.value = DofFocalLength;
-            _dof.aperture.value = DofAperture;
-            _dof.bladeCount.value = 5;             // fewer blades = cheaper bokeh
-            _dof.focusDistance.value = DofFocusFallback;
-            // OWNER 2026-06-26 ("looks lower-quality when PLAYING vs stopped"): at the ~3cm POV the
-            // Bokeh DoF softens the near foreground (the closest pavement that fills the bottom of the
-            // portrait frame) yet — per Gemini R18 — never delivers creamy far bokeh, so it only
-            // SUBTRACTS sharpness from the live frame (the Scene view, which has no post, looks crisp =
-            // "better stopped"). Default it OFF for a crisp high-quality read; a proper far-only DoF can
-            // be re-introduced by lighting-post-artist later. Still toggled by SetLite.
-            _dof.active = false;
+            _dof.mode.value = DepthOfFieldMode.Gaussian;
+            _dof.gaussianStart.value = DofGaussStart;   // sharp out to here (hero + near/mid street)
+            _dof.gaussianEnd.value = DofGaussEnd;        // full blur by here (deep avenue / skyline)
+            _dof.gaussianMaxRadius.value = 1.0f;         // gentle recede, not a smeary wash
+            _dof.highQualitySampling.value = false;      // mobile-cheap
+            _dof.active = true;                          // re-enabled: far-only can't soften the near hero (R31-safe)
         }
 
         /// <summary>
@@ -236,38 +215,10 @@ namespace LizardCrossing
             QualitySettings.shadowDistance = lite ? 24f : 42f;
         }
 
-        private void LateUpdate()
-        {
-            if (_dof == null || _cam == null || _focusTarget == null) return;
-
-            // First-person POV: the lens sits AT the lizard's head, so focusing on the
-            // lizard (~0.04u away) would blur the whole street. Focus a little down the
-            // street so the scene reads sharp; the very near snout/feet stay softly out
-            // of focus, which is fine.
-            if (LizardCameraController.Instance != null && LizardCameraController.Instance.IsFirstPerson)
-            {
-                // snap (no easing) when in FP so toggling views doesn't ramp the focus
-                _focusDist = 5f;
-                _focusVel = 0f;
-                _dof.focusDistance.value = _focusDist;
-                return;
-            }
-
-            // Third-person REALISM PASS: the camera sits only ~0.2m behind the tiny lizard, so focusing
-            // EXACTLY on it gave a razor-thin in-focus slab — the entire avenue (pavement, facades, peds)
-            // smeared to a heavy wash on the real MP4, erasing all the surface detail (the new normal maps,
-            // the facade windows) and reading as flat/low-detail. The signature DoF should blur only the
-            // VERY-near foreground hazard (giant leg/wheel at the lens) and the FAR background — the
-            // mid-ground street the player reads should be reasonably sharp. So push the focus a bit BEYOND
-            // the lizard (FocusForwardBias) so both the hero AND the near street fall inside the acceptable
-            // -sharp zone; the deeper lens (set in Setup) then keeps the mid-ground legible while the far
-            // skyline and the close hazard still go soft. EASE toward it (SmoothDamp, unscaled) so dash FOV
-            // kicks / near-miss slow-mo / shake can't pulse the hero out of focus.
-            float dist = Mathf.Max(0.1f, Vector3.Distance(_cam.transform.position, _focusTarget.position));
-            float target = dist + FocusForwardBias;   // focus just past the hero, not on it
-            float dt = Time.unscaledDeltaTime;
-            _focusDist = Mathf.SmoothDamp(_focusDist, target, ref _focusVel, 0.10f, Mathf.Infinity, dt);
-            _dof.focusDistance.value = _focusDist;
-        }
+        // Gaussian DoF uses a FIXED world-space near/far blur band (gaussianStart/End in Setup), not a
+        // per-frame focus distance — so there is nothing to chase here. (The old Bokeh focus-distance
+        // easing lived here; it's retired with the switch to far-only Gaussian.) Kept as a no-op hook in
+        // case a future mode needs per-frame focus again.
+        private void LateUpdate() { }
     }
 }
