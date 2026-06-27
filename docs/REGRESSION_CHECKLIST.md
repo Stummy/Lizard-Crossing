@@ -15,10 +15,10 @@ Statuses below are the LAST KNOWN state; the Gemini run is the live re-check. Ma
 ---
 
 ## HERO LIZARD
-- **[R1]** Lizard FACES the camera or shows its side — it must keep its BACK/TAIL to the camera, head up-street, NEVER facing the viewer.
-- **[R2]** Lizard reads as a "frog" / wrong species / low-detail blob, not a vivid emerald GECKO. *(known PRESENT — locked Lizard section, Stage 4)*
-- **[R3]** Run animation looks like a WALK / stiff / slidey — feet skate, no clear mid-stride leg motion. *(known PRESENT — locked)*
-- **[R4]** Lizard feet or tail CLIP / sink into the ground. *(known PRESENT — locked)*
+- **[R1]** Lizard FACES the camera or shows its side — it must keep its BACK/TAIL to the camera, head up-street, NEVER facing the viewer. *(FIXED 2026-06-26: run waddle cut ±12°→±4°; Gemini confirmed back-to-camera.)*
+- **[R2]** Lizard reads as a "frog" / wrong species / low-detail blob, not a vivid emerald GECKO. *(MODEL FIXED 2026-06-26: real Meshy emerald gecko (gecko.glb) replaced the frog-like Tripo mesh, textured. Remaining: reads SMALL on-screen at the current camera distance — that's hero prominence = the locked camera, owner's call.)*
+- **[R3]** Run animation looks like a WALK / stiff / slidey — feet skate, no clear mid-stride leg motion. *(mitigated 2026-06-26: the gecko is a static mesh, so added a springier bob + per-step pitch "scuttle"; re-judge in motion.)*
+- **[R4]** Lizard feet or tail CLIP / sink into the ground. *(minor float/clip remains on the gecko; grounding nudge pending — re-judge.)*
 - **[R5]** On impact the lizard clips INTO a wall/prop instead of a readable faceplant (smush → hold → recover).
 
 ## CROWD / PEDESTRIANS
