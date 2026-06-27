@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Playables;
+using UnityEngine.Animations;
 
 namespace LizardCrossing
 {
@@ -39,6 +41,17 @@ namespace LizardCrossing
         private Transform[] _legBones;
         private Quaternion[] _legBind;
         private float _modelGait;
+
+        // Rigged WALK (2026-06-27): the gecko_walk GLB carries a real Meshy quadruped skeleton +
+        // a baked "Walking" clip. We play it through a PlayableGraph (no AnimatorController asset
+        // needed) and scale its playback speed by the run speed, so the legs actually step. This
+        // supersedes the procedural body-scuttle for the rigged model.
+        private Animator _walkAnimator;
+        private PlayableGraph _walkGraph;
+        private AnimationClipPlayable _walkClip;
+        private bool _riggedWalk;
+        private Transform _walkRootBone;   // skeleton root — pinned each frame to kill baked root-motion drift
+        private Vector3 _walkRootBindPos;
 
         // Model metrics for the first-person "lizard cam" (so the POV anchors on the real
         // snout/eye line, not the body centre). Local frame: lizard faces +Z, base at y=0.
@@ -98,6 +111,7 @@ namespace LizardCrossing
                     r.sharedMaterials = mats;
                     _renderers.Add(r);
                 }
+                TrySetupRiggedWalk(model);
                 CacheLegBones();
                 ComputeModelMetrics();
                 return;
@@ -398,6 +412,19 @@ namespace LizardCrossing
             if (_squashed) return;
             float s01 = Mathf.Clamp01(speed / GameConst.LizardMoveSpeed);
 
+            // Rigged walk (gecko_walk): the baked skeletal clip drives the whole body + the four
+            // stepping legs. We only scale its playback SPEED by the run speed (a brisker cadence
+            // at speed, brisker still on dash) and keep the holder flat & facing forward — no
+            // procedural lean/bob/scuttle layered on top. Covers both third-person and FP.
+            if (_riggedWalk)
+            {
+                if (_walkClip.IsValid())
+                    _walkClip.SetSpeed(Mathf.Lerp(0.55f, dashing ? 2.6f : 1.7f, s01));
+                _root.localPosition = Vector3.zero;
+                _root.localRotation = Quaternion.Euler(0f, ModelYaw, 0f);
+                return;
+            }
+
             // First-person POV rides the lizard's own eyes. The third-person run pose (forward
             // lean + step bob + hip waddle) tilts the whole torso UP into that lens, so you'd see
             // the back/head dome instead of the street. In FP we keep the body dead flat & low so
@@ -464,6 +491,63 @@ namespace LizardCrossing
             ModelHalfWidth = b.extents.x;
         }
 
+        /// <summary>If the imported model carries an Animator + a baked walk AnimationClip
+        /// (the Meshy-rigged gecko_walk), drive it through a PlayableGraph so the real skeletal
+        /// walk plays — speed-scaled by run speed in <see cref="ModelAnimate"/>. Returns quietly
+        /// (leaving the procedural scuttle in charge) for a rig-less static mesh.</summary>
+        private void TrySetupRiggedWalk(Transform model)
+        {
+            _walkAnimator = model.GetComponentInChildren<Animator>();
+            if (_walkAnimator == null) return;
+            _walkAnimator.applyRootMotion = false; // PlayerController drives travel; clip is in-place
+            // Cache the pelvis bone so LateUpdate can pin it. The Meshy clip bakes the forward
+            // root motion onto "Hips" (verified from the GLB animation channels); applyRootMotion
+            // =false does NOT strip that from the bone curve, so without pinning Hips the gecko
+            // slides toward the camera and balloons across the frame.
+            foreach (var t in model.GetComponentsInChildren<Transform>(true))
+                if (t.name == "Hips") { _walkRootBone = t; break; }
+            if (_walkRootBone == null)
+            {
+                var smr = model.GetComponentInChildren<SkinnedMeshRenderer>();
+                if (smr != null) _walkRootBone = smr.rootBone;
+            }
+            if (_walkRootBone != null) _walkRootBindPos = _walkRootBone.localPosition;
+            // The clip is a sub-asset of the GLB at Resources/Models/<key>.
+            var clips = Resources.LoadAll<AnimationClip>("Models/" + ModelLibrary.LizardKey);
+            AnimationClip walk = null;
+            for (int i = 0; i < clips.Length; i++)
+            {
+                if (clips[i] == null) continue;
+                if (walk == null) walk = clips[i];                 // default to the first clip
+                string n = clips[i].name.ToLower();
+                if (n.Contains("walk") || n.Contains("run") || n.Contains("take")) { walk = clips[i]; break; }
+            }
+            if (walk == null) return;
+            _walkGraph = PlayableGraph.Create("GeckoWalk");
+            _walkGraph.SetTimeUpdateMode(DirectorUpdateMode.GameTime);
+            var output = AnimationPlayableOutput.Create(_walkGraph, "anim", _walkAnimator);
+            _walkClip = AnimationClipPlayable.Create(_walkGraph, walk);
+            _walkClip.SetSpeed(1.0);
+            output.SetSourcePlayable(_walkClip);
+            _walkGraph.Play();
+            _riggedWalk = true;
+        }
+
+        private void OnDestroy()
+        {
+            if (_walkGraph.IsValid()) _walkGraph.Destroy();
+        }
+
+        private void LateUpdate()
+        {
+            // Kill the baked clip's forward root-motion drift: pin the skeleton root in place each
+            // frame (after the PlayableGraph has evaluated this frame's pose). PlayerController owns
+            // the lizard's travel, so the walk should be an in-place leg cycle — without this the
+            // gecko slides toward the camera and balloons across the frame.
+            if (_riggedWalk && _walkRootBone != null)
+                _walkRootBone.localPosition = _walkRootBindPos;
+        }
+
         /// <summary>Cache the four upper-leg bones of the rigged model + their bind pose, so we
         /// can swing them procedurally (the AI rig has no baked walk clip).</summary>
         private void CacheLegBones()
@@ -507,6 +591,7 @@ namespace LizardCrossing
         public void Squash()
         {
             _squashed = true;
+            if (_riggedWalk && _walkClip.IsValid()) _walkClip.SetSpeed(0.0); // freeze the stepping legs while flattened
             if (_modelMode)
             {
                 _root.localScale = new Vector3(1.5f, 0.18f, 1.5f);

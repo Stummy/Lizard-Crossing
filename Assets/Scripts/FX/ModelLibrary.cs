@@ -18,7 +18,13 @@ namespace LizardCrossing
     /// </summary>
     public static class ModelLibrary
     {
-        public const string LizardKey = "gecko";   // Meshy-generated textured emerald gecko (2026-06-26, replaced the frog-like Tripo lizard_gen); falls back to procedural gecko if absent
+        // Hero model. "gecko" = the clean static TEXTURED emerald gecko (committed, verified-good).
+        // "gecko_walk" = the Meshy-rigged quadruped WITH a baked Walking clip (LizardBody plays it via
+        // Playables, Hips pinned to kill root-motion drift) — REAL skeletal walk, but at the tiny low
+        // POV it currently reads too low/large and can slide out of frame; needs in-engine framing/scale
+        // tuning (blocked while the Unity MCP bridge is down). Kept dormant behind the static gecko until
+        // that's finished. Switch back to "gecko_walk" to resume the walk pass.
+        public const string LizardKey = "gecko";
         public const string CatKey = "cat";
         public const string SneakerKey = "sneaker";
         public const string WheelKey = "wheel";
