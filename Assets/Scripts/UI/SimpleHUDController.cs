@@ -35,6 +35,7 @@ namespace LizardCrossing
         private Text _dangerLabel;
         private Text _message;
         private Text _popup;
+        private UnityEngine.UI.Image _popupBg;   // styled pill behind the popup text
         private RectTransform _startPanel;
         private RectTransform _deathPanel;
         private DeathCause _lastDeathCause = DeathCause.Unknown;
@@ -289,11 +290,18 @@ namespace LizardCrossing
             // smaller + pinned to the TOP third (under the progress bar) + outlined, so transient
             // popups (CLOSE CALL / TAIL DROPPED / OUCH) read as styled UI and never obstruct the lane
             // or the hero (concept review 2026-06-26: was font 64, dead-centre, unstyled raw text).
-            _popup = UIFactory.CreateText(root, "Popup", "", 42, new Color(1f, 0.62f, 0.24f));
+            // dark rounded PILL behind the text so a popup reads as styled game UI, not raw text
+            // (Gemini R26). Created first so the bright outlined text renders on top of it.
+            _popupBg = UIFactory.CreateImage(root, "PopupBg", UIFactory.RoundedSprite(),
+                new Color(0.06f, 0.06f, 0.08f, 0.66f));
+            UIFactory.SetRect(_popupBg, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f),
+                new Vector2(0f, -205f), new Vector2(560f, 86f));
+            _popup = UIFactory.CreateText(root, "Popup", "", 36, new Color(1f, 0.62f, 0.24f));
             UIFactory.SetRect(_popup, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f),
-                new Vector2(0f, -210f), new Vector2(760f, 72f));
+                new Vector2(0f, -205f), new Vector2(540f, 80f));
             AddTextOutline(_popup);
             _popup.gameObject.SetActive(false);
+            _popupBg.gameObject.SetActive(false);
 
             BuildStartPanel(root);
             _deathPanel = null;
@@ -706,6 +714,7 @@ namespace LizardCrossing
             _popup.text = msg;
             _popup.color = color;
             _popup.gameObject.SetActive(true);
+            if (_popupBg != null) _popupBg.gameObject.SetActive(true);
             _popupUntil = Time.unscaledTime + 0.9f;
         }
 
@@ -766,7 +775,10 @@ namespace LizardCrossing
             }
 
             if (_popup.gameObject.activeSelf && Time.unscaledTime > _popupUntil)
+            {
                 _popup.gameObject.SetActive(false);
+                if (_popupBg != null) _popupBg.gameObject.SetActive(false);
+            }
         }
 
         /// <summary>A big translucent steer pad in a bottom corner. Held → InputProvider.ButtonSteer

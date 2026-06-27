@@ -1043,6 +1043,17 @@ namespace LizardCrossing
                     FlatQuad(parent, new Vector3(x, 0.04f, zz), new Vector3(cellW, 0.8f, 1f), 0f,
                         white ? new Color(0.95f, 0.95f, 0.95f) : new Color(0.07f, 0.07f, 0.07f), "FinishCell");
                 }
+
+            // TALL central BEACON (R23, 2026-06-27): the gate posts/sign top out below y7, so from down
+            // the avenue they hide behind the crowd + curb and the run reads with NO visible goal (the
+            // concept's defining "glowing goal down the lane" was absent). Crown the gate with a tall amber
+            // light SHAFT + a glowing halo, high above the corridor walls and bright enough to punch through
+            // the haze, so the player can see where to run from mid-run on. Collider-stripped and sitting at
+            // the goal Z (past the finish trigger), so it is purely a visual beacon — no gameplay effect.
+            EmissiveBox(parent, new Vector3(0f, 9.5f, z), new Vector3(0.55f, 19f, 0.55f), amber, 3.4f, "GoalBeaconShaft");
+            var beaconHalo = Sphere(parent, new Vector3(0f, 18.5f, z), Vector3.one * 2.4f, amber, "GoalBeaconHalo");
+            Object.Destroy(beaconHalo.GetComponent<Collider>());
+            beaconHalo.GetComponent<Renderer>().sharedMaterial = EmissiveMat(amber, 4.0f);
         }
 
         private static void BuildSignText(Transform parent, Vector3 pos, string msg)
