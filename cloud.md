@@ -134,6 +134,7 @@ modules you need from the Unity Dashboard + SDK. Develop/launch free; pay only p
      secret, but the machine must be on); (c) **Unity Pro/Plus serial** (`UNITY_SERIAL`+email+password —
      paid). Until one is set up, **CI is dormant and we rely on the local verify loop** (the same tests
      run in-editor on every change). Revisit at beta or when a collaborator joins.
+   - **✅ CHOSEN (2026-06-28): option (b) — self-hosted Windows runner on the owner's PC.** `ci.yml` now runs on `[self-hosted, windows]` and calls the local Hub-activated `Unity.exe` in batchmode directly (no Docker, no GameCI action, no `UNITY_LICENSE` secret); caveat = the PC must be on for a run to fire (else it queues), and close the Editor during a run to avoid license/instance contention.
 2. **Beta:** add **Firebase Crashlytics + Analytics + Remote Config** (free). Crash visibility + a
    live-tunable difficulty/economy. Owner handles store enrollment + TestFlight/Play internal testing.
 3. **Launch:** wire CI → Fastlane auto-upload to TestFlight / Play (owner provides signing). Remote Config

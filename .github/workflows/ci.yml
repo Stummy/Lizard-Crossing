@@ -1,6 +1,29 @@
-name: CI — Unity Tests
+name: CI — Unity Tests (self-hosted Windows)
 
-# Run on every push and PR to the protected branches.
+# ===========================================================================
+# WHY THIS WORKFLOW LOOKS THE WAY IT DOES (read me, owner)
+# ---------------------------------------------------------------------------
+# This runs the Unity tests on a SELF-HOSTED runner — i.e. YOUR own Windows PC,
+# using the Unity that is already installed and activated there via Unity Hub.
+#
+# We deliberately do NOT use game-ci/unity-test-runner here. That action spins
+# up a Linux Docker container with a fresh Unity inside it, which then needs a
+# UNITY_LICENSE secret to activate. On Unity 6 a free Personal license can no
+# longer be activated that way reliably (manual .ulf activation is dead, and
+# Unity 6 leaves no reusable license file to copy). See cloud.md →
+# "Unity CI licensing reality".
+#
+# On a self-hosted Windows runner we sidestep all of that: we just call the
+# locally-installed Unity.exe in batchmode. The machine's Unity Hub login
+# already provides the Personal license, so there is NO license secret to
+# manage, NO Docker, and NO GameCI action. Simpler and free.
+#
+# The trade-off: a run only happens when this PC is on and the runner service
+# is running (see the runner-setup notes the cloud-engineer gave you). If the
+# PC is off, the run just queues until the runner comes back online.
+# ===========================================================================
+
+# Run on every push and PR to the protected branches, plus a manual button.
 on:
   push:
     branches: [main, feat/realistic-city-crossing]
@@ -10,21 +33,24 @@ on:
   workflow_dispatch:
 
 # Cancel an in-flight run on the same branch/PR when a new commit lands.
-# Saves Actions minutes — only the latest commit matters.
+# Saves time — only the latest commit matters. (Especially nice here since
+# your one PC runs jobs serially.)
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# Least privilege: the test job only needs to read the repo and write checks.
+# Least privilege: the test job only needs to read the repo.
 permissions:
   contents: read
-  checks: write
 
 jobs:
   test:
     name: Run Unity Tests (PlayMode + EditMode)
-    runs-on: ubuntu-latest
-    timeout-minutes: 60   # safety net; the GameCI image + first import can be slow
+    # Target YOUR machine: any runner that has BOTH the "self-hosted" and
+    # "windows" labels. GitHub adds "windows" automatically to a Windows
+    # x64 runner; "self-hosted" is implicit for all self-hosted runners.
+    runs-on: [self-hosted, windows]
+    timeout-minutes: 90   # safety net; the FIRST run does a full asset import (slow)
 
     steps:
       # ----------------------------------------------------------------------
@@ -38,112 +64,174 @@ jobs:
           lfs: true
           fetch-depth: 1
 
-      # Belt-and-suspenders: ensure LFS objects are fully materialised
-      # (checkout's lfs:true smudges pointers, this guarantees the pull).
+      # Belt-and-suspenders: make sure every LFS object is actually materialised.
+      # checkout's lfs:true smudges pointers; this guarantees the real bytes are
+      # on disk before Unity tries to import them.
       - name: Pull LFS objects
+        shell: pwsh
         run: git lfs pull
 
       # ----------------------------------------------------------------------
-      # 2. Cache the Git LFS object store so we don't re-download big binaries
-      #    (and re-spend LFS bandwidth) on every run. Keyed on the LFS
-      #    pointer manifest so it invalidates only when tracked binaries change.
+      # 2. Locate the locally-installed, Hub-activated Unity.exe.
+      #    Order of preference:
+      #      a) UNITY_EDITOR_PATH env var, if you set one on the machine
+      #         (handy if you ever move Unity or run a different version);
+      #      b) the known Hub install path for this project's exact version;
+      #      c) fail loudly with a clear message so it's obvious what to fix.
+      #    The resolved path is exported for later steps via $GITHUB_ENV.
       # ----------------------------------------------------------------------
-      - name: Cache LFS objects
-        uses: actions/cache@v4
-        with:
-          path: .git/lfs
-          key: lfs-${{ hashFiles('.lfs-assets-id', '**/*.glb', '**/*.png') }}
-          restore-keys: |
-            lfs-
+      - name: Resolve Unity editor path
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          # (a) explicit override wins, if present and real
+          $unity = $env:UNITY_EDITOR_PATH
+          if ($unity -and (Test-Path $unity)) {
+            Write-Host "Using UNITY_EDITOR_PATH override: $unity"
+          }
+          else {
+            # (b) the known Hub path for this project's Unity version
+            $fallback = 'C:\Program Files\Unity\Hub\Editor\6000.4.10f1\Editor\Unity.exe'
+            if (Test-Path $fallback) {
+              $unity = $fallback
+              Write-Host "Using Hub fallback path: $unity"
+            }
+            else {
+              # (c) give up with a useful error instead of a confusing one later
+              Write-Error @"
+Could not find Unity.exe.
+Looked for:
+  - UNITY_EDITOR_PATH env var (was: '$($env:UNITY_EDITOR_PATH)')
+  - $fallback
+Fix: install Unity 6000.4.10f1 via Unity Hub on this runner machine, OR set a
+machine-level UNITY_EDITOR_PATH env var pointing at the correct Unity.exe.
+"@
+              exit 1
+            }
+          }
+
+          # Make the resolved path available to subsequent steps.
+          "UNITY_EXE=$unity" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
       # ----------------------------------------------------------------------
-      # 3. Cache the Unity Library/ folder — the asset import database.
-      #    First import is the slowest part of any Unity CI run; caching it
-      #    turns a ~15–25 min cold run into a few minutes warm.
-      #    Key on the inputs that change the import: assets, packages, settings.
+      # 3. Run the PlayMode tests by calling Unity.exe directly in batchmode.
+      #
+      #    PlayMode is the real gate: it covers Phase1SmokeTests, AutoPlaytest
+      #    (the bot playthrough), and InvariantTest.Lizard_StaysConfined_...
+      #    (the spatial regression gate). The world is runtime-built from Boot.
+      #
+      #    Flags explained:
+      #      -batchmode -nographics : headless, no window, no GPU needed
+      #      -runTests              : Unity Test Framework CI entry point
+      #                               (implies -quit when tests finish)
+      #      -projectPath .         : repo root IS the Unity project root
+      #      -testPlatform PlayMode : which test platform to run
+      #      -testResults <file>    : NUnit XML results we upload as an artifact
+      #      -logFile -             : stream the full Unity log to the console so
+      #                               you can read it live in the Actions log
+      #
+      #    EXIT CODE: Unity returns non-zero if a test fails (or it crashes).
+      #    PowerShell does NOT auto-fail the step on a native non-zero exit, so
+      #    we capture $LASTEXITCODE and re-throw it — that's what makes the job
+      #    go red when a test fails. We stash it in $GITHUB_ENV first so a later
+      #    "always" step can still see the result if we ever need it.
       # ----------------------------------------------------------------------
-      - name: Cache Library
-        uses: actions/cache@v4
-        with:
-          path: Library
-          key: Library-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
-          restore-keys: |
-            Library-
+      - name: Run PlayMode tests
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Continue'   # don't abort on Unity's stderr noise
+          New-Item -ItemType Directory -Force -Path 'artifacts' | Out-Null
+
+          $results = Join-Path (Get-Location) 'artifacts\playmode-results.xml'
+          $log     = Join-Path (Get-Location) 'artifacts\unity-playmode.log'
+
+          Write-Host "Unity     : $env:UNITY_EXE"
+          Write-Host "Results   : $results"
+          Write-Host "Log (tee) : $log"
+
+          # Run Unity. -logFile - streams to stdout; we Tee it into a file too so
+          # the full editor log is also captured as an artifact for debugging.
+          & "$env:UNITY_EXE" `
+              -batchmode `
+              -nographics `
+              -runTests `
+              -projectPath . `
+              -testPlatform PlayMode `
+              -testResults "$results" `
+              -logFile - 2>&1 | Tee-Object -FilePath "$log"
+
+          $code = $LASTEXITCODE
+          Write-Host "Unity PlayMode exit code: $code"
+          "PLAYMODE_EXIT=$code" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+          if ($code -ne 0) {
+            Write-Error "PlayMode tests FAILED (Unity exit code $code). See artifacts/playmode-results.xml and the log above."
+            exit $code
+          }
 
       # ----------------------------------------------------------------------
-      # 4. Run the tests via GameCI's Unity Test Runner.
-      #    PlayMode covers Phase1SmokeTests, AutoPlaytest (bot playthrough),
-      #    and InvariantTest (the spatial regression gate). EditMode is included
-      #    too — it's trivial and cheap, and catches edit-time/asmdef breakage.
-      #    Requires the UNITY_LICENSE secret (personal .ulf — see cloud.md / setup).
+      # 4. Run the EditMode tests too. They're cheap and catch edit-time /
+      #    asmdef / compile breakage. There is currently no dedicated EditMode
+      #    test assembly, so this run normally finds zero EditMode tests — that
+      #    is expected and is NOT a failure (Unity exits 0 with an empty result).
+      #    We keep it so that the moment you add EditMode tests, CI runs them.
+      #
+      #    Same exit-code propagation as PlayMode: a real EditMode test failure
+      #    turns the job red.
       # ----------------------------------------------------------------------
-      - name: Run tests
-        uses: game-ci/unity-test-runner@v4
-        id: tests
-        env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-        with:
-          unityVersion: 6000.4.10f1
-          testMode: all            # runs editmode + playmode
-          projectPath: .           # repo root IS the Unity project root
-          githubToken: ${{ secrets.GITHUB_TOKEN }}  # publishes the Checks summary
-          artifactsPath: artifacts
+      - name: Run EditMode tests
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Continue'
+          New-Item -ItemType Directory -Force -Path 'artifacts' | Out-Null
+
+          $results = Join-Path (Get-Location) 'artifacts\editmode-results.xml'
+          $log     = Join-Path (Get-Location) 'artifacts\unity-editmode.log'
+
+          & "$env:UNITY_EXE" `
+              -batchmode `
+              -nographics `
+              -runTests `
+              -projectPath . `
+              -testPlatform EditMode `
+              -testResults "$results" `
+              -logFile - 2>&1 | Tee-Object -FilePath "$log"
+
+          $code = $LASTEXITCODE
+          Write-Host "Unity EditMode exit code: $code"
+          if ($code -ne 0) {
+            Write-Error "EditMode tests FAILED (Unity exit code $code). See artifacts/editmode-results.xml and the log above."
+            exit $code
+          }
 
       # ----------------------------------------------------------------------
-      # 5. Upload the test results (NUnit XML) as a downloadable artifact,
-      #    even if tests failed, so you can read what broke.
+      # 5. Upload the NUnit results XML + the full Unity logs as an artifact,
+      #    even if a test failed (if: always()), so you can download and read
+      #    exactly what broke from the run's summary page.
       # ----------------------------------------------------------------------
-      - name: Upload test results
+      - name: Upload test results + Unity logs
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: test-results
-          path: ${{ steps.tests.outputs.artifactsPath }}
+          name: unity-test-results
+          path: |
+            artifacts/playmode-results.xml
+            artifacts/editmode-results.xml
+            artifacts/unity-playmode.log
+            artifacts/unity-editmode.log
           retention-days: 14
           if-no-files-found: warn
 
 # ===========================================================================
 # FUTURE: Android build job — DO NOT enable yet.
 # ---------------------------------------------------------------------------
-# Add this only when we actually need installable APK/AAB builds from CI.
-# It is intentionally stubbed because:
-#   * Building Android needs a signing keystore (release builds) — the OWNER
-#     owns/generates those certs; we never commit them.
-#   * Mobile build minutes / IL2CPP builds are heavier than the test job.
-# When ready, do Android FIRST (no Apple certs/fees needed), like so:
-#
-#   build-android:
-#     name: Build Android (AAB)
-#     needs: test                     # only build if tests pass
-#     runs-on: ubuntu-latest
-#     permissions:
-#       contents: read
-#     steps:
-#       - uses: actions/checkout@v4
-#         with:
-#           lfs: true
-#       - uses: actions/cache@v4
-#         with:
-#           path: Library
-#           key: Library-android-${{ hashFiles('Assets/**','Packages/**','ProjectSettings/**') }}
-#           restore-keys: Library-android-
-#       - uses: game-ci/unity-builder@v4
-#         env:
-#           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-#           # Owner-provided keystore secrets (base64 the .keystore into a secret):
-#           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-#           ANDROID_KEYSTORE_PASS:   ${{ secrets.ANDROID_KEYSTORE_PASS }}
-#           ANDROID_KEYALIAS_NAME:   ${{ secrets.ANDROID_KEYALIAS_NAME }}
-#           ANDROID_KEYALIAS_PASS:   ${{ secrets.ANDROID_KEYALIAS_PASS }}
-#         with:
-#           unityVersion: 6000.4.10f1
-#           targetPlatform: Android
-#           androidAppBundle: true   # .aab for Play; set false for a sideload .apk
-#       - uses: actions/upload-artifact@v4
-#         with:
-#           name: android-build
-#           path: build
-#
-# iOS comes LATER (needs Apple Developer cert/provisioning + a macOS runner,
-# which costs 10x the Linux minute rate) and is owner-gated on enrollment.
+# When you actually need an installable APK/AAB from CI, add a second job that
+# also runs on [self-hosted, windows] and calls Unity.exe in batchmode with
+# -buildTarget Android and -executeMethod <your build script>. It will need
+# the Android module installed in this Unity (via Unity Hub) and, for a signed
+# release, your keystore (the OWNER owns those certs — never commit them; pass
+# the path/passwords as machine env vars or repo secrets at that time).
+# Do Android FIRST (no Apple certs/fees). iOS needs a macOS machine + Apple
+# enrollment and is owner-gated.
 # ===========================================================================
