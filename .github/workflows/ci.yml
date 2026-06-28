@@ -1,0 +1,149 @@
+name: CI — Unity Tests
+
+# Run on every push and PR to the protected branches.
+on:
+  push:
+    branches: [main, feat/realistic-city-crossing]
+  pull_request:
+    branches: [main, feat/realistic-city-crossing]
+  # Lets you kick a run by hand from the Actions tab.
+  workflow_dispatch:
+
+# Cancel an in-flight run on the same branch/PR when a new commit lands.
+# Saves Actions minutes — only the latest commit matters.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Least privilege: the test job only needs to read the repo and write checks.
+permissions:
+  contents: read
+  checks: write
+
+jobs:
+  test:
+    name: Run Unity Tests (PlayMode + EditMode)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60   # safety net; the GameCI image + first import can be slow
+
+    steps:
+      # ----------------------------------------------------------------------
+      # 1. Check out the repo INCLUDING Git LFS bytes.
+      #    GLB/textures/MP4 are LFS pointers; the tests load the Boot scene and
+      #    runtime-build the world, so the real binaries must be present.
+      # ----------------------------------------------------------------------
+      - name: Checkout (with LFS)
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          fetch-depth: 1
+
+      # Belt-and-suspenders: ensure LFS objects are fully materialised
+      # (checkout's lfs:true smudges pointers, this guarantees the pull).
+      - name: Pull LFS objects
+        run: git lfs pull
+
+      # ----------------------------------------------------------------------
+      # 2. Cache the Git LFS object store so we don't re-download big binaries
+      #    (and re-spend LFS bandwidth) on every run. Keyed on the LFS
+      #    pointer manifest so it invalidates only when tracked binaries change.
+      # ----------------------------------------------------------------------
+      - name: Cache LFS objects
+        uses: actions/cache@v4
+        with:
+          path: .git/lfs
+          key: lfs-${{ hashFiles('.lfs-assets-id', '**/*.glb', '**/*.png') }}
+          restore-keys: |
+            lfs-
+
+      # ----------------------------------------------------------------------
+      # 3. Cache the Unity Library/ folder — the asset import database.
+      #    First import is the slowest part of any Unity CI run; caching it
+      #    turns a ~15–25 min cold run into a few minutes warm.
+      #    Key on the inputs that change the import: assets, packages, settings.
+      # ----------------------------------------------------------------------
+      - name: Cache Library
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: |
+            Library-
+
+      # ----------------------------------------------------------------------
+      # 4. Run the tests via GameCI's Unity Test Runner.
+      #    PlayMode covers Phase1SmokeTests, AutoPlaytest (bot playthrough),
+      #    and InvariantTest (the spatial regression gate). EditMode is included
+      #    too — it's trivial and cheap, and catches edit-time/asmdef breakage.
+      #    Requires the UNITY_LICENSE secret (personal .ulf — see cloud.md / setup).
+      # ----------------------------------------------------------------------
+      - name: Run tests
+        uses: game-ci/unity-test-runner@v4
+        id: tests
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        with:
+          unityVersion: 6000.4.10f1
+          testMode: all            # runs editmode + playmode
+          projectPath: .           # repo root IS the Unity project root
+          githubToken: ${{ secrets.GITHUB_TOKEN }}  # publishes the Checks summary
+          artifactsPath: artifacts
+
+      # ----------------------------------------------------------------------
+      # 5. Upload the test results (NUnit XML) as a downloadable artifact,
+      #    even if tests failed, so you can read what broke.
+      # ----------------------------------------------------------------------
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: ${{ steps.tests.outputs.artifactsPath }}
+          retention-days: 14
+          if-no-files-found: warn
+
+# ===========================================================================
+# FUTURE: Android build job — DO NOT enable yet.
+# ---------------------------------------------------------------------------
+# Add this only when we actually need installable APK/AAB builds from CI.
+# It is intentionally stubbed because:
+#   * Building Android needs a signing keystore (release builds) — the OWNER
+#     owns/generates those certs; we never commit them.
+#   * Mobile build minutes / IL2CPP builds are heavier than the test job.
+# When ready, do Android FIRST (no Apple certs/fees needed), like so:
+#
+#   build-android:
+#     name: Build Android (AAB)
+#     needs: test                     # only build if tests pass
+#     runs-on: ubuntu-latest
+#     permissions:
+#       contents: read
+#     steps:
+#       - uses: actions/checkout@v4
+#         with:
+#           lfs: true
+#       - uses: actions/cache@v4
+#         with:
+#           path: Library
+#           key: Library-android-${{ hashFiles('Assets/**','Packages/**','ProjectSettings/**') }}
+#           restore-keys: Library-android-
+#       - uses: game-ci/unity-builder@v4
+#         env:
+#           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+#           # Owner-provided keystore secrets (base64 the .keystore into a secret):
+#           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+#           ANDROID_KEYSTORE_PASS:   ${{ secrets.ANDROID_KEYSTORE_PASS }}
+#           ANDROID_KEYALIAS_NAME:   ${{ secrets.ANDROID_KEYALIAS_NAME }}
+#           ANDROID_KEYALIAS_PASS:   ${{ secrets.ANDROID_KEYALIAS_PASS }}
+#         with:
+#           unityVersion: 6000.4.10f1
+#           targetPlatform: Android
+#           androidAppBundle: true   # .aab for Play; set false for a sideload .apk
+#       - uses: actions/upload-artifact@v4
+#         with:
+#           name: android-build
+#           path: build
+#
+# iOS comes LATER (needs Apple Developer cert/provisioning + a macOS runner,
+# which costs 10x the Linux minute rate) and is owner-gated on enrollment.
+# ===========================================================================

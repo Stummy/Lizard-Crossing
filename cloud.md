@@ -118,9 +118,13 @@ modules you need from the Unity Dashboard + SDK. Develop/launch free; pay only p
 ---
 
 ## Staged plan for Lizard Crossing (what to adopt, in order)
-1. **Now (pre-beta):** keep GitHub + LFS + the AI-gen cloud tools. **No backend.** Optionally add
-   **GameCI/GitHub Actions** when local builds become a chore (free, fits our stack). Keep `Resources/`
-   lean (don't ship unused assets).
+1. **Now (pre-beta):** keep GitHub + LFS + the AI-gen cloud tools. **No backend.** ✅ **CI is live:**
+   `.github/workflows/ci.yml` (GameCI) runs EditMode+PlayMode tests — incl. the **Invariant spatial
+   gate** (`InvariantTest`) + the bot playthrough — on push/PR to `main` + `feat/realistic-city-crossing`.
+   Linux runner (1× minutes), LFS + Library cached, results uploaded as an artifact. **Owner action to
+   activate:** add the `UNITY_LICENSE` secret (personal `.ulf` via the GameCI `.alf`→Unity→`.ulf` flow)
+   + enable Actions; optionally require the check on `main`. Android build job is stubbed (owner
+   keystore) — enable only when installable builds are needed. Keep `Resources/` lean (no unused assets).
 2. **Beta:** add **Firebase Crashlytics + Analytics + Remote Config** (free). Crash visibility + a
    live-tunable difficulty/economy. Owner handles store enrollment + TestFlight/Play internal testing.
 3. **Launch:** wire CI → Fastlane auto-upload to TestFlight / Play (owner provides signing). Remote Config
