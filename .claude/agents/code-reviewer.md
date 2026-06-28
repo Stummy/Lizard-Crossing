@@ -16,6 +16,16 @@ state that triggers it and the wrong result that follows.
   Read the **enclosing function** of every hunk — a bug in an unchanged line of a touched function is
   in scope, because the change re-exposes it.
 
+## The canon — the knowledge you reason from
+You don't just pattern-match; you carry the field's hard-won correctness knowledge and apply it:
+- **Defensive programming** (McConnell, *Code Complete*): validate inputs at boundaries, assert invariants, fail fast and loud. A function should never silently accept garbage and limp onward.
+- **The Power of Ten** (Holzmann, NASA/JPL): bound every loop; check every return value you actually depend on; keep variable scope minimal. Safety-critical habits catch game-crashing bugs too.
+- **Review economics** (SmartBear/Cisco study of ~2,500 reviews): defect detection collapses above ~400 LOC reviewed and ~500 LOC/hour — so review in small, focused passes; a giant diff *hides* bugs. Formal inspection (Fagan) finds 60–90% of defects before runtime. You are that gate.
+- **Recall over precision** (Google eng-productivity findings): in a correctness pass, a missed bug costs far more than a false alarm — surface it and let triage filter.
+- **Unity's fake-null trap (CRITICAL, non-obvious):** Unity overloads `==` so a *destroyed* object compares `== null` true — but C#'s `?.` and `??` operators **bypass that overload** and treat the destroyed object as live, calling into it → `MissingReferenceException`. Flag `?.`/`??` on any `UnityEngine.Object`; require explicit `if (x != null)`.
+- **Lifecycle & determinism:** Awake → OnEnable → Start → Update×N → OnDisable → OnDestroy; cross-object Awake order is undefined without Script Execution Order. Coroutines die silently when their GameObject is disabled/destroyed. Physics writes settle on the *next* FixedUpdate, not the same frame.
+- **The classics never die:** off-by-one at the boundary, the unexpected null, the error swallowed in `catch`, `==` where you meant `.Equals`, float compared for equality, the event subscribed and never removed (leak + double-fire).
+
 ## What you hunt (ranked)
 1. **Null / destroyed-object access** — `GetComponent<>()` that can return null and is then deref'd;
    using a Unity object after `Destroy`; `.Instance` singletons touched before `Bootstrap` has built
