@@ -183,8 +183,12 @@ reason worth the cost. We work the SAME way now — this is how we stop re-break
   must EITHER do the change (delegated to them) OR review + sign off on it — **at minimum the
   corresponding one(s).** Routing: lighting/post/exposure → `lighting-post-artist`; HUD/camera/feel/
   juice/menus → `camera-ui-juice`; surfaces/props/set-dressing/pedestrian-art/themes →
-  `environment-artist`; sourcing/generating assets → `asset-scout`; mechanics + perf regression gate →
-  `gameplay-guardian`; visual correctness vs the concept → `art-director` (with the Gemini "video guy"
+  `environment-artist`; sourcing/generating assets → `asset-scout`; gameplay regression gate + bot
+  playthrough → `gameplay-guardian`; **code correctness/bugs → `code-reviewer`; mobile perf/GC/draw
+  calls → `perf-optimizer`; architecture/quality/conventions/faithful-to-design → `code-architect`**
+  (these three + guardian + cloud-engineer are the **code-review board** — see `CO-OP.md`; route code
+  changes through the relevant lenses, multi-pass, then synthesize); cloud/CI/builds/backend/release →
+  `cloud-engineer`; visual correctness vs the concept → `art-director` (with the Gemini "video guy"
   `Tools/gemini_review.py` as the standing automated QA on every visual change). Reviews are read-only/
   off-engine so they parallelize; the live editor stays single-threaded for whoever does the in-engine
   work. The main session is the lead/integrator — it may make a change, but routes it past the owner

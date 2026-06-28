@@ -15,7 +15,10 @@
 | HUD / camera framing / feel / juice / menus | `camera-ui-juice` |
 | Surfaces / props / set-dressing / pedestrians / themes / city reskin | `environment-artist` |
 | Sourcing or generating assets (CC0 / Meshy) | `asset-scout` |
-| Mechanics + performance + regression gate | `gameplay-guardian` |
+| Gameplay regression gate + bot playthrough + rough frame budget | `gameplay-guardian` |
+| Code correctness / bugs / removed guards / regressions (recall) | `code-reviewer` |
+| Mobile performance: GC allocs, hot paths, draw calls, pooling | `perf-optimizer` |
+| Architecture / code quality / conventions / faithful-to-design | `code-architect` |
 | Cloud / CI-CD / builds / backend / analytics / release (reads `cloud.md`) | `cloud-engineer` |
 | Visual correctness vs the concept (lead reviewer) | `art-director` |
 | Sequencing the push / what ships next | `studio-producer` |
@@ -23,6 +26,34 @@
 
 Reviews are **read-only and run in parallel** (they don't touch the editor). The **live editor is
 single-threaded** — only the main session (or one delegated specialist) makes the in-engine change.
+
+## The code-review board (the code mirror of the art team)
+Just as `art-director` + the visual specialists grade every *look* change against the concept, a
+**code-review board** grades every *code* change against correctness, performance, and quality — so
+code is checked **multiple times, for specific reasons**, and optimized when it needs to be. The board
+is **five lenses**, routed by what the change touches (not every change needs all five):
+
+| Lens | Agent | The question it answers |
+|---|---|---|
+| Correctness / bugs | `code-reviewer` | "Is it a bug?" — null/destroyed derefs, removed guards, lifecycle/timing footguns, cross-file breakage. Recall-focused: a missed bug ships. |
+| Performance | `perf-optimizer` | "Is it fast on a phone?" — per-frame GC allocs, hot-path lookups, pooling, draw calls/overdraw, Resources bloat. Profiler-grounded when the editor is live. |
+| Architecture / quality | `code-architect` | "Is it the RIGHT, clean implementation — and does it build what the concept calls for?" — altitude, reuse, layering, conventions, scope. |
+| Gameplay regression | `gameplay-guardian` | "Did it break the game or blow the rough frame budget?" — sacred mechanics + bot playthrough + Invariant Check. |
+| Infra / secrets / release | `cloud-engineer` | "Is anything touching builds, CI, backend, or secrets safe and lean?" — reads `cloud.md`. |
+
+**How the board runs (same shape as the art team):**
+- **Route by domain.** A gameplay/systems diff → `code-reviewer` + `gameplay-guardian` (+ `perf-optimizer`
+  if it's per-frame/spawn code). A refactor/new-system → add `code-architect`. A CI/build/secrets diff →
+  `cloud-engineer`. Always ask "is this fast enough on a phone?" for anything in `Update`/spawning.
+- **Parallel + read-only.** The reviewers don't edit; they hand back ranked punch-lists. They can run
+  at the same time since they only read.
+- **The main session synthesizes** (the heart of "check between agents"): dedupe overlapping findings,
+  rank correctness/regression bugs above perf above cleanup, sequence the fixes so they don't fight,
+  apply them, then **re-run the affected lens** to confirm the finding closed and nothing reopened.
+- **Optimize when it needs it, not always.** `perf-optimizer` calls out what's *fine as-is* so we don't
+  churn good code; `code-architect` praises what's clean. The bar is high quality, not max churn.
+- **On-demand heavyweight:** the `/code-review` skill (and owner-run `/code-review ultra` at gates) is
+  the multi-angle cloud review; the standing board is the per-change, in-session equivalent.
 
 ## The loop — run this for every visible change, in order
 1. **ORIENT** (session boot): read `docs/PROJECT_PLAN.md` §0 (the ONE Active section) + §5 ledger,
