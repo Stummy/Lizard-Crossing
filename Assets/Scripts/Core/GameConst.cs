@@ -23,20 +23,14 @@ namespace LizardCrossing
         public const float SidewalkHalfWidth = 2f;     // used only for prop/pickup placement near the centre; the PLAYER band is the wider Z-aware one below
         public const float SidewalkVisualHalfWidth = 5f; // half width of the drawn sidewalk slab + walls
 
-        // Player sidewalk band [minX, maxX] varies with Z. The NYC right sidewalk is WIDE for
-        // most of the run (lots of room to weave left/right), but the left curb jogs inward
-        // after the 2nd intersection, so we tighten the LEFT edge there to keep the lizard off
-        // the road near the end (owner's ask). The right edge hugs the building line throughout.
-        // See PlayerController.CorridorBand. Supersedes the old fixed x[7,11] clamp.
+        // Player sidewalk band [minX, maxX]. The right edge hugs the building line and the left
+        // edge is pinned to the curb line, so the lizard always stays on the sidewalk and can
+        // never step onto the road. See PlayerController.CorridorBand. Supersedes the old fixed
+        // x[7,11] clamp (and a later Z-taper whose two ends were both 6.0 — a no-op, now collapsed).
         public const float CorridorRightX = 11f;       // sidewalk right edge (building line) — safe the whole way
-        public const float CorridorLeftWideX = 6.0f;   // OWNER FIX 2026-06-26: was 4.5 — the clamp let the lizard
-                                                       // slip LEFT of the curb (5.8) onto the road on wide blocks
-                                                       // ("going down the curb"). Pin the band's left edge to the
-                                                       // curb line (constant 6.0, == tight) so the lizard is always
-                                                       // confined to the sidewalk and can never step onto the road.
-        public const float CorridorLeftTightX = 6f;    // left edge past the curb jog (band is now constant 6.0 the whole way)
-        public const float CurbJogStartZ = 95f;        // z where the left curb starts jogging inward
-        public const float CurbJogRampZ = 25f;         // distance over which the left edge tightens
+        public const float CorridorLeftX = 6.0f;       // sidewalk left edge — pinned to the curb line (OWNER FIX
+                                                       // 2026-06-26): the band is clamped to 6.0 so the lizard can
+                                                       // never slip left of the curb (5.8) onto the road.
 
         // --- Authored straight corridor (World section, 2026-06-26) ---
         // The imported NYC street is one continuous, collider-less mesh whose sidewalk STEPS right
@@ -55,6 +49,7 @@ namespace LizardCrossing
         public const float CorridorFenceHeight = 0.4f;  // OWNER: a low CURB (not a "fence"/railing) on the road
                                                         // side — reads as a concrete curb edge, still solid so the
                                                         // lizard can't step off the sidewalk onto the road.
+        public const float MinRunZ = -4f;               // the lizard can't be pushed back behind this Z (knockback floor)
 
         // Lizard — speeds scaled to the realistic ~0.15u lizard (2026-06-16).
         // Kept snappier than a true 1/12 scale so the run still feels arcade-fast.
@@ -74,6 +69,7 @@ namespace LizardCrossing
         // Abilities (jump = Anole, camouflage = Chameleon, revive = rewarded ad)
         public const float JumpVelocity = 2.2f;
         public const float JumpGravity = 26f;
+        public const float AirborneThresholdY = 0.7f; // y above which the lizard counts as airborne (jumped clear of a footfall)
         public const float CamouflageDelay = 0.4f;   // stand still this long to vanish
         public const float ReviveInvulnerableTime = 2.0f;
 

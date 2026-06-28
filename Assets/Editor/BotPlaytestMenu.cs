@@ -75,6 +75,16 @@ namespace LizardCrossing.EditorTools
             LizardCrossing.Testing.InvariantCheck.Launch();
         }
 
+        // [R33] regression: die tail-less, wait past the autotomy regrow delay (the rewarded-ad
+        // watch), revive, and assert the tail does NOT instantly grow back. Play mode first.
+        // Writes PASS/FAIL to Temp/Playtest/revive.txt.
+        [MenuItem(Root + "Revive Check")]
+        private static void ReviveCheck()
+        {
+            if (!Application.isPlaying) { Debug.LogWarning("[ReviveCheck] Enter Play mode first."); return; }
+            LizardCrossing.Testing.ReviveRegressionCheck.Launch();
+        }
+
         // Records a real MP4 of a bot run to Temp/Recording/run.mp4 (HUD included) for
         // uploading to a video model (e.g. Gemini) to critique motion/feel. Play mode first.
         [MenuItem(Root + "Record MP4 (14s)")]

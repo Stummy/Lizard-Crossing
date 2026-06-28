@@ -16,11 +16,9 @@ namespace LizardCrossing
         public bool IsDashing { get; private set; }
         public bool IsInvulnerable { get { return Time.time < _invulnerableUntil || _camouflaged; } }
         /// <summary>Jumped high enough to clear a footfall (kill tests ignore us).</summary>
-        public bool IsAirborne { get { return transform.position.y > 0.7f; } }
+        public bool IsAirborne { get { return transform.position.y > GameConst.AirborneThresholdY; } }
         /// <summary>Pedestrians read this so one walk-through can't chain-stagger the lizard.</summary>
         public bool CanFootBump { get { return Time.time >= _bumpCooldownUntil; } }
-        /// <summary>Mid-tumble after a foot-bump (control is briefly damped).</summary>
-        public bool IsStumbling { get { return Time.time < _stumbleUntil; } }
         public float DashCooldownRemaining { get { return Mathf.Max(0f, _dashReadyAt - Time.time); } }
         public Vector3 Velocity { get; private set; }
 
@@ -37,7 +35,6 @@ namespace LizardCrossing
         private int _jumpsLeft;     // for double-jump lizards
         private float _stillTime;   // for camouflage
         private bool _camouflaged;
-        private float _stumbleUntil;       // tumbling from a foot-bump until this time
         private float _bumpCooldownUntil;  // earliest next foot-bump / prop hit
         private float _controlLockUntil;   // steering ignored until this time (start of a stumble/faceplant)
 
@@ -212,7 +209,7 @@ namespace LizardCrossing
             //     lizard barely advances. One delta, one Move = the forward step always
             //     lands, smoothly.
             Vector3 cur = transform.position;
-            float newZ = Mathf.Max(cur.z + move.z * Time.deltaTime, -4f);
+            float newZ = Mathf.Max(cur.z + move.z * Time.deltaTime, GameConst.MinRunZ);
             // Confined to the sidewalk band (wide for most of the run, tightening on the left
             // past the curb jog) so it stays on the pavement but has real room to weave.
             float minX, maxX;
@@ -272,25 +269,26 @@ namespace LizardCrossing
         /// lizard scrambles up. The knockback + i-frames come from the paired HitPlayer.</summary>
         private void Stumble(Vector3 fromPos)
         {
-            _stumbleUntil = Time.time + GameConst.StumbleDuration;
-            _bumpCooldownUntil = Time.time + GameConst.FootBumpCooldown;
-            _controlLockUntil = Time.time + GameConst.StumbleControlLock;
-            _vel = Vector3.zero;          // lose the run
-            IsDashing = false;
+            BeginStagger(GameConst.FootBumpCooldown, GameConst.StumbleControlLock);
             if (Body != null) Body.Stumble();
-            GameAudio.Play(Sfx.Hit);
         }
 
         /// <summary>Smack head-on into a prop/wall: the lizard splats spread-eagle against
         /// it, holds, then peels off (the HitPlayer knockback) and runs on.</summary>
         private void Faceplant(Vector3 fromPos)
         {
-            _stumbleUntil = Time.time + GameConst.FaceplantDuration;
-            _bumpCooldownUntil = Time.time + GameConst.FaceplantDuration;
-            _controlLockUntil = Time.time + GameConst.FaceplantControlLock;
-            _vel = Vector3.zero;
-            IsDashing = false;
+            BeginStagger(GameConst.FaceplantDuration, GameConst.FaceplantControlLock);
             if (Body != null) Body.Faceplant();
+        }
+
+        /// <summary>Shared stagger setup for a stumble/faceplant: kill the run, lock steering
+        /// for a beat, gate the next bump, and play the hit sfx.</summary>
+        private void BeginStagger(float bumpCooldown, float controlLock)
+        {
+            _bumpCooldownUntil = Time.time + bumpCooldown;
+            _controlLockUntil = Time.time + controlLock;
+            _vel = Vector3.zero;          // lose the run
+            IsDashing = false;
             GameAudio.Play(Sfx.Hit);
         }
 
@@ -328,7 +326,7 @@ namespace LizardCrossing
 
         private void OnDied(DeathCause cause)
         {
-            Body.Squash();
+            if (Body != null) Body.Squash();
             GameAudio.Play(Sfx.Death);
         }
 
@@ -338,21 +336,20 @@ namespace LizardCrossing
             _knockback = Vector3.zero;
             _vVel = 0f;
             IsDashing = false;
-            Body.Unsquash();
+            if (Body != null) Body.Unsquash();
             // step back from the kill spot so we don't get instantly re-stomped
             transform.position += Vector3.back * 1.5f;
             GameAudio.Play(Sfx.Win);   // upbeat revive sting
         }
 
-        /// <summary>The playable sidewalk band [minX, maxX] at world <paramref name="z"/>. Wide
-        /// on the open early/mid blocks so there's real room to weave; the LEFT edge tightens
-        /// past the curb jog so the lizard never drops onto the road near the end. The right edge
-        /// hugs the building line throughout.</summary>
+        /// <summary>The playable sidewalk band [minX, maxX]: the right edge hugs the building
+        /// line and the left edge is pinned to the curb line, so the lizard always stays on the
+        /// sidewalk. (Kept z-parameterised so a future block can re-introduce a taper; today the
+        /// band is constant along the run.)</summary>
         public static void CorridorBand(float z, out float minX, out float maxX)
         {
             maxX = GameConst.CorridorRightX;
-            float t = Mathf.Clamp01((z - GameConst.CurbJogStartZ) / GameConst.CurbJogRampZ);
-            minX = Mathf.Lerp(GameConst.CorridorLeftWideX, GameConst.CorridorLeftTightX, t);
+            minX = GameConst.CorridorLeftX;
         }
 
         /// <summary>World-space position used by hazard footprint kill tests.</summary>
