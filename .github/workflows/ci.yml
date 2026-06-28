@@ -102,15 +102,15 @@ jobs:
               Write-Host "Using Hub fallback path: $unity"
             }
             else {
-              # (c) give up with a useful error instead of a confusing one later
-              Write-Error @"
-Could not find Unity.exe.
-Looked for:
-  - UNITY_EDITOR_PATH env var (was: '$($env:UNITY_EDITOR_PATH)')
-  - $fallback
-Fix: install Unity 6000.4.10f1 via Unity Hub on this runner machine, OR set a
-machine-level UNITY_EDITOR_PATH env var pointing at the correct Unity.exe.
-"@
+              # (c) give up with a useful error instead of a confusing one later.
+              # NOTE: plain Write-Host lines (NOT a PowerShell here-string) — a
+              # column-0 here-string body breaks the surrounding YAML `run: |` block.
+              Write-Host "ERROR: Could not find Unity.exe."
+              Write-Host "Looked for:"
+              Write-Host "  - UNITY_EDITOR_PATH env var (was: '$($env:UNITY_EDITOR_PATH)')"
+              Write-Host "  - $fallback"
+              Write-Host "Fix: install Unity 6000.4.10f1 via Unity Hub on this runner machine,"
+              Write-Host "     OR set a machine-level UNITY_EDITOR_PATH env var to the correct Unity.exe."
               exit 1
             }
           }

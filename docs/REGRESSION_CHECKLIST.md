@@ -61,6 +61,15 @@ Statuses below are the LAST KNOWN state; the Gemini run is the live re-check. Ma
 - **[R29]** ⚙️ A crosswalk crossing is impassable (no safe gap opens) OR a car hit does NOT cost a heart. → bot playthrough reaches the safe zone; car-hit→HitPlayer verified.
 - **[R30]** ⚙️ Any magenta / un-skinned material in the scene. → renderer scan = 0 bad materials.
 
+## CI / BUILD  (⚙️ machine-gated — asserted by the workflow itself parsing + running)
+- **[R32]** ⚙️ A GitHub Actions workflow YAML fails to parse, so CI silently never runs (the PR/branch
+  shows **0 checks** instead of a red failure). *(2026-06-28)* Root cause hit once: a PowerShell
+  here-string (`@"…"@`) whose body sat at **column 0 inside a `run: |` block** broke the surrounding
+  YAML — GitHub couldn't parse `ci.yml` and created no run at all. → Never put column-0 here-strings in
+  a `run:` block (use indented `Write-Host` lines). Validate every workflow edit with
+  `python -c "import yaml; yaml.safe_load(open('.github/workflows/ci.yml'))"` BEFORE pushing, and after
+  pushing confirm the run actually appears in the **Actions** tab (0 checks ≠ pass — it means it never ran).
+
 ---
 
 ### How to read a Gemini regression report
