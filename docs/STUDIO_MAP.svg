@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 1000 610" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t d">
+<title id="t">Lizard Crossing studio org chart and per-change workflow loop</title>
+<desc id="d">An org chart with the Owner over the Main Session, branching into the Art Department, the Code-Review Board, and Production and QA; below it an eight-step loop from Orient to Checkpoint that repeats.</desc>
+<style>
+text{font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;}
+.h1{fill:#1b1f24;font-size:18px;font-weight:700;}
+.sec{fill:#5b61e6;font-size:13px;font-weight:700;letter-spacing:.03em;}
+.name{fill:#1b1f24;font-size:12.5px;font-weight:600;}
+.role{fill:#59606b;font-size:9.5px;}
+.cap{fill:#59606b;font-size:10px;}
+.lt{fill:#1b1f24;font-size:12.5px;font-weight:700;}
+.ls{fill:#59606b;font-size:9px;}
+.badge{fill:#5b61e6;font-size:10px;font-weight:700;}
+.card{fill:#ffffff;stroke:#dde1e7;stroke-width:1;}
+.strong{fill:#ffffff;stroke:#c2c8d2;stroke-width:1.5;}
+.chipArt{fill:#ffffff;stroke:#d98a2b;stroke-width:1.5;}
+.chipCode{fill:#ffffff;stroke:#2f6fed;stroke-width:1.5;}
+.con{stroke:#dde1e7;stroke-width:1.3;fill:none;}
+.flow{stroke:#5b61e6;stroke-width:2;fill:none;}
+</style>
+<defs>
+<marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+<path d="M0,0 L7,3 L0,6 Z" fill="#5b61e6"/>
+</marker>
+</defs>
+
+<rect x="0" y="0" width="1000" height="610" fill="#f6f7f9"/>
+
+<text class="h1" x="24" y="27">LIZARD CROSSING — STUDIO &amp; WORKFLOW</text>
+<rect class="chipArt" x="640" y="16" width="13" height="13" rx="3"/><text class="cap" x="659" y="27">Art dept</text>
+<rect class="chipCode" x="740" y="16" width="13" height="13" rx="3"/><text class="cap" x="759" y="27">Code-review board</text>
+
+<rect class="strong" x="390" y="42" width="220" height="32" rx="6"/>
+<text class="name" x="500" y="58" text-anchor="middle">OWNER</text>
+<text class="role" x="500" y="69" text-anchor="middle">directs · judges the feel</text>
+<line class="con" x1="500" y1="74" x2="500" y2="86"/>
+<rect class="strong" x="365" y="86" width="270" height="36" rx="6"/>
+<text class="name" x="500" y="103" text-anchor="middle">MAIN SESSION</text>
+<text class="role" x="500" y="115" text-anchor="middle">lead · integrator · runs the loop</text>
+
+<path class="con" d="M500,122 L190,150"/>
+<path class="con" d="M500,122 L500,150"/>
+<path class="con" d="M500,122 L810,150"/>
+
+<text class="sec" x="190" y="164" text-anchor="middle">ART DEPARTMENT</text>
+<line class="con" x1="70" y1="171" x2="310" y2="171"/>
+<text class="sec" x="500" y="164" text-anchor="middle">CODE-REVIEW BOARD</text>
+<line class="con" x1="380" y1="171" x2="620" y2="171"/>
+<text class="sec" x="810" y="164" text-anchor="middle">PRODUCTION &amp; QA</text>
+<line class="con" x1="690" y1="171" x2="930" y2="171"/>
+
+<rect class="chipArt" x="70" y="184" width="240" height="30" rx="6"/><text class="name" x="190" y="203" text-anchor="middle">art-director  (lead)</text>
+<rect class="chipArt" x="70" y="222" width="240" height="30" rx="6"/><text class="name" x="190" y="241" text-anchor="middle">lighting-post-artist</text>
+<rect class="chipArt" x="70" y="260" width="240" height="30" rx="6"/><text class="name" x="190" y="279" text-anchor="middle">environment-artist</text>
+<rect class="chipArt" x="70" y="298" width="240" height="30" rx="6"/><text class="name" x="190" y="317" text-anchor="middle">camera-ui-juice</text>
+<rect class="chipArt" x="70" y="336" width="240" height="30" rx="6"/><text class="name" x="190" y="355" text-anchor="middle">asset-scout</text>
+
+<rect class="chipCode" x="380" y="184" width="240" height="30" rx="6"/><text class="name" x="500" y="203" text-anchor="middle">code-reviewer  · bugs</text>
+<rect class="chipCode" x="380" y="222" width="240" height="30" rx="6"/><text class="name" x="500" y="241" text-anchor="middle">perf-optimizer  · phone</text>
+<rect class="chipCode" x="380" y="260" width="240" height="30" rx="6"/><text class="name" x="500" y="279" text-anchor="middle">code-architect  · quality</text>
+<rect class="chipCode" x="380" y="298" width="240" height="30" rx="6"/><text class="name" x="500" y="317" text-anchor="middle">gameplay-guardian</text>
+<rect class="chipCode" x="380" y="336" width="240" height="30" rx="6"/><text class="name" x="500" y="355" text-anchor="middle">cloud-engineer</text>
+
+<rect class="card" x="690" y="184" width="240" height="30" rx="6"/><text class="name" x="810" y="203" text-anchor="middle">studio-producer</text>
+<rect class="card" x="690" y="222" width="240" height="30" rx="6"/><text class="name" x="810" y="241" text-anchor="middle">Gemini QA · video bot</text>
+<rect class="card" x="690" y="260" width="240" height="30" rx="6"/><text class="name" x="810" y="279" text-anchor="middle">CI · self-hosted runner</text>
+<text class="role" x="810" y="312" text-anchor="middle">plans the work · QA gate · the pipeline</text>
+
+<line class="con" x1="24" y1="388" x2="976" y2="388" opacity="0.7"/>
+<text class="sec" x="24" y="408">THE PER-CHANGE LOOP</text>
+<text class="cap" x="205" y="408">every visible change runs this, in order — then repeats</text>
+
+<rect class="card" x="70" y="418" width="174" height="56" rx="7"/><circle cx="85" cy="433" r="9" fill="none" stroke="#5b61e6"/><text class="badge" x="85" y="436" text-anchor="middle">1</text><text class="lt" x="157" y="444" text-anchor="middle">ORIENT</text><text class="ls" x="157" y="460" text-anchor="middle">plan · concept · tester</text>
+<rect class="card" x="295" y="418" width="174" height="56" rx="7"/><circle cx="310" cy="433" r="9" fill="none" stroke="#5b61e6"/><text class="badge" x="310" y="436" text-anchor="middle">2</text><text class="lt" x="382" y="444" text-anchor="middle">CHANGE</text><text class="ls" x="382" y="460" text-anchor="middle">smallest · on-concept</text>
+<rect class="card" x="520" y="418" width="174" height="56" rx="7"/><circle cx="535" cy="433" r="9" fill="none" stroke="#5b61e6"/><text class="badge" x="535" y="436" text-anchor="middle">3</text><text class="lt" x="607" y="444" text-anchor="middle">SPECIALIST GATE</text><text class="ls" x="607" y="460" text-anchor="middle">agents review + sign off</text>
+<rect class="card" x="745" y="418" width="174" height="56" rx="7"/><circle cx="760" cy="433" r="9" fill="none" stroke="#5b61e6"/><text class="badge" x="760" y="436" text-anchor="middle">4</text><text class="lt" x="832" y="444" text-anchor="middle">GEMINI GATE</text><text class="ls" x="832" y="460" text-anchor="middle">record clip → review</text>
+
+<rect class="card" x="70" y="502" width="174" height="56" rx="7"/><circle cx="85" cy="517" r="9" fill="none" stroke="#5b61e6"/><text class="badge" x="85" y="520" text-anchor="middle">8</text><text class="lt" x="157" y="528" text-anchor="middle">CHECKPOINT</text><text class="ls" x="157" y="544" text-anchor="middle">gate: /code-review ultra</text>
+<rect class="card" x="295" y="502" width="174" height="56" rx="7"/><circle cx="310" cy="517" r="9" fill="none" stroke="#5b61e6"/><text class="badge" x="310" y="520" text-anchor="middle">7</text><text class="lt" x="382" y="528" text-anchor="middle">COMMIT + PUSH</text><text class="ls" x="382" y="544" text-anchor="middle">to feature branch</text>
+<rect class="card" x="520" y="502" width="174" height="56" rx="7"/><circle cx="535" cy="517" r="9" fill="none" stroke="#5b61e6"/><text class="badge" x="535" y="520" text-anchor="middle">6</text><text class="lt" x="607" y="528" text-anchor="middle">AUTO-ADD MISTAKE</text><text class="ls" x="607" y="544" text-anchor="middle">→ regression list grows</text>
+<rect class="card" x="745" y="502" width="174" height="56" rx="7"/><circle cx="760" cy="517" r="9" fill="none" stroke="#5b61e6"/><text class="badge" x="760" y="520" text-anchor="middle">5</text><text class="lt" x="832" y="528" text-anchor="middle">MACHINE GATE</text><text class="ls" x="832" y="544" text-anchor="middle">verify-and-ship · invariant</text>
+
+<path class="flow" d="M244,446 L289,446" marker-end="url(#ah)"/>
+<path class="flow" d="M469,446 L514,446" marker-end="url(#ah)"/>
+<path class="flow" d="M694,446 L739,446" marker-end="url(#ah)"/>
+<path class="flow" d="M832,474 L832,500" marker-end="url(#ah)"/>
+<path class="flow" d="M745,530 L700,530" marker-end="url(#ah)"/>
+<path class="flow" d="M520,530 L475,530" marker-end="url(#ah)"/>
+<path class="flow" d="M295,530 L250,530" marker-end="url(#ah)"/>
+<path class="flow" d="M70,530 C34,530 34,446 66,446" marker-end="url(#ah)"/>
+<text class="badge" x="30" y="491" text-anchor="middle">↻</text>
+
+<text class="cap" x="500" y="592" text-anchor="middle">Governed by CO-OP.md · CLAUDE.md · docs/PROJECT_PLAN.md — carried across every session</text>
+</svg>

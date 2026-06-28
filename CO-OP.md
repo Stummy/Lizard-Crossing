@@ -1,5 +1,8 @@
 # CO-OP.md — the studio cooperation workflow (how the agents check each other)
 
+> 🗺️ **At-a-glance team + loop map:** [`docs/STUDIO_MAP.svg`](docs/STUDIO_MAP.svg) — the org chart
+> (Owner → Main Session → Art Dept / Code-Review Board / Production & QA) and the 8-step per-change loop.
+
 > **Owner ask (2026-06-27):** "Make a workflow that you can check in between the agents and commit
 > it, so you are always doing that." This is that workflow. The main session is the **lead /
 > integrator**; the specialist agents (`.claude/agents/`) are the **section owners + reviewers**;
