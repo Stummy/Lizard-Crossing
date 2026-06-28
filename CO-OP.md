@@ -23,6 +23,8 @@
 | Mobile performance: GC allocs, hot paths, draw calls, pooling | `perf-optimizer` |
 | Architecture / code quality / conventions / faithful-to-design | `code-architect` |
 | Cloud / CI-CD / builds / backend / analytics / release (reads `cloud.md`) | `cloud-engineer` |
+| Claude / Anthropic capability + new updates (advisor) | `claude-advisor` |
+| Unity 6 / URP / mobile expertise + new updates (advisor) | `unity-advisor` |
 | Visual correctness vs the concept (lead reviewer) | `art-director` |
 | Sequencing the push / what ships next | `studio-producer` |
 | Automated QA on EVERY visual change (not an agent — a tool) | `Tools/gemini_review.py` |
@@ -57,6 +59,20 @@ is **five lenses**, routed by what the change touches (not every change needs al
   churn good code; `code-architect` praises what's clean. The bar is high quality, not max churn.
 - **On-demand heavyweight:** the `/code-review` skill (and owner-run `/code-review ultra` at gates) is
   the multi-angle cloud review; the standing board is the per-change, in-session equivalent.
+
+## The advisory board (keeping the studio current)
+Two read-only experts whose job is to catch what the main session misses and keep us on the *current*
+best path — they recommend, they don't change code:
+| Advisor | Owns | Defining rule |
+|---|---|---|
+| `claude-advisor` | Claude models, Claude Code (skills/hooks/subagents/MCP), Agent SDK, Anthropic API, prompt/agent design, context+cost | **Verify before asserting** — training cutoff is Jan 2026; check the `/claude-api` reference + official docs/changelog before quoting any model id, price, or feature. |
+| `unity-advisor` | Unity 6 / URP 17 / mobile: engine + package features, the right built-in for a job, profiling, our exact-version gotchas | **Verify before asserting** — check the Unity Manual / Scripting API / release notes via web before quoting a version-specific fact. |
+- **They pair up.** When a recommendation spans both halves of our tooling (driving the Unity MCP
+  bridge better from Claude, automating the record→review→verify loop, CI for Unity), they co-author it.
+- **They're proactive.** Invoke them to ask "what are we missing / what's new that would help?" — not
+  just to answer a question. Each recommendation carries a freshness tag (VERIFIED <source> / UNVERIFIED).
+- **Owner-gated outward steps.** Installs, upgrades, and paid tiers are recommended by them, approved
+  by the owner, integrated by the main session — same as `cloud-engineer`.
 
 ## The loop — run this for every visible change, in order
 1. **ORIENT** (session boot): read `docs/PROJECT_PLAN.md` §0 (the ONE Active section) + §5 ledger,

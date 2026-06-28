@@ -188,7 +188,9 @@ reason worth the cost. We work the SAME way now — this is how we stop re-break
   calls → `perf-optimizer`; architecture/quality/conventions/faithful-to-design → `code-architect`**
   (these three + guardian + cloud-engineer are the **code-review board** — see `CO-OP.md`; route code
   changes through the relevant lenses, multi-pass, then synthesize); cloud/CI/builds/backend/release →
-  `cloud-engineer`; visual correctness vs the concept → `art-director` (with the Gemini "video guy"
+  `cloud-engineer`; **Claude/Anthropic capability + new updates → `claude-advisor`; Unity 6/URP/mobile
+  expertise + new updates → `unity-advisor`** (the read-only **advisory board** — they scan for updates
+  and recommend what we miss); visual correctness vs the concept → `art-director` (with the Gemini "video guy"
   `Tools/gemini_review.py` as the standing automated QA on every visual change). Reviews are read-only/
   off-engine so they parallelize; the live editor stays single-threaded for whoever does the in-engine
   work. The main session is the lead/integrator — it may make a change, but routes it past the owner
