@@ -1,0 +1,46 @@
+# TEMPORARY smoke-test workflow — proves the self-hosted runner picks up jobs.
+# It does NOT touch Unity; it just echoes from the runner machine so we can see
+# the whole GitHub -> runner -> report-back loop work in seconds. Delete this
+# file once the runner is confirmed (the real gate is ci.yml on PRs to main).
+name: Runner smoke test
+
+on:
+  push:
+    branches: [feat/realistic-city-crossing]
+  workflow_dispatch:
+
+# Cancel an older smoke run if a newer push lands while one is queued.
+concurrency:
+  group: smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  hello:
+    name: Hello from the self-hosted runner
+    runs-on: [self-hosted, windows]
+    timeout-minutes: 5
+    steps:
+      - name: Say hello
+        shell: powershell
+        run: |
+          Write-Host "============================================="
+          Write-Host " Self-hosted runner is ALIVE and picking up jobs."
+          Write-Host " Machine : $env:COMPUTERNAME"
+          Write-Host " User    : $env:USERNAME"
+          Write-Host " Runner  : $env:RUNNER_NAME"
+          Write-Host " OS      : $env:RUNNER_OS / $env:RUNNER_ARCH"
+          Write-Host "============================================="
+
+      - name: Confirm Unity is reachable (path check only, does NOT launch it)
+        shell: powershell
+        run: |
+          $unity = 'C:\Program Files\Unity\Hub\Editor\6000.4.10f1\Editor\Unity.exe'
+          if (Test-Path $unity) {
+            Write-Host "OK: Found Unity at $unity"
+          } else {
+            Write-Host "WARNING: Unity not found at the expected path: $unity"
+            Write-Host "The real CI job will need this; set UNITY_EDITOR_PATH if Unity lives elsewhere."
+          }
