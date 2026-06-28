@@ -118,13 +118,22 @@ modules you need from the Unity Dashboard + SDK. Develop/launch free; pay only p
 ---
 
 ## Staged plan for Lizard Crossing (what to adopt, in order)
-1. **Now (pre-beta):** keep GitHub + LFS + the AI-gen cloud tools. **No backend.** ✅ **CI is live:**
-   `.github/workflows/ci.yml` (GameCI) runs EditMode+PlayMode tests — incl. the **Invariant spatial
-   gate** (`InvariantTest`) + the bot playthrough — on push/PR to `main` + `feat/realistic-city-crossing`.
-   Linux runner (1× minutes), LFS + Library cached, results uploaded as an artifact. **Owner action to
-   activate:** add the `UNITY_LICENSE` secret (personal `.ulf` via the GameCI `.alf`→Unity→`.ulf` flow)
-   + enable Actions; optionally require the check on `main`. Android build job is stubbed (owner
-   keystore) — enable only when installable builds are needed. Keep `Resources/` lean (no unused assets).
+1. **Now (pre-beta):** keep GitHub + LFS + the AI-gen cloud tools. **No backend.** **CI pipeline is
+   built** (`.github/workflows/ci.yml`, GameCI) — runs EditMode+PlayMode tests incl. the **Invariant
+   spatial gate** (`InvariantTest`) + the bot playthrough on push/PR to `main` +
+   `feat/realistic-city-crossing`; Linux runner (1× minutes), LFS + Library cached. Android build job
+   stubbed (owner keystore). Keep `Resources/` lean.
+   - **⚠️ Unity CI licensing reality (verified 2026-06-28):** Unity **deprecated manual activation for
+     Personal licenses**, AND Unity 6's new Licensing Client leaves **no reusable `Unity_lic.ulf`** on
+     disk — so both the old `.alf`→`.ulf` manual flow and the "grab the local `.ulf`" trick are DEAD for
+     a free Personal license. To run GameCI in the cloud on Personal you now need ONE of:
+     (a) **`game-ci/unity-license-activate`** — logs in headlessly with `UNITY_EMAIL` + `UNITY_PASSWORD`
+     secrets to fetch a license each run (works on Personal; breaks if the Unity account has 2FA without
+     a TOTP secret; means your Unity password lives in a repo secret — acceptable only for your own
+     private repo); (b) a **self-hosted runner** on a machine with Unity already activated (no license
+     secret, but the machine must be on); (c) **Unity Pro/Plus serial** (`UNITY_SERIAL`+email+password —
+     paid). Until one is set up, **CI is dormant and we rely on the local verify loop** (the same tests
+     run in-editor on every change). Revisit at beta or when a collaborator joins.
 2. **Beta:** add **Firebase Crashlytics + Analytics + Remote Config** (free). Crash visibility + a
    live-tunable difficulty/economy. Owner handles store enrollment + TestFlight/Play internal testing.
 3. **Launch:** wire CI → Fastlane auto-upload to TestFlight / Play (owner provides signing). Remote Config
