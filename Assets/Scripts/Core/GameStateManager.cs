@@ -197,11 +197,17 @@ namespace LizardCrossing
             if (!CanRevive) return;
             _ads.ShowRewarded(AdPlacement.Revive, success =>
             {
+                // Guard: a real (async) ad SDK can return after the GM was destroyed (e.g. the
+                // player hit Restart while the ad was up) — don't touch a dead singleton.
+                if (Instance != this) return;
                 if (success && State == GameState.Dead)
                 {
                     ReviveUsed = true;
                     Hearts = 1;
                     State = GameState.Playing;
+                    // Reset the autotomy timer, or the tail regrows INSTANTLY on revive: the player
+                    // died tail-less, so Time.time - _lastHitTime is already past TailRegrowDelay.
+                    _lastHitTime = Time.time;
                     GameEvents.RaisePlayerRevived();
                 }
             });
@@ -218,6 +224,7 @@ namespace LizardCrossing
             if (!CanDoubleRewards) { if (onDone != null) onDone(LastReward); return; }
             _ads.ShowRewarded(AdPlacement.DoubleRewards, success =>
             {
+                if (Instance != this) return; // GM destroyed before the async ad returned
                 if (success)
                 {
                     RewardsDoubled = true;

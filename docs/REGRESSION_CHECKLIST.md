@@ -60,6 +60,11 @@ Statuses below are the LAST KNOWN state; the Gemini run is the live re-check. Ma
 - **[R28]** ⚙️ Lizard leaves the sidewalk / passes through a wall / the run band drifts or loses its floor. → `Bot/Invariant Check` must PASS.
 - **[R29]** ⚙️ A crosswalk crossing is impassable (no safe gap opens) OR a car hit does NOT cost a heart. → bot playthrough reaches the safe zone; car-hit→HitPlayer verified.
 - **[R30]** ⚙️ Any magenta / un-skinned material in the scene. → renderer scan = 0 bad materials.
+- **[R33]** A rewarded REVIVE instantly regrows the tail (and a free-hit buffer) the frame you revive.
+  *(2026-06-28, found by the code-review board)* Cause: `RequestRevive` didn't reset `_lastHitTime`, so
+  the autotomy regrow timer (`TailRegrowDelay`) was already elapsed at revive. FIXED — revive now resets
+  `_lastHitTime`; also guarded both rewarded-ad callbacks against a destroyed GM (use-after-destroy under
+  a real async ad SDK). → re-check: die tail-less → revive → tail must NOT return until 14s of clean play.
 
 ## CI / BUILD  (⚙️ machine-gated — asserted by the workflow itself parsing + running)
 - **[R32]** ⚙️ A GitHub Actions workflow YAML fails to parse, so CI silently never runs (the PR/branch
