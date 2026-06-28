@@ -172,6 +172,16 @@ on-device, build pipeline, save/progression, store assets → Boardwalk theme �
 > fences ▶ · traffic system (Stage 3) · cat deferred. Full detail in
 > `Lizard_Crossing_Claude_Work_Packet/04_ReviewChecklists/BUG_AND_GAP_LOG.md`.
 
+### Session 2026-06-28 — code-correctness + infra pass (machine-verified)
+Pure correctness + tooling work done while the visual run is owner-gated; all gated by the machine checks.
+| ✓ | Item | Verify | Commit |
+|---|------|--------|--------|
+| ✅ | **Controls cleanup** (locked section, owner-OK'd): removed dead `IsStumbling`/`_stumbleUntil`; Stumble/Faceplant → one `BeginStagger`; magic numbers `0.7`/`-4` → `GameConst`; collapsed the no-op corridor ramp → `CorridorLeftX`; consistent `Body` guards. | Invariant PASS · 6/8 bot wins · 0 errors | `9aabcc1` |
+| ✅ | **[R33] revive fix machine-gated** — new `Bot/Revive Check` (`ReviveRegressionCheck`): die tail-less → fast-forward past the 14s autotomy delay → revive → assert the tail stays dropped. | Revive Check PASS | `9aabcc1` |
+| ✅ | **CI speedup** — `clean: false` on the self-hosted checkout so Unity's `Library/` + LFS bytes persist between runs (kills the 20-40 min cold-import stall). Applies at the next `main` PR. | YAML validated; cloud-engineer to confirm at gate | `672386e` |
+| ✅ | **Capture recipe consolidated** → `docs/CAPTURE_RECIPE.md` (single source vs. 5 duplicated agent copies; bakes in the "RT renders brighter — judge tone on the real MP4" gotcha). Follow-up: point the 5 agents at it. | doc only | (docs) |
+| ⏸️ | **Camera locked dead-centre** (owner D4): `CamMaxLateralLead` 0.13 → 0 so the hero stays pinned bottom-centre (no off-centre weave drift). **APPLIED on disk, HELD uncommitted** pending owner: re-approve Unity MCP → record a clip → owner eyes → commit. | pending (MCP was revoked mid-verify) | — |
+
 ## 6. Risks / unknowns
 - **On-device perf** (Stage 5): DoF + Bloom + crowd of skinned pedestrians is the budget
   risk on mid-tier phones; the `SetLite` path exists but needs a real device test.
