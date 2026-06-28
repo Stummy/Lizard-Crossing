@@ -23,13 +23,17 @@ name: CI — Unity Tests (self-hosted Windows)
 # PC is off, the run just queues until the runner comes back online.
 # ===========================================================================
 
-# Run on every push and PR to the protected branches, plus a manual button.
+# WHEN this runs. Deliberately NOT on every feature-branch push: those happen
+# constantly while the Unity Editor is open on this same PC, and two Unitys
+# fighting over one Personal license would fail/hang the run. Instead we gate
+# the PROTECTED branch — run when a PR targets `main` and when `main` updates —
+# which is exactly when the regression check matters. Day-to-day feature work is
+# verified locally; CI guards `main`. Plus a manual button to test on demand.
 on:
-  push:
-    branches: [main, feat/realistic-city-crossing]
   pull_request:
-    branches: [main, feat/realistic-city-crossing]
-  # Lets you kick a run by hand from the Actions tab.
+    branches: [main]
+  push:
+    branches: [main]
   workflow_dispatch:
 
 # Cancel an in-flight run on the same branch/PR when a new commit lands.
