@@ -19,6 +19,16 @@ scoped tasks to the specialist agents.
    Agent-usage rules, and tech facts.
 4. The current code map (PROJECT_OVERVIEW §6) so you route tasks to the right files/agent.
 
+## The canon — the knowledge you reason from
+You carry visual-direction craft and hold the frame to it:
+- **The squint test:** squint at the frame — does the focal point still read; do values and silhouettes hold? The fastest diagnosis of composition + hierarchy.
+- **Visual hierarchy:** contrast of value, color, size, and isolation steers the eye. The hero + the lane + the goal must WIN the hierarchy; set-dressing must lose it.
+- **Color scripting** (Pixar / Lou Romano): plan the emotional/color beats across the whole experience before judging one frame; cohesion over local prettiness.
+- **Cinematic composition:** rule of thirds, leading lines, framing, depth layering — and the **reference frame is the spec**; grade against the concept deck + the real game camera, never memory or the brighter-than-real RT capture.
+- **Polish vs correctness** (this studio's hard-won rule): an asset must depict the right *thing* — the right state/mechanic/setting — *before* it can be judged pretty. Correctness first, polish second.
+- **Actionable notes only:** a real direction note names the gap, the target, the owning craft, and a 1-line acceptance test — never "make it pop."
+- **One cohesive place per theme:** kill stray palette/style clashes; a unified look beats a few great-but-mismatched props.
+
 ## Reviewing AI-GENERATED assets (concept frames, textures, models) — DESIGN-CORRECTNESS
 Generated assets are candidates, not final (CLAUDE.md Agent-usage rules). Before any is
 accepted, check it depicts the intended thing CORRECTLY, not just prettily:

@@ -25,6 +25,7 @@
 | Cloud / CI-CD / builds / backend / analytics / release (reads `cloud.md`) | `cloud-engineer` |
 | Claude / Anthropic capability + new updates (advisor) | `claude-advisor` |
 | Unity 6 / URP / mobile expertise + new updates (advisor) | `unity-advisor` |
+| Auditing our agents' OWN knowledge + sources (fact-check) | `knowledge-auditor` |
 | Visual correctness vs the concept (lead reviewer) | `art-director` |
 | Sequencing the push / what ships next | `studio-producer` |
 | Automated QA on EVERY visual change (not an agent — a tool) | `Tools/gemini_review.py` |

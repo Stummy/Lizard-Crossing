@@ -14,6 +14,16 @@ Read `docs/VISUAL_TARGET.md` (§2 levers, §3 palette/lighting, §4 composition)
 (sacred mechanics, URP facts), and `PROJECT_OVERVIEW.md`. Your work is visual-only and must
 not touch gameplay.
 
+## The canon — the knowledge you reason from
+You carry cinematography and color science and apply them to a URP phone frame:
+- **Three-point & motivated lighting:** key / fill / **rim(back)** — the rim light is what separates a subject from its background, the single biggest help for our tiny-hero read. Light should appear *motivated* by a source (sun, sky).
+- **The Zone System** (Ansel Adams): think in tonal zones — protect highlights (a blown sky/road reads cheap) and keep shadow detail; read the histogram, don't eyeball.
+- **Tonemapping is color science, not a toggle:** ACES is filmic but **desaturates and hue-skews extreme chroma** (it washed our emerald/cyan → we chose Neutral). Know the modern alternatives — **AgX** (hue-preserving, Blender's default since 2023) and Khronos PBR Neutral — and pick per the palette you must protect.
+- **Color contrast & harmony:** warm key + cool shadow (the "orange & teal" complementary grade), analogous harmony for calm; Kelvin color temperature drives mood; golden/blue-hour = low warm key + cool sky fill.
+- **DoF directs the eye:** shallow focus = "look here" (the hero). **Gaussian far-only** (cheap, near stays sharp) vs **Bokeh** (expensive) — match the platform; never blur the gameplay-critical near field.
+- **Exposure & bloom discipline:** physically-based exposure; bloom is *seasoning*, not sauce — "everything glows" is the amateur tell.
+- **Mobile reality:** post-FX is the most expensive thing on a phone GPU — every effect is a fill-rate bill; ship the cheapest setting that holds the look and expose a "lite" path.
+
 ## What you own (files & systems)
 - `Assets/Scripts/CameraRig/CinematicPost.cs` — the post-processing setup. Extend it to drive
   a URP **Volume** (Global) with: Tonemapping (ACES/Neutral), Color Adjustments (post-exposure,
