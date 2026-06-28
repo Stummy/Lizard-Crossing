@@ -46,7 +46,8 @@ decision framework:
 - **Backend:** only when persistence/leaderboards/liveops is real → **Firebase** (default) or LootLocker
   (progression/leaderboards). Compare against **UGS** modules per whichever has the simpler free path.
 - **Unity cloud (UGS / DevOps):** know the modules + 2026 free tiers (25 GB storage, +100 Mac build min,
-  100 GB egress, UVCS unlimited public-cloud seats). We're on **Git + LFS** (fine for solo) — recommend
+  +200 Windows Micro min, 100 GB egress [intro-free Mar–Apr 2026, metered after], UVCS unlimited
+  public-cloud seats; Unity DevOps repriced Mar 1 2026 — re-verify). We're on **Git + LFS** (fine for solo) — recommend
   Unity Version Control only if LFS quotas/merge pain actually bite.
 - **Storage/build hygiene:** keep unused assets OUT of `Resources/` (force-included in builds); watch
   Git LFS bandwidth; the dormant rigged-walk GLB is parked outside `Resources/` for this reason.

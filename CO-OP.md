@@ -75,6 +75,16 @@ best path — they recommend, they don't change code:
 - **Owner-gated outward steps.** Installs, upgrades, and paid tiers are recommended by them, approved
   by the owner, integrated by the main session — same as `cloud-engineer`.
 
+## Standing cadences — the meta-bots are PART OF THE PROCESS (not just on-call)
+The advisory board and the knowledge-auditor are wired into the loop on a fixed cadence, so they keep
+the studio current and correct automatically instead of waiting to be asked:
+| Bot(s) | Fires… | Produces | Acted on by |
+|---|---|---|---|
+| `claude-advisor` **+** `unity-advisor` (paired) | at **every stage gate** (alongside `/code-review ultra`), and at **session boot** when a session opens a new stage | a ranked **"what's new / what we're missing"** list (each item VERIFIED/UNVERIFIED) — new Claude/Unity models, features, packages, or practices worth adopting | main session triages; **owner** approves any install / upgrade / paid tier |
+| `knowledge-auditor` | **after ANY change to an agent's canon** (mandatory) and at **every stage gate** | a per-agent scorecard + ranked corrections (bad/stale sources, errors, gaps, bloat) | main session applies the high-value fixes, then **re-runs it to confirm** |
+- **The gate rule:** a stage gate is not "done" until (a) the **advisory board** has scanned for what we're missing and (b) the **auditor** has re-blessed any canon we changed. New facts get logged — advisor findings → `docs/PROJECT_PLAN.md` §5 + the relevant knowledge base (`cloud.md`, `MEMORY.md`); auditor fixes → applied straight to the agent files.
+- **Cost-aware:** these are spawned agent runs (they cost tokens), so they fire on the **gate cadence**, not on every change — the per-change loop already has its specialist + Gemini + machine gates. The owner can also invoke any of the three on demand at any time ("what are we missing?", "audit the agents").
+
 ## The loop — run this for every visible change, in order
 1. **ORIENT** (session boot): read `docs/PROJECT_PLAN.md` §0 (the ONE Active section) + §5 ledger,
    `CLAUDE.md`, `MEMORY.md`; open the concept frame(s) for the state(s) being touched. Name which
@@ -103,8 +113,11 @@ best path — they recommend, they don't change code:
    grows; anything hit even once becomes a permanent watch item.
 7. **COMMIT + PUSH**: narrowly-scoped commit, push to `origin feat/realistic-city-crossing` (never
    `main`/merge without owner OK). Tick the §5 ledger.
-8. **CHECKPOINT / GATE**: at each section or stage gate, remind the owner to run `/code-review ultra`
-   (Claude can't launch it). Show before/after vs the concept frame.
+8. **CHECKPOINT / GATE**: at each section or stage gate — remind the owner to run `/code-review ultra`
+   (Claude can't launch it); **fire the advisory board** (`claude-advisor` + `unity-advisor`: "what's
+   new / what are we missing?") and the **knowledge-auditor** (re-verify any canon we changed) per the
+   **Standing cadences** below; show before/after vs the concept frame. The gate isn't done until those
+   scans are in and their high-value findings are logged/applied.
 
 ## When to spawn an agent vs. do it inline
 - Spawn the specialist when the owner asks for it, when the change is squarely in that domain and

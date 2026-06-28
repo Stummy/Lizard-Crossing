@@ -137,7 +137,10 @@ Done and verified in-engine (0 console errors, mechanics intact):
   end of each sprint or stage (see `docs/PROJECT_PLAN.md`), and before any merge to
   `main`, REMIND the owner to run `/code-review ultra` (multi-agent cloud review of the
   branch) — it's the owner's "second pair of eyes." Claude CANNOT launch it (owner-
-  triggered + billed); prompt the owner at the gate, never attempt to run it.
+  triggered + billed); prompt the owner at the gate, never attempt to run it. **Also at each gate,
+  fire the advisory board (`claude-advisor` + `unity-advisor`) and the `knowledge-auditor` per
+  `CO-OP.md` "Standing cadences"** — scan for what's new / what we're missing, and re-verify any
+  agent canon we changed; log/apply their high-value findings before the gate is "done."
 
 ## North star — ALWAYS WORK THE PLAN (owner, 2026-06-25)
 - **Every task must trace to the plan AND the concept deck. No orphan work.** The single
