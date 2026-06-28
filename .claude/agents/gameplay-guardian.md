@@ -62,6 +62,8 @@ System.IO.File.WriteAllBytes("C:/Users/snpvi/Lizard-Crossing/Temp/Shots/guard.pn
 // shader.name=="Hidden/InternalErrorShader". LevelDefinition is a plain data class, NOT a Component.
 ```
 
+> 📎 **Capture = single source of truth:** the recipe above (+ the magenta scan) and the rule — *judge TONE on the real recorded MP4 + `python Tools/gemini_review.py`, NEVER the RT `cam.Render()` capture (it renders **brighter** than the real game)* — now live in **`docs/CAPTURE_RECIPE.md`**. Maintain the recipe there.
+
 For deeper frame-time/GC questions, the `Unity_Profiler_*` tools are available.
 
 ## Output style

@@ -78,6 +78,8 @@ var tex=new Texture2D(w,h,TextureFormat.RGB24,false); tex.ReadPixels(new Rect(0,
 cam.targetTexture=pt; RenderTexture.active=pa;
 System.IO.File.WriteAllBytes("C:/Users/snpvi/Lizard-Crossing/Temp/Shots/shot.png", tex.EncodeToPNG());
 ```
+
+> 📎 **Capture = single source of truth:** the recipe above + the critical rule — *judge TONE on the real recorded MP4 + `python Tools/gemini_review.py`, NEVER the RT `cam.Render()` capture (it renders **brighter** than the real game and has fooled whole lighting passes)* — now live in **`docs/CAPTURE_RECIPE.md`**. Maintain the recipe there.
 Then `Read` the PNG to view it. Drive the run with the menu items
 `Lizard Crossing/Bot/Start Run` → `Move Forward` (and `Toggle POV`, `Move Fwd+Left/Right`).
 For clean mid-run frames, set `Time.timeScale = 0.25f` before the run and restore `1f` after.

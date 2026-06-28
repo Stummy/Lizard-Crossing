@@ -69,5 +69,7 @@ cam.targetTexture=pt; RenderTexture.active=pa;
 System.IO.File.WriteAllBytes("C:/Users/snpvi/Lizard-Crossing/Temp/Shots/light.png", tex.EncodeToPNG());
 ```
 
+> 📎 **Capture = single source of truth:** the recipe above + the critical rule — *judge TONE on the real recorded MP4 + `python Tools/gemini_review.py`, NEVER the RT `cam.Render()` capture (it renders **brighter** than the real game and has fooled whole lighting passes — this matters most for YOU)* — now live in **`docs/CAPTURE_RECIPE.md`**. Maintain the recipe there.
+
 Report what you changed, the before/after frames, the perf implication, and the remaining gap
 to the target.
