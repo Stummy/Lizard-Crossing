@@ -67,6 +67,14 @@ jobs:
         with:
           lfs: true
           fetch-depth: 1
+          # Self-hosted runner speed fix: do NOT wipe the working tree between runs.
+          # checkout's default (clean: true) runs `git clean -ffdx`, which DELETES Unity's
+          # Library/ import cache and the materialised LFS bytes — forcing a full cold
+          # reimport every run (the 20-40 min stall seen on the first PR over a home
+          # connection). Persisting them makes every run after the first WARM and fast.
+          # Tracked files are still hard-reset to the checked-out commit, so this is safe;
+          # the only persisted state is the re-derivable Library/ cache + LFS objects.
+          clean: false
 
       # Belt-and-suspenders: make sure every LFS object is actually materialised.
       # checkout's lfs:true smudges pointers; this guarantees the real bytes are
