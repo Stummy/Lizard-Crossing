@@ -65,19 +65,13 @@ namespace LizardCrossing.Testing
 
             InputProvider.StartOverride = true;
 
-            // size from the first rendered frame, preserving the Game-view aspect but scaling the
-            // LONGER side to ~1280 so the H.264 encode has room to stay crisp (a tiny source res
-            // makes the encoder produce blocky "static"); force even dims (H.264 needs even w/h).
-            yield return new WaitForEndOfFrame();
-            var probe = ScreenCapture.CaptureScreenshotAsTexture();
-            float aspect = (float)probe.width / Mathf.Max(1, probe.height);
-            int W, H;
-            if (aspect >= 1f) { W = 1280; H = Mathf.RoundToInt(1280f / aspect); }
-            else { H = 1280; W = Mathf.RoundToInt(1280f * aspect); }
-            W = Mathf.Clamp(W, 320, 1920); H = Mathf.Clamp(H, 320, 1920);
-            if ((W & 1) == 1) W++;
-            if ((H & 1) == 1) H++;
-            Object.DestroyImmediate(probe);
+            // Fixed portrait 9:16 capture (the Game view is set to 9:16). We render the GAME CAMERA
+            // explicitly to this RenderTexture each frame (in the loop below) rather than grabbing the
+            // screen backbuffer — see the capture note there for why.
+            int W = 720, H = 1280;
+            var cam = Camera.main;
+            if (cam == null) { Debug.LogError("[RunRecorder] no Camera.main to record"); Destroy(gameObject); yield break; }
+            var capRt = new RenderTexture(W, H, 24);
 
             var attrs = new UnityEditor.Media.VideoTrackAttributes
             {
@@ -104,11 +98,21 @@ namespace LizardCrossing.Testing
                     if (acc < frameDt) continue;   // fixed-cadence sampling so playback timing is correct
                     acc -= frameDt;
 
-                    yield return new WaitForEndOfFrame();
-                    var full = ScreenCapture.CaptureScreenshotAsTexture(); // includes HUD overlay
-                    var frame = DownscaleRGBA(full, W, H);
+                    // Render the game camera straight to capRt. This forces a REAL render every frame
+                    // regardless of whether the Game-view tab is repainting or the editor is foreground.
+                    // (ScreenCapture only grabs the screen backbuffer, which goes stale when the editor
+                    // is backgrounded — that's why earlier clips were a single frozen frame. No more
+                    // WaitForEndOfFrame either: it can stall when nothing is presenting.) The HUD is a
+                    // Screen-Space-Overlay canvas, so it isn't camera-rendered — the clip shows the WORLD
+                    // without HUD, which is what we want for judging framing/look/motion. The RT path
+                    // renders a touch brighter than the device (docs/CAPTURE_RECIPE.md) — weight tone loosely.
+                    var prevTarget = cam.targetTexture; var prevActive = RenderTexture.active;
+                    cam.targetTexture = capRt; cam.Render();
+                    RenderTexture.active = capRt;
+                    var frame = new Texture2D(W, H, TextureFormat.RGBA32, false);
+                    frame.ReadPixels(new Rect(0, 0, W, H), 0, 0); frame.Apply();
+                    cam.targetTexture = prevTarget; RenderTexture.active = prevActive;
                     encoder.AddFrame(frame);
-                    Object.DestroyImmediate(full);
                     Object.DestroyImmediate(frame);
                     frames++;
 
@@ -119,6 +123,8 @@ namespace LizardCrossing.Testing
             {
                 encoder.Dispose();
                 InputProvider.MoveOverride = null;
+                RenderTexture.active = null;
+                if (capRt != null) Object.DestroyImmediate(capRt);
             }
             Debug.Log("[RunRecorder] VIDEO DONE — " + frames + " frames @ " + VideoFps + "fps (" + W + "x" + H + ") -> Temp/Recording/run.mp4");
             Destroy(gameObject);
@@ -127,20 +133,6 @@ namespace LizardCrossing.Testing
             Destroy(gameObject);
             yield break;
 #endif
-        }
-
-        // RGBA32 copy at a fixed size — MediaEncoder.AddFrame wants a readable, even-sized texture.
-        private static Texture2D DownscaleRGBA(Texture2D src, int w, int h)
-        {
-            var rt = RenderTexture.GetTemporary(w, h, 0);
-            var prev = RenderTexture.active;
-            Graphics.Blit(src, rt);
-            RenderTexture.active = rt;
-            var dst = new Texture2D(w, h, TextureFormat.RGBA32, false);
-            dst.ReadPixels(new Rect(0, 0, w, h), 0, 0); dst.Apply();
-            RenderTexture.active = prev;
-            RenderTexture.ReleaseTemporary(rt);
-            return dst;
         }
 
         private IEnumerator Record()
