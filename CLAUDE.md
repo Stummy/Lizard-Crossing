@@ -6,6 +6,14 @@ before doing any work.** Do not ask the owner to re-explain the game idea.
 
 **How the agents cooperate + the per-change QA loop is `CO-OP.md` (owner rule, 2026-06-27) — run
 that loop (specialist gate → Gemini gate → machine gate → commit) on every visible change.**
+- **Machine gate = menu checks that write PASS/FAIL to `Temp/Playtest/` (read the files, don't eyeball):**
+  `Lizard Crossing/Bot/Invariant Check` (R28 spatial confinement → `invariant.txt`),
+  `Lizard Crossing/Bot/Revive Check` (R33 revive/tail → `revive.txt`),
+  `Lizard Crossing/Bot/Auto-Playtest (8 runs)` (reaches the safe zone + 0 console errors → `report.txt`),
+  plus a magenta-material scan (R30). **Add a NEW gate whenever a bug is bot-assertable** (that's why R33 got one).
+- **How to capture AND judge a frame/clip is `docs/CAPTURE_RECIPE.md`** (single source of truth):
+  real recorded MP4 + `Tools/gemini_review.py` for TONE/look; the RT→PNG snippet for geometry only
+  (it renders BRIGHTER than the real game — never judge the look on it).
 
 **Cloud / CI-CD / builds / backend / analytics / release decisions: read `cloud.md` (owner rule,
 2026-06-27) and route them past the `cloud-engineer` agent — lean, free-tier-first, solo-dev.**
@@ -24,12 +32,12 @@ update this file + memory whenever we learn a rule, fix, or gotcha.
 3. **TESTER ("the video guy")** — the Gemini reviewer is our QA game tester, kept IN SYNC: it is
    fed the concept frames + spec and reports BUGS + CONCEPT-GAP + a punch-list. Read the latest
    `Temp/Recording/run.review.md` if fresh; otherwise, when the build runs, record a clip
-   (menu **Lizard Crossing → Bot → Record MP4 (10s)**, Game view set to 9:16 portrait) and run
+   (menu **Lizard Crossing → Bot → Set Game View 9:16** → **Bot → Record MP4 (14s)**) and run
    `python Tools/gemini_review.py` (use `--state <name>` to compare a specific concept frame).
-   **Log its findings into the §5 ledger** so nothing is lost.
+   **Log its findings into the §5 ledger** so nothing is lost. (Full capture+judge recipe: `docs/CAPTURE_RECIPE.md`.)
 4. **WORK THE LOOP** — pull the top ledger item for the Active section → change → `verify-and-ship`
-   (compile clean → bot playthrough reaches the safe zone → **Bot → Invariant Check** PASS → 0
-   console errors → proof frame) → commit+push → tick the ledger → **re-run the tester to confirm
+   (compile clean → bot playthrough reaches the safe zone → **Bot → Invariant Check** + **Bot → Revive
+   Check** PASS → 0 console errors → proof frame) → commit+push → tick the ledger → **re-run the tester to confirm
    the gap closed** → checkpoint the owner with before/after vs the concept frame. Remind the owner
    to run `/code-review ultra` at each section/stage gate.
 
@@ -93,10 +101,11 @@ Done and verified in-engine (0 console errors, mechanics intact):
 - **Verify before "done" — the `verify-and-ship` loop** (owner rule, 2026-06-25): after
   every completed unit of work, run the verification loop BEFORE calling it done —
   compile clean (0 console errors) → bot playthrough reaches the safe zone (`State==Won`)
-  → scene validator → 0 console errors → capture a proof frame. Packaged as the
-  `verify-and-ship` skill (`.claude/skills/verify-and-ship/`). NEVER mark work done with
-  console errors or a failed playthrough. The owner judges *feel*; this loop checks
-  *correctness* so "approved" is never "unchecked."
+  → the machine gates **`Bot/Invariant Check`** (R28) + **`Bot/Revive Check`** (R33) PASS
+  (they write `Temp/Playtest/invariant.txt` / `revive.txt` — read them) → 0 magenta (R30) →
+  capture a proof frame. Packaged as the `verify-and-ship` skill (`.claude/skills/verify-and-ship/`).
+  NEVER mark work done with console errors or a failed playthrough. The owner judges *feel*;
+  this loop checks *correctness* so "approved" is never "unchecked."
 - **ALWAYS run the Gemini video reader as a standing 2nd-brain QA gate (owner rule, 2026-06-26).**
   It is not optional and not just for big art passes — on EVERY change that is visible in-game
   (and at every stage gate), after the change verifies: record a portrait clip (menu `Lizard
@@ -108,7 +117,8 @@ Done and verified in-engine (0 console errors, mechanics intact):
   "streetlights/night" that don't exist) — weight its concrete BUG reports + measured frames over a
   vague vibe label, and treat the OWNER's stated preference (e.g. neutral over golden) as
   superseding the spec; (2) judge the look on the REAL MP4 / ScreenCapture, never the RT capture
-  (it renders brighter than the real game and has fooled passes — see commit 62ccfff). Every agent
+  (it renders brighter than the real game and has fooled passes — see commit 62ccfff; the full
+  capture + judging recipe is **`docs/CAPTURE_RECIPE.md`**). Every agent
   brief that touches visuals must include this Gemini step (the agent runs it, or the main session
   runs it on the agent's clip).
 - **REGRESSION CHECKLIST — stop old bugs from silently coming back (owner rule, 2026-06-26).**
@@ -251,6 +261,6 @@ reason worth the cost. We work the SAME way now — this is how we stop re-break
 ## Batch verification
 ```
 & "C:\Program Files\Unity\Hub\Editor\6000.4.10f1\Editor\Unity.exe" -batchmode -quit -nographics `
-  -projectPath "C:\Users\snpvi\Documents\GitHub\Lizard-Crossing" `
+  -projectPath "C:\Users\snpvi\Lizard-Crossing" `
   -executeMethod LizardCrossing.EditorTools.ProjectSetup.BatchSetup -logFile setup.log
 ```
