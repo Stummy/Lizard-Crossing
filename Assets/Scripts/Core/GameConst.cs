@@ -117,7 +117,11 @@ namespace LizardCrossing
         public const float CamDashFovKick = 8f;
         public const float CamTraumaDecay = 1.4f;
         public const float CamMinGroundClearance = 0.1f; // camera never sinks closer than this above the ground it pans over
-        public const float CamMaxLateralLead = 0.13f;  // the lizard may slide this far off-centre when strafing so side-to-side weaving READS on screen; the camera leashes to it so it never leaves the frame
+        public const float CamMaxLateralLead = 0f;     // OWNER 2026-06-28: LOCKED to dead-centre — the camera
+                                                       // tracks the lizard's x exactly so the hero stays pinned
+                                                       // bottom-CENTRE (no off-centre weave drift). Was 0.13 (a
+                                                       // deliberate slide so weaving read on screen); owner
+                                                       // prefers the locked framing. Bump >0 to re-allow drift.
         // De-clip: when a solid prop/wall is between the camera and the lizard, pull the rig IN
         // (toward the lizard) so the lens never ends up inside faceted rubble filling the frame.
         // A short sphere of this radius is swept from the lizard back toward the desired cam slot;

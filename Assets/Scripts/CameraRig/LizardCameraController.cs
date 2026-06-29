@@ -248,9 +248,11 @@ namespace LizardCrossing
             desired.z += targetVelZ * FollowSmooth;
             transform.position = Vector3.SmoothDamp(transform.position, desired, ref _posVelocity, FollowSmooth);
 
-            // Let the lizard visibly LEAD the camera sideways so a weave reads on screen, but
-            // leash the camera to it so it can never slide out of frame. Without this the camera
-            // tracks the lizard's x exactly and it sits dead-centre — making side movement invisible.
+            // Leash the camera's x to the lizard so the hero stays pinned horizontally. With
+            // CamMaxLateralLead = 0 (owner's locked-centre framing) the camera tracks the lizard's x
+            // exactly so it sits dead-centre; a non-zero lead would let it slide that far off-centre
+            // so a weave reads on screen. The lizard's own motion is already velocity-smoothed, so
+            // exact tracking still looks smooth — just centred.
             float lizX = _target.position.x;
             Vector3 p = transform.position;
             p.x = Mathf.Clamp(p.x, lizX - GameConst.CamMaxLateralLead, lizX + GameConst.CamMaxLateralLead);
