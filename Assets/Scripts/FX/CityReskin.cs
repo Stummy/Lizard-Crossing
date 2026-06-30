@@ -38,11 +38,16 @@ namespace LizardCrossing
             // REALISM PASS 2026-06-26: NORMAL MAPS now wired (facade_*_normal, flagged NormalMap +
             // linear). The flat-printed facades gain real surface relief — brick courses, window
             // reveals and concrete grain catch the directional sun instead of reading as a decal.
+            // OWNER 2026-06-29: the run read GREY because most building faces were grey concrete /
+            // unmapped GLB albedo. The concept wants WARM BROWNSTONE — so shift the concrete blocks to
+            // brick and warm-tint the rest toward stone (Tint multiplies the texture). facade_brick is
+            // a real warm brownstone-with-windows scan, so this keeps the windows, just warms the city.
             { "CityGen_LR_Facades",  new Skin("facade_brick",    "facade_brick_normal") },   // brick mid-rise + window rows
-            { "Building_Facade.001", new Skin("facade_concrete", "facade_concrete_normal") }, // grey concrete + window bands
+            { "Building_Facade.001", new Skin("facade_brick2",   "facade_brick2_normal") },  // was grey concrete -> brown brick
             { "CityGenyellow_stone", new Skin("facade_brick2",   "facade_brick2_normal") },   // brown-brick tower (variety)
-            { "CityGensimple_concrete_1", new Skin("facade_concrete", "facade_concrete_normal") }, // concrete facade w/ windows
-            { "CityGenconcrete.001",      new Skin("facade_concrete", "facade_concrete_normal") },
+            { "CityGensimple_concrete_1", new Skin("facade_concrete", "facade_concrete_normal", new Color(0.97f, 0.86f, 0.74f)) }, // concrete -> warm stone
+            { "CityGenconcrete.001",      new Skin("facade_concrete", "facade_concrete_normal", new Color(0.97f, 0.86f, 0.74f)) },
+            { "CityGenwhite_marble_tiles", new Skin("facade_brick", "facade_brick_normal") }, // was UNMAPPED pale grey -> warm brick
 
             // --- WO-4: road-zone barrier walls + crosswalk (were flat grey / flat orange) ---
             // The grey concrete barrier curbs flanking the road read as flat un-skinned grey.
