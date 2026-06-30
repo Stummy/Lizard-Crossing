@@ -140,26 +140,34 @@ namespace LizardCrossing
                 TextureLibrary.Pavement, TextureLibrary.PavementNormal, new Color(0.80f, 0.73f, 0.62f),
                 0.08f, (halfW * 2f) / stoneTile, zlen / stoneTile);
 
-            // 2) RIGHT building-facade wall — a SOLID collider the CharacterController lizard physically
-            //    can't pass, opaque + tall so it frames the run and occludes the drifting GLB buildings.
-            //    Skinned with the procedural concrete/glass facade (owner: neutral building base, not brick).
+            // 2) RIGHT building wall — a SOLID full-length collider the CharacterController lizard can't
+            //    pass. OWNER 2026-06-30 ("the building on the right is flat/image-like + I can go through
+            //    it — make it a REAL building, not walk-thru-able"): skin it with the WARM-BRICK brownstone
+            //    facade scan + its NORMAL MAP so it reads as a real brick building with windows + depth
+            //    relief instead of a flat grey decal. The collider geometry is unchanged — the lizard is
+            //    already physically confined by it (Invariant Check asserts maxX<=11.2); this is the visual
+            //    "make it look solid/real" half of the owner's note.
+            var rbTex = Resources.Load<Texture2D>("GeneratedArt/facade_brick");
+            var rbNrm = Resources.Load<Texture2D>("GeneratedArt/facade_brick_normal");
             BuildCorridorWall(corr, GameConst.CorridorWallRightX, z0, z1,
                 GameConst.CorridorWallHeight, 0.5f,
-                ProceduralTextures.BuildingFacade, null, new Color(0.60f, 0.58f, 0.54f), "CorridorWallRight");
-            // 0.95 near-white -> 0.60 warm-neutral STONE (env-artist + Gemini R19/R20: the near-white wall
-            // blew out + read generic-flat). Kept NEUTRAL stone, NOT brick (owner: "neutral building base").
+                rbTex != null ? rbTex : ProceduralTextures.BuildingFacade, rbNrm, Color.white, "CorridorWallRight");
 
             // 3) LEFT railing/curb — a lower SOLID collider so the lizard never drifts onto the road.
             // darker concrete curb (was 0.55 pale grey → read as a glowing "scaffolding" pole in the
             // crossing foreground); a darker curb recedes correctly.
-            BuildCorridorWall(corr, GameConst.CorridorFenceLeftX, z0, z1,
+            // OWNER 2026-06-30 ("remove the fences in the way"): hide the left curb's VISUAL but KEEP its
+            // collider — the lizard still physically can't drift onto the road (Foundation invariant intact,
+            // Invariant Check still asserts minX>=5.8). The fence look is gone; the confinement isn't.
+            var leftCurb = BuildCorridorWall(corr, GameConst.CorridorFenceLeftX, z0, z1,
                 GameConst.CorridorFenceHeight, 0.3f,
                 null, null, new Color(0.34f, 0.34f, 0.33f), "CorridorCurbLeft");
+            var curbR = leftCurb.GetComponent<Renderer>(); if (curbR != null) curbR.enabled = false;
         }
 
         /// <summary>One long solid wall/curb box along the run (kept collider → blocks the lizard).
         /// Optional texture tiles down its length; null tex = flat lit colour.</summary>
-        private static void BuildCorridorWall(Transform parent, float x, float z0, float z1,
+        private static GameObject BuildCorridorWall(Transform parent, float x, float z0, float z1,
             float height, float thick, Texture2D tex, Texture2D normal, Color color, string name)
         {
             float zc = (z0 + z1) * 0.5f;
@@ -172,6 +180,7 @@ namespace LizardCrossing
                 w.GetComponent<Renderer>().sharedMaterial = MaterialCache.GetTexturedNormal(
                     tex, normal, color, 0.18f, zlen / 8f, Mathf.Max(1f, height / 4f));
             }
+            return w;
         }
 
         // ---------- Stage 3: crosswalk crossings ----------

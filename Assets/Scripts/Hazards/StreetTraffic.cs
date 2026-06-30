@@ -131,13 +131,18 @@ namespace LizardCrossing
         // random rest so the crossings stay irregular and unpredictable.
         static void CrossLane(Transform parent, float length, int count)
         {
-            float margin = GameConst.CorridorHalfWidth + 16f;
+            // OWNER 2026-06-30 ("some people are walking SIDEWAYS — it's just a road to the side"):
+            // jaywalkers used to span the WHOLE avenue (±25u), so they walked sideways (±X) straight
+            // THROUGH the lizard's sidewalk band (x[6..11]) and the left sidewalk. Confine them to the
+            // ROADWAY between the two sidewalks (x[-9 .. 5.5]) so they cross the road only and never
+            // traverse a sidewalk; the sidewalk crowds (SidewalkStream) keep walking ALONG ±Z as they should.
+            const float roadLeft = -9f, roadRight = 5.5f; // stop short of the right sidewalk band (x>=6)
             for (int i = 0; i < count; i++)
             {
                 float z = Mathf.Lerp(8f, Mathf.Max(8f, length - 8f), (i + 0.5f) / count);
                 int dir = (i % 2 == 0) ? 1 : -1;
-                Vector3 start = new Vector3(dir > 0 ? -margin : margin, 0f, z);
-                Vector3 end   = new Vector3(-start.x, 0f, z);
+                Vector3 start = new Vector3(dir > 0 ? roadLeft : roadRight, 0f, z);
+                Vector3 end   = new Vector3(dir > 0 ? roadRight : roadLeft, 0f, z);
                 GiantPedestrian.SpawnTrack(parent, start, end,
                     Random.Range(0.46f, 0.60f),   // step duration (walk pace)
                     Random.Range(0f, 4f),         // start delay (stagger first crossing)
