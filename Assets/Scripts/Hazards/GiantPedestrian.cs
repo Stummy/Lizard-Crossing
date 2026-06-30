@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace LizardCrossing
@@ -22,6 +23,13 @@ namespace LizardCrossing
         // ---- asset paths (under a Resources/ folder so the runtime-built world loads them) ----
         const string PrefabFolder = "NPC";                  // Resources/NPC/ped_*.prefab
         const string ControllerPath = "NPC/PedestrianLocomotion";
+
+        // Registry of live peds for the CAMERA DE-CLIP. Peds carry NO collider (stripped below for
+        // the analytic stomp), so the rig's physics back-sweep is blind to them and the lens buries
+        // in a giant leg (the owner's "why's it zoomed in"). The camera consults BackClearance() to
+        // stop short of any VISIBLE walker between it and the lizard.
+        static readonly List<GiantPedestrian> Active = new List<GiantPedestrian>();
+        const float CamBlockRadius = 0.5f; // a leg/body's effective half-width at the low POV
 
         // ---- tuning (public so they can be tweaked live in the editor) ----
         public float height = 1.8f;       // REAL human height (CLAUDE.md spec: person ≈ 1.8u).
@@ -297,6 +305,30 @@ namespace LizardCrossing
             SetVisible(false);
             if (_markerL != null) _markerL.Hide();
             if (_markerR != null) _markerR.Hide();
+        }
+
+        void OnEnable() { if (!Active.Contains(this)) Active.Add(this); }
+        void OnDisable() { Active.Remove(this); }
+
+        /// <summary>Camera de-clip vs the live crowd (peds carry no collider). Returns how far back
+        /// along -Z from <paramref name="from"/> the rig may sit before a VISIBLE pedestrian would be
+        /// between it and the lizard — the crowd counterpart to ObstacleField.ClearBackDistance.</summary>
+        public static float BackClearance(Vector3 from, float maxBack, float camHalfWidth)
+        {
+            if (maxBack <= 0f) return maxBack;
+            float best = maxBack;
+            float clear = CamBlockRadius + camHalfWidth;
+            for (int i = 0; i < Active.Count; i++)
+            {
+                var p = Active[i];
+                if (p == null || p._holder == null || !p._holder.gameObject.activeSelf) continue;
+                Vector3 pos = p.transform.position;
+                float dz = from.z - pos.z;                 // ped behind the lizard (toward the lens) => dz > 0
+                if (dz <= 0f || dz > maxBack) continue;
+                if (Mathf.Abs(from.x - pos.x) > clear) continue;   // misses the back-sweep laterally
+                if (dz < best) best = dz;
+            }
+            return best;
         }
 
         void SetVisible(bool on)

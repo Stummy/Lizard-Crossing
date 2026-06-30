@@ -186,6 +186,11 @@ namespace LizardCrossing
             }
             float fieldClear = ObstacleField.ClearBackDistance(anchor, back, GameConst.CamDeClipRadius);
             back = Mathf.Min(back, Mathf.Max(0f, fieldClear - GameConst.CamDeClipSkin));
+            // (3) the live CROWD: pedestrians strip their colliders for the analytic stomp, so the
+            // physics sweep in (1) is blind to them — the lens used to bury in a giant leg mid-run.
+            // Stop the rig short of any visible walker between it and the lizard.
+            float pedClear = GiantPedestrian.BackClearance(anchor, back, GameConst.CamDeClipRadius);
+            back = Mathf.Min(back, Mathf.Max(0f, pedClear - GameConst.CamDeClipSkin));
 
             // Hard floor: never let the camera dip into the ground it's over.
             float groundUnderCam = StreetGround.HeightAt(camX, anchor.z);
